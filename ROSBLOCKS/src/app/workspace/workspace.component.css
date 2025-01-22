@@ -1,0 +1,289 @@
+* {
+  font-family: 'Arial', sans-serif;/*TODO */
+}
+
+.container {
+    display: flex;
+    width: 100vw;
+    height: calc(100vh - 57px);
+  }
+  
+  .left-div, .right-div {
+    width: 15vw;
+    background-color: #253942; /*!*/
+    padding: 10px;
+    box-sizing: border-box;
+    min-width: 270px;
+  }
+
+  .right-div {
+    padding: 2px;
+    overflow: scroll;
+  }
+
+  .right-div * {
+    margin-top: 5px;
+  }
+  
+  .center-div {
+    width: 70vw;
+    flex-grow: 1;
+    background-color: #022741;/*!*/
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+
+  .tab-content {
+    border-top: 2px solid rgba(128, 128, 128, 0.3);
+    height: calc(100% - 40px);
+    overflow: auto;
+    background-size: 20px 20px;
+    background-image:
+    linear-gradient(to right, rgba(128, 128, 128, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(128, 128, 128, 0.2) 1px, transparent 1px);
+    background-attachment: scroll;
+}
+
+  
+  .tabs-bar {
+    padding: 0px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    height: 38px;
+    scrollbar-width: 1px;
+  }
+
+  .tab-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start; 
+  }
+  
+
+  .tab-list li {
+    border-radius: 0 15px 0 0;
+  }
+
+  .tab-list input {
+    border: none;
+    background: transparent;
+    color: #3bdbdb;/*!*/
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    width: 15ch; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  input::selection {
+    background-color: transparent;
+  }
+
+  .node-tab {
+    display: inline-block;
+    padding: 10px;
+    padding-right: 15px;
+    margin-left: -10px;
+    background-color: #022741;/*!*/
+    border-top-right-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    position: relative;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
+    position: relative;
+  }
+
+  .node-tab.selected {
+    background-color: #003961;/*!*/
+    color: white;/*!*/
+    border-color: #003961;/*!*/
+  }
+
+  .node-tab button {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #3bdbdb;/*!*/
+  }
+
+  .add-tab-button {
+    display: inline-block;
+    padding: 10px 20px;
+    padding-left: 30px;
+    margin-left: -15px;
+    background: #3c505a;/*!*/
+    color: #3bdbdb;/*!*/
+    cursor: pointer;
+    font-weight: bold;
+    position: relative;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
+    min-width: 20px;
+    z-index: 1;
+  }
+
+
+  .container-options {
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .left-button {
+    margin: 10px 0;
+  }
+  
+  .container-options div button {
+    background-color: #39515c;/*!*/
+    border-radius: 5px;
+    color: white;/*!*/
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 250px;
+  }
+  
+  .container-options div button .button-text {
+    flex: 1;
+    text-align: center;
+  }
+  
+  .arrow {
+    font-size: 20px;
+    color: #3bdbdb;/*!*/
+  }
+  
+  .list-container {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;/*!*/
+    background-color: #f9f9f9;/*!*/
+  }
+  
+  .list-container ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .list-container li {
+    margin: 5px 0;
+  }
+  
+
+  .search-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+  }
+  
+  .search-button {
+    background: none;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 25px 0 0 25px;/*!*/
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .search-button:hover {
+    background-color: #2d3e46;/*!*/
+  }
+  
+  .search-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    position: relative;
+    filter: invert(41%) sepia(79%) saturate(7484%) hue-rotate(154deg);/*!*/
+  }
+  
+  .search-icon::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 2px;
+    background-color: #3bdbdb43;/*!*/
+    top: 7px;
+    left: 6px;
+    transform: rotate(45deg);
+  }
+  
+  .search-input {
+    padding: 10px;
+    padding-left: 50px;
+    margin-left: -40px;
+    font-size: 16px;
+    width: 250px;
+    border: 2px solid #3bdbdb43;/*!*/
+    background-color: #3bdbdb43;/*!*/
+    color: white;/*!*/
+    border-radius: 25px;
+    outline: none;
+  }
+
+  .search-input::placeholder {
+    color: #bbbbbb;/*!*/
+  }
+  
+  .search-input:focus {
+    border-color: #2d3e46;/*!*/
+  }
+  
+  .maps {
+    height: 50px;
+    width: 100%;
+  }
+
+  .maps * {
+    margin: 0 2px;
+  }
+
+  .turtlesim {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background-color: #001117;
+  }
+
+  .console {
+    width: 100%;
+    height: 100%;
+    background-color: #001117;
+  }
+
+  .sample-map {
+    border-radius: 10px;
+    color: #FFF;
+    border: 1px solid #b249c1;/*TODO */
+    background-color: #b249c1;/*TODO */
+  }
+
+  .add-map {
+    border-radius: 100%;
+    background-color: #6f797e;
+  }
+
+  .add-map, .sample-map {
+    border: none;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    font-size: 24px;
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .node {
+    outline: none;
+  }

@@ -1,0 +1,69 @@
+
+<app-header></app-header>
+<div class="container">
+    <div class="left-div">
+    <!-- Search Bar -->
+        <div class="search-container">
+            <button class="search-button">
+                <img src="../../assets/lupa.png" class="search-icon" alt="Buscar">
+            </button>
+            <input type="text" class="search-input" placeholder="Buscar..." />
+        </div>
+
+    <!--Items -->
+        <div class="container-options">
+            <div *ngFor="let button of buttonItems; let i = index" class="left-button">
+                <button (click)="toggleList(i)">
+                    <span class="button-text">{{ button.buttonLabel }}</span>
+                    <span class="arrow">{{ button.isListVisible ? '▼' : '►' }}</span>
+                </button>
+                <div *ngIf="button.isListVisible" class="list-container">
+                    <ul>
+                        <li *ngFor="let item of button.items">{{ item }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="center-div">
+    <!-- Tabs-->
+        <div class="tabs-bar" #tabsBar>
+            <ul class="tab-list">
+                <li *ngFor="let tab of tabs; let i = index" class="node-tab"
+                [class.selected]="tab.id === selectedTabId"
+                [ngStyle]="{
+                'z-index': tab.id === selectedTabId ? 999 : i + 1
+                }"
+                (click)="selectTab(tab.id)">
+                    <input type="text" [(ngModel)]="tab.name" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
+                    <button class="play-button" (click)="playTab(tab.id)">►</button>
+                    <!-- <button class="delete-button" (click)="deleteTab(tab.id)">X</button> -->
+                </li>
+                <li class="add-tab-button" (click)="addTab()">
+                    <span>+</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content">
+            <p style="color: aliceblue;" *ngIf="selectedTabId !== null">Contenido de {{ selectedTabName }}</p>
+        </div>
+        
+    </div>
+
+    <div class="right-div">
+        <div class="maps">
+            <button class="sample-map">1</button>
+            <button class="sample-map">2</button>
+            <button class="sample-map">3</button>
+            <button class="add-map">+</button>
+        </div>
+        <div class="turtlesim">
+            <p style="color: aliceblue;">Turtlesim</p>
+        </div>
+        <div class="console">
+            <p style="color: aliceblue;">Console</p>
+        </div>
+    </div>
+</div>
