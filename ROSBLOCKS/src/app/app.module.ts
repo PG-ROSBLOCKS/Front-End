@@ -13,7 +13,7 @@ import { ErrorMsgComponent } from './shared/components/error-msg/error-msg.compo
     AppComponent,
     WorkspaceComponent,
     HeaderComponent,
-    ErrorMsgComponent
+    ErrorMsgComponent,
   ],
   imports: [
     BrowserModule,
