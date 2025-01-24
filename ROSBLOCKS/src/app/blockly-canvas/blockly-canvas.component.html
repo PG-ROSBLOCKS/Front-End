@@ -1,18 +1,64 @@
-<app-header></app-header>
-<div class="container">
-    <div #blocklyDiv style="height: calc(100vh - 57px); width: 85vw;"></div>
-    <div class="right-div">
-        <div class="maps">
-            <button class="sample-map">1</button>
-            <button class="sample-map">2</button>
-            <button class="sample-map">3</button>
-            <button class="add-map">+</button>
+<div class="container">   
+    <app-header></app-header> 
+    <div class="workspaceContainer">
+        <div class="left">
+            <div class="up">
+                <div class="up-left">
+                    <div class="search-container">
+                        <!--
+                        <button class="search-button">
+                            <img src="../../assets/lupa.png" class="search-icon" alt="Buscar">
+                        </button>
+                        <input type="text" class="search-input" placeholder="Buscar..." />
+                        -->
+                    </div>
+                </div>
+                <div class="nodebar">
+                    <div class="tabs-bar" #tabsBar>
+                        <ul class="tab-list">
+                            <li *ngFor="let tab of tabs; let i = index" class="node-tab"
+                            [class.selected]="tab.id === selectedTabId"
+                            [ngStyle]="{
+                            'z-index': tab.id === selectedTabId ? 999 : i + 1
+                            }"
+                            (click)="selectTab(tab.id)">
+                                <input type="text" [(ngModel)]="tab.name" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
+                                <button class="play-button" (click)="playTab(tab.id)">►</button>
+                                <!-- <button class="delete-button" (click)="deleteTab(tab.id)">X</button> -->
+                            </li>
+                            <li class="add-tab-button" (click)="addTab()">
+                                <span>+</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="blockly-container">
+                <input
+                    id="searchBox"
+                    type="text"
+                    placeholder="Buscar..."
+                    (input)="onSearch($event)"
+                />
+                <div id="blocklyDiv" style="height: calc(100vh - 95px); width: 100%;"></div>
+            </div>
+            
         </div>
-        <div class="turtlesim">
-            <p style="color: aliceblue;">Turtlesim</p>
-        </div>
-        <div class="console">
-            <p style="color: aliceblue;">Console</p>
+        <div class="right">
+            <div class="maps">
+                <button class="sample-map">1</button>
+                <button class="sample-map">2</button>
+                <button class="sample-map">3</button>
+                <button class="add-map">+</button>
+            </div>
+            <div class="turtlesim">
+                <p style="color: aliceblue;">Turtlesim</p>
+            </div>
+            <div class="console">
+                <p style="color: aliceblue;">Console</p>
+            </div>
         </div>
     </div>
+    
 </div>
+
