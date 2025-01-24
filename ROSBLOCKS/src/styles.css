@@ -35,6 +35,43 @@
     background: transparent;
   }
 
+
+  /* Estilo para la scrollbar vertical */
+#blocklyDiv::-webkit-scrollbar {
+  width: 12px;
+}
+
+#blocklyDiv::-webkit-scrollbar-track {
+  background: #e20e0e;
+}
+
+#blocklyDiv::-webkit-scrollbar-thumb {
+  background: #f50808;
+  border-radius: 6px;
+}
+
+#blocklyDiv::-webkit-scrollbar-thumb:hover {
+  background: #e00808;
+}
+
+/* Estilo para la scrollbar horizontal */
+#blocklyDiv::-webkit-scrollbar-horizontal {
+  height: 12px;
+}
+
+#blocklyDiv::-webkit-scrollbar-track-horizontal {
+  background: #ff0000;
+}
+
+#blocklyDiv::-webkit-scrollbar-thumb-horizontal {
+  background: #eb0f0f;
+  border-radius: 6px;
+}
+
+#blocklyDiv::-webkit-scrollbar-thumb-horizontal:hover {
+  background: #db1c1c;
+}
+
 /* Blockly */
 .blocklyToolboxDiv {
   padding-top: 30px;
@@ -50,17 +87,23 @@
   padding: 10px 0;
   border-radius: 5px;
   background-color: #39515c;
+  box-shadow: 0px 5px 10px 0px #00000040 inset;
+  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.5s ease; /* Añadido para la animación */
 }
 
 .blocklyTreeRow:hover {
-  background-color: #1c77a1 !important;
+  background-color: #22617e !important;
+  transform: scale(1.02);
+  box-shadow: 0px 0px 2px #1c77a1;
 }
 
 .blocklyTreeSelected {
-  background-color: #1c77a1 !important;
+  background-color: #22617e !important;
   border: 2px solid #1ea7e623;
-  box-shadow: 0px 0px 6px #1ea6e6c5;
+  box-shadow: 0px 0px 6px #1c77a1;
+  transition: box-shadow 0.3s ease;
 }
+
 
 .blocklyFlyout{
   background-color: #3c505a;
@@ -69,6 +112,6 @@
 
 .blocklySvg {
   background-size: 20px 20px;
-  background-color: #022741;
+  background-color: #012840;
   background-image: linear-gradient(to right, rgba(128, 128, 128, 0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(128, 128, 128, 0.2) 1px, transparent 1px);
 }

@@ -7,8 +7,6 @@ import { AppComponent } from './app.component';
 import { WorkspaceComponent } from './workspace/workspace.component';
 import { HeaderComponent } from './shared/components/header/header.component';
 import { ErrorMsgComponent } from './shared/components/error-msg/error-msg.component';
-import { BlocklyCanvasComponent } from './blockly-canvas/blockly-canvas.component';
-import { BlocklyComponent } from './blockly/blockly.component';
 
 @NgModule({
   declarations: [
@@ -16,8 +14,6 @@ import { BlocklyComponent } from './blockly/blockly.component';
     WorkspaceComponent,
     HeaderComponent,
     ErrorMsgComponent,
-    BlocklyCanvasComponent,
-    BlocklyComponent
   ],
   imports: [
     BrowserModule,

@@ -1,28 +1,127 @@
-import { Component } from '@angular/core';
+import { Component, AfterViewInit} from '@angular/core';
+import * as Blockly from 'blockly';
 
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
   styleUrls: ['./workspace.component.css']
 })
-export class WorkspaceComponent {
-  buttonItems: { 
-    buttonLabel: string; 
-    items: string[]; 
-    isListVisible: boolean;
-  }[] = [
-    { buttonLabel: 'nodes', items: ['Elemento 1.1', 'Elemento 1.2', 'Elemento 1.3'], isListVisible: false },
-    { buttonLabel: 'Services', items: ['Elemento 2.1', 'Elemento 2.2', 'Elemento 2.3'], isListVisible: false },
-    { buttonLabel: 'Topics', items: ['Elemento 3.1', 'Elemento 3.2', 'Elemento 3.3'], isListVisible: false },
-    { buttonLabel: 'etc', items: ['Elemento 2.1', 'Elemento 2.2', 'Elemento 2.3'], isListVisible: false }
-  ];
-
-  // Función para alternar la visibilidad de las listas
-  toggleList(index: number) {
-    this.buttonItems[index].isListVisible = !this.buttonItems[index].isListVisible;
-  }
-
-
+export class WorkspaceComponent implements AfterViewInit {
+  workspace: Blockly.WorkspaceSvg | undefined;
+  
+    // Toolbox inicial (Los bloques aqui son solo de prueba)
+    toolbox = {
+      kind: 'categoryToolbox',
+      contents: [
+        {
+          kind: 'category',
+          name: 'Nodes',
+          contents: [
+            { kind: 'block', type: 'controls_if' },
+            { kind: 'block', type: 'logic_compare' },
+            { kind: 'block', type: 'logic_operation' },
+            { kind: 'block', type: 'logic_negate' },
+            { kind: 'block', type: 'logic_boolean' },
+          ],
+        },
+        {
+          kind: 'category',
+          name: 'Services',
+          contents: [
+            { kind: 'block', type: 'controls_repeat_ext' },
+            { kind: 'block', type: 'controls_whileUntil' },
+            { kind: 'block', type: 'controls_for' },
+            { kind: 'block', type: 'controls_flow_statements' },
+          ],
+        },
+        {
+          kind: 'category',
+          name: 'Topics',
+          contents: [
+            { kind: 'block', type: 'math_number' },
+            { kind: 'block', type: 'math_arithmetic' },
+            { kind: 'block', type: 'math_single' },
+            { kind: 'block', type: 'math_trig' },
+            { kind: 'block', type: 'math_random_int' },
+          ],
+        },
+        {
+          kind: 'category',
+          name: 'etc',
+          contents: [
+            { kind: 'block', type: 'math_number' },
+            { kind: 'block', type: 'math_arithmetic' },
+            { kind: 'block', type: 'math_single' },
+            { kind: 'block', type: 'math_trig' },
+            { kind: 'block', type: 'math_random_int' },
+          ],
+        },
+      ],
+    };
+  
+    ngAfterViewInit(): void {
+      this.initializeBlockly();
+    }
+  
+    initializeBlockly(): void {
+      this.workspace = Blockly.inject('blocklyDiv', {
+        toolbox: this.toolbox,
+        trashcan: true,
+        /*
+              grid: {
+          spacing: 20,
+          length: 3,
+          colour: '#ccc',
+          snap: true
+        },
+        */
+        zoom: {
+          controls: true,
+          wheel: true,
+          startScale: 0.7,
+          maxScale: 2,
+          minScale: 0.6,
+          scaleSpeed: 1.1
+        },
+        move: {
+          scrollbars: true,
+          drag: true,
+          wheel: false
+        },
+        sounds: true,
+        media: 'https://unpkg.com/blockly/media/',
+        rtl: false,
+        horizontalLayout: false,
+        renderer: 'zelos',
+        theme: Blockly.Themes.Classic
+      });
+    }
+  
+    onSearch(event: any): void {
+      const query = event.target.value.toLowerCase();
+  
+      // Filtrar categorías y bloques por el texto ingresado
+      const filteredToolbox = {
+        kind: 'categoryToolbox',
+        contents: this.toolbox.contents
+          .map((category: any) => {
+            // Filtrar bloques dentro de la categoría
+            const filteredContents = category.contents.filter((block: any) =>
+              block.type.toLowerCase().includes(query)
+            );
+  
+            // Incluir la categoría solo si tiene bloques que coincidan
+            if (filteredContents.length > 0) {
+              return { ...category, contents: filteredContents };
+            }
+            return null;
+          })
+          .filter((category: any) => category !== null), // Eliminar categorías vacías
+      };
+  
+      // Actualizar el toolbox con los resultados filtrados
+      this.workspace?.updateToolbox(filteredToolbox);
+    }
 
   tabs: { name: string, id: number }[] = [];
   selectedTabId: number | null = null;

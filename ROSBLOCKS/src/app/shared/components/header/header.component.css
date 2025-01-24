@@ -3,7 +3,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 0px 20px;
-    background-color: #011c27;/*TODO */
+    background-color: #011C26;/*TODO */
     color: white;
   }
 
@@ -23,41 +23,45 @@
     padding: 10px 20px;
     font-family: 'Arial', sans-serif;/*TODO */
     font-size: 14px;
-    border-radius: 5px;
+    border-radius: 10px;
+    border-color: #011C26;
+    box-shadow: 0px 2px 5px 0px #333e4371 inset;
     cursor: pointer;
     transition: background-color 0.3s ease;/*TODO */
   }
 
   .export {
+    box-shadow: 0px 2px 5px 0px #287f65 inset;
     font-family: 'Poppins', sans-serif;
-    border: 1px solid #b249c1;/*TODO */
-    background-color: #b249c1;/*TODO */
+    border: 1px solid #41BF9A;/*TODO */
+    background-color: #41BF9A;/*TODO */
     color: white;
   }
 
   .help {
+    box-shadow: 0px 2px 5px 0px #0404044f inset;
     font-family: 'Poppins', sans-serif;
-    border: 1px solid gray;/*TODO */
-    background-color: gray;/*TODO */
+    border: 1px solid #333E43;/*TODO */
+    background-color: #333E43;/*TODO */
     color: white;
   }
 
   .export.export:hover {
-    border: 1px solid #bc4dcb;/*TODO */
-    background-color: #bc4dcb;/*TODO */
+    border: 1px solid #39cea1;/*TODO */
+    background-color: #39cea1;/*TODO */
   }
 
   .help:hover {
-    border: 1px solid #909090;/*TODO */
-    background-color: #909090;/*TODO */
+    border: 1px solid #404d53;/*TODO */
+    background-color: #404d53;/*TODO */
   }
 
   .export.export:active {
-    border: 1px solid #993fa4;/*TODO */
-    background-color: #993fa4;/*TODO */
+    border: 1px solid #41b894;/*TODO */
+    background-color: #41b894;/*TODO */
   }
 
   .help:active {
-    border: 1px solid #656565;/*TODO */
-    background-color: #656565;/*TODO */
+    border: 1px solid #303a3f;/*TODO */
+    background-color: #303a3f;/*TODO */
   }
