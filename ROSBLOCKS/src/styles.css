@@ -3,7 +3,7 @@
 /* Scroll bar */
 ::-webkit-scrollbar {
     width: 5px;
-    height: 3px;
+    height: 5px;
   }
   ::-webkit-scrollbar-button {
     width: 0px;

@@ -11,6 +11,8 @@
 
 .nodebar {
   height: auto;
+  width: calc(100vw - 15vw - 250px);
+  overflow-y: hidden;
 }
 
 .workspaceContainer {
