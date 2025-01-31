@@ -38,6 +38,7 @@
             placeholder="Buscar"
             (input)="onSearch($event)"
           />
+          <img id="createImg" src="../../assets/CreaNuevoNodo.png">
           <!-- Div de Blockly único por cada pestaña -->
           <div *ngFor="let tab of tabs" 
                [hidden]="tab.id !== selectedTabId" 

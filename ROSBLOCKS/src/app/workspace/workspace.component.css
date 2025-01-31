@@ -11,7 +11,7 @@
 
 .nodebar {
   height: auto;
-  width: calc(100vw - 15vw - 250px);
+  width: calc(85vw - 250px);
   overflow-y: hidden;
 }
 
@@ -369,4 +369,11 @@ input::selection {
 
 .play-all:hover, .stop-all:hover {
   background: #016e7a;
+}
+
+#createImg {
+  position: fixed;
+  width: 200px;
+  top: 85px;
+  left: 255px;
 }
