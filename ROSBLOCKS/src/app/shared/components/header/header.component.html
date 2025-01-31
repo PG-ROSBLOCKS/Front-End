@@ -1,8 +1,8 @@
 <header class="header">
     <p class="logo">ROSBLOCKS</p>
     <div class="buttons">
-      <button class="export">Exportar proyecto</button>
-      <button class="help">?</button>
+      <button *ngIf="mostrarExportar" class="export">Exportar proyecto</button>
+      <button class="help" routerLink="/help">?</button>
     </div>
   </header>
   

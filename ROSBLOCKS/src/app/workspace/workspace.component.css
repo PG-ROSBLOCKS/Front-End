@@ -11,7 +11,7 @@
 
 .nodebar {
   height: auto;
-  width: calc(100vw - 15vw - 250px);
+  width: calc(100vw - 250px - 270px);
   overflow-y: hidden;
 }
 
@@ -22,11 +22,16 @@
 }
 
 .up {
+  position: relative;
+  left: 250px;
   display: flex;
 }
 
 .up-left {
+  position: fixed;
+  left: 0px;
   width: 250px;
+  height: calc(100vh - 60px);
   background-color: #253942;
 }
 
@@ -37,11 +42,10 @@
 }
 
 .right {
-  width: 15vw;
   background-color: #253942; /*!*/
   padding: 10px;
   box-sizing: border-box;
-  min-width: 270px;
+  width: 270px;
   padding: 2px;
   overflow: scroll;
 }
@@ -364,4 +368,11 @@ input::selection {
 
 .play-all:hover, .stop-all:hover {
   background: #016e7a;
+}
+
+#createImg {
+  position: fixed;
+  width: 200px;
+  top: 85px;
+  left: 255px;
 }
