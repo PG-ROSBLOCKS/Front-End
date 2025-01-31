@@ -20,31 +20,31 @@ export class RosblocksHelpComponent {
   selectVideo(videoName: string): void {
     switch(videoName) {
       case 'video1':
-        this.selectedVideo = 'assets/videos/video1.mp4';
+        this.selectedVideo = 'https://www.youtube.com/embed/dQw4w9WgXcQ';
         break;
       case 'video2':
-        this.selectedVideo = 'assets/videos/video2.mp4';
+        this.selectedVideo = 'https://www.youtube.com/embed/eudOwe3Rz-0?si=uLdWZQYNo_lg8UF_';
         break;
       case 'video3':
-        this.selectedVideo = 'assets/videos/video3.mp4';
+        this.selectedVideo = 'https://www.youtube.com/embed/eudOwe3Rz-0?si=uLdWZQYNo_lg8UF_';
         break;
       case 'videoA':
-        this.selectedVideo = 'assets/videos/videoA.mp4';
+        this.selectedVideo = 'https://www.youtube.com/embed/eudOwe3Rz-0?si=uLdWZQYNo_lg8UF_';
         break;
       case 'videoB':
-        this.selectedVideo = 'assets/videos/videoB.mp4';
+        this.selectedVideo = 'https://www.youtube.com/embed/eudOwe3Rz-0?si=uLdWZQYNo_lg8UF_';
         break;
       case 'videoC':
-        this.selectedVideo = 'assets/videos/videoC.mp4';
+        this.selectedVideo = 'https://www.youtube.com/embed/eudOwe3Rz-0?si=uLdWZQYNo_lg8UF_';
         break;
       case 'videoX':
-        this.selectedVideo = 'assets/videos/videoX.mp4';
+        this.selectedVideo = 'https://www.youtube.com/embed/eudOwe3Rz-0?si=uLdWZQYNo_lg8UF_';
         break;
       case 'videoY':
-        this.selectedVideo = 'assets/videos/videoY.mp4';
+        this.selectedVideo = 'https://www.youtube.com/embed/eudOwe3Rz-0?si=uLdWZQYNo_lg8UF_';
         break;
       case 'videoZ':
-        this.selectedVideo = 'assets/videos/videoZ.mp4';
+        this.selectedVideo = 'https://www.youtube.com/embed/eudOwe3Rz-0?si=uLdWZQYNo_lg8UF_';
         break;
       default:
         this.selectedVideo = null;
