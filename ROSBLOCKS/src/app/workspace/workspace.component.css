@@ -22,11 +22,16 @@
 }
 
 .up {
+  position: relative;
+  left: 250px;
   display: flex;
 }
 
 .up-left {
+  position: fixed;
+  left: 0px;
   width: 250px;
+  height: calc(100vh - 60px);
   background-color: #253942;
 }
 
