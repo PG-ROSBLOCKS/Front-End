@@ -1,0 +1,49 @@
+<div class="container">   
+    <app-header></app-header> 
+    <div class="helpContainer">
+        <div class="left">
+            <div class="blockly-container">
+                <input
+                    id="searchBox"
+                    type="text"
+                    placeholder="Buscar"
+                    (input)="onSearch($event)"
+                />
+                <div class="button-container">
+                    <button class="dropdown-btn" (click)="toggleDropdown(1)">
+                        Opción 1 <span>{{ dropdowns[1] ? '˄' : '˅' }}</span>
+                    </button>
+                    <ul *ngIf="dropdowns[1]" class="dropdown-list">
+                        <li (click)="selectVideo('video1')">Subopción 1</li>
+                        <li (click)="selectVideo('video2')">Subopción 2</li>
+                        <li (click)="selectVideo('video3')">Subopción 3</li>
+                    </ul>
+
+                    <button class="dropdown-btn" (click)="toggleDropdown(2)">
+                        Opción 2 <span>{{ dropdowns[2] ? '˄' : '˅' }}</span>
+                    </button>
+                    <ul *ngIf="dropdowns[2]" class="dropdown-list">
+                        <li (click)="selectVideo('videoA')">Subopción A</li>
+                        <li (click)="selectVideo('videoB')">Subopción B</li>
+                        <li (click)="selectVideo('videoC')">Subopción C</li>
+                    </ul>
+
+                    <button class="dropdown-btn" (click)="toggleDropdown(3)">
+                        Opción 3 <span>{{ dropdowns[3] ? '˄' : '˅' }}</span>
+                    </button>
+                    <ul *ngIf="dropdowns[3]" class="dropdown-list">
+                        <li (click)="selectVideo('videoX')">Elemento X</li>
+                        <li (click)="selectVideo('videoY')">Elemento Y</li>
+                        <li (click)="selectVideo('videoZ')">Elemento Z</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="right">
+            <div *ngIf="selectedVideo">
+                <iframe [src]="selectedVideo | safe" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+</div>

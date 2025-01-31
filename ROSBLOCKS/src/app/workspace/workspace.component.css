@@ -11,6 +11,8 @@
 
 .nodebar {
   height: auto;
+  width: calc(100vw - 15vw - 250px);
+  overflow-y: hidden;
 }
 
 .workspaceContainer {
@@ -92,6 +94,7 @@
 
 
 .tabs-bar {
+  display: flex;
   padding: 0px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -186,6 +189,15 @@ input::selection {
   text-align: center;
   min-width: 20px;
   z-index: 1;
+}
+
+.delete-button {
+  margin-right: 5px;
+}
+
+.delete-button:hover, .play-button:hover {
+  text-shadow: 0px 0px 5px #3bdbdb;
+  cursor: pointer;
 }
 
 .add-tab-button:hover {
@@ -311,4 +323,45 @@ input::selection {
   color: #FFF;
   box-shadow: 0px 5px 5px 0px #00000047 inset;
   background-color: #04C4D9;
+}
+
+.ai {
+  margin-left: auto; /* Empuja los botones a la derecha */
+  display: flex;
+  gap: 10px;
+  padding-right: 10px;
+}
+
+.play-all, .stop-all {
+  border: none;
+  background: none;
+  padding: 5px 5px;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+
+.play-all {
+  color: #3bdbdb;
+}
+
+.play-all:hover {
+  text-shadow: 0px 0px 5px #3bdbdb;
+  background: none !important;
+}
+
+.stop-all:hover {
+  text-shadow: 0px 0px 5px #F15FF2;
+  background: none !important;
+}
+
+.stop-all {
+  color: #F15FF2;
+}
+
+.play-all:hover, .stop-all:hover {
+  background: #016e7a;
 }

@@ -7,6 +7,8 @@ import { AppComponent } from './app.component';
 import { WorkspaceComponent } from './workspace/workspace.component';
 import { HeaderComponent } from './shared/components/header/header.component';
 import { ErrorMsgComponent } from './shared/components/error-msg/error-msg.component';
+import { RosblocksHelpComponent } from './rosblocks-help/rosblocks-help.component';
+import { SafePipe } from './safe.pipe';
 
 @NgModule({
   declarations: [
@@ -14,6 +16,8 @@ import { ErrorMsgComponent } from './shared/components/error-msg/error-msg.compo
     WorkspaceComponent,
     HeaderComponent,
     ErrorMsgComponent,
+    RosblocksHelpComponent,
+    SafePipe,
   ],
   imports: [
     BrowserModule,

@@ -123,15 +123,20 @@ export class WorkspaceComponent implements AfterViewInit {
       this.workspace?.updateToolbox(filteredToolbox);
     }
 
-  tabs: { name: string, id: number }[] = [];
+    tabs: { name: string, id: number, isPlaying: boolean }[] = [];
   selectedTabId: number | null = null;
   selectedTabName: string | null = null;
 
   addTab() {
+    if (this.tabs.length >= 5) {
+      alert('No se pueden agregar más de 5 pestañas.');
+      return;
+    }
     const newTabId = this.tabs.length + 1;
-    this.tabs.push({ name: `Nodo ${newTabId}`, id: newTabId });
+    this.tabs.push({ name: `Nodo ${newTabId}`, id: newTabId, isPlaying: false });
     this.selectTab(newTabId);
   }
+  
 
   selectTab(tabId: number) {
     this.selectedTabId = tabId;
@@ -147,7 +152,10 @@ export class WorkspaceComponent implements AfterViewInit {
   }
 
   playTab(tabId: number) {
-
+    const tab = this.tabs.find(tab => tab.id === tabId);
+    if (tab) {
+      tab.isPlaying = !tab.isPlaying; // Alterna entre true y false
+    }
   }
 
   deleteTab(tabId: number) {
