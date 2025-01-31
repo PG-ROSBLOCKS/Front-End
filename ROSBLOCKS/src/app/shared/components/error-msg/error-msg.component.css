@@ -1,0 +1,31 @@
+.error-container {
+    position: relative;
+    background-color: #04C4D9;
+    color: white;
+    padding: 15px;
+    border: 4px solid #04F2F2;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    font-family: 'Albert Sans', sans-serif;
+    width: 500px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 10px auto;
+  }
+  
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  .close-btn:hover {
+    color: #f2f2f2;
+  }
+  

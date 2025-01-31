@@ -15,13 +15,21 @@
                             }"
                             (click)="selectTab(tab.id)">
                                 <input type="text" [(ngModel)]="tab.name" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
-                                <button class="play-button" (click)="playTab(tab.id)">►</button>
+                                <button class="delete-button" (click)="deleteTab(tab.id)">✖</button>
+                                <button class="play-button" (click)="playTab(tab.id)">
+                                    {{ tab.isPlaying ? '◼' : '▶' }}
+                                  </button>
+                                  
                                 <!-- <button class="delete-button" (click)="deleteTab(tab.id)">X</button> -->
                             </li>
                             <li class="add-tab-button" (click)="addTab()">
                                 <span>+</span>
                             </li>
                         </ul>
+                        <div class="ai">
+                            <button class="play-all">▶</button>
+                            <button class="stop-all">◼</button>
+                        </div>
                     </div>
                 </div>
             </div>

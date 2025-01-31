@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-error-msg',
@@ -6,5 +6,10 @@ import { Component } from '@angular/core';
   styleUrls: ['./error-msg.component.css']
 })
 export class ErrorMsgComponent {
+  @Input() message: string = 'Mensaje de prueba';
+  isVisible: boolean = true;
 
+  closeMessage() {
+    this.isVisible = false;
+  }
 }
