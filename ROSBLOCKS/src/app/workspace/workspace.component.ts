@@ -147,8 +147,8 @@ export class WorkspaceComponent implements AfterViewInit {
   }
 
   addTab() {
-    if (this.tabs.length >= 5) {
-      alert('No se pueden agregar más de 5 pestañas.');
+    if (this.tabs.length >= 10) {
+      alert('No se pueden agregar más de 10 pestañas.');
       return;
     }
 
