@@ -75,6 +75,10 @@
 #blocklyDiv::-webkit-scrollbar-thumb-horizontal:hover {
   background: #db1c1c;
 }
+.console-output-container::-webkit-scrollbar-thumb {
+  background: aliceblue; /* Color del pulgar (la parte que se mueve) */
+  border-radius: 6px; /* Bordes redondeados del pulgar */
+}
 
 /* Blockly */
 .blocklyToolboxDiv {
