@@ -125,6 +125,23 @@ export class WorkspaceComponent implements AfterViewInit {
           { kind: "block", type: "procedures_ifreturn" }, // Retorno condicional en una función
         ],
       },
+      {
+        kind: 'category',
+        name: 'Texto',
+        contents: [
+          { kind: "block", type: "text" }, // Texto
+          { kind: "block", type: "text_join" }, // Concatenar texto
+          { kind: "block", type: "text_append" }, // Agregar texto
+          { kind: "block", type: "text_length" }, // Longitud de texto
+          { kind: "block", type: "text_isEmpty" }, // Texto vacío
+          { kind: "block", type: "text_indexOf" }, // Índice de texto
+          { kind: "block", type: "text_charAt" }, // Carácter en posición
+          { kind: "block", type: "text_getSubstring" }, // Subcadena
+          { kind: "block", type: "text_changeCase" }, // Cambiar mayúsculas/minúsculas
+          { kind: "block", type: "text_trim" }, // Quitar espacios en blanco
+          { kind: "block", type: "text_print" }, // Imprimir texto
+        ]
+      }
     ],
   };
 
