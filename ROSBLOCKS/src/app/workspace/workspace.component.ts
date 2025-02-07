@@ -13,7 +13,8 @@ export class WorkspaceComponent implements AfterViewInit {
   MAX_NUM_PESTANAS = 8; // Máximo número de pestañas permitidas
   consoles_output: Map<string, string> = new Map(); // Salida de la consola por pestaña
   current_displayed_console_output: string = ''; // Salida de la consola ACTUAL
-  codigo_testeo_backend: string = ''; // Código a enviar al backend para ejecutar
+  text_code: Map<string, string> = new Map(); // Código de la pestaña
+  codigo_testeo_backend: string = ''; // Salida del código de la pestaña actual
   workspaces: { [key: number]: Blockly.WorkspaceSvg } = {}; // Diccionario de workspaces por ID de pestaña
   toolbox = {
     kind: 'categoryToolbox',
@@ -192,21 +193,24 @@ export class WorkspaceComponent implements AfterViewInit {
     });
     // Se crea su consola de salida
     this.consoles_output.set(tabId.toString(), '');
+
+    //Se crea su codigo de la pestaña
+    this.text_code.set(tabId.toString(), '');
   }
 
   addTab() {
     if (this.tabs.length >= this.MAX_NUM_PESTANAS) {
-      alert('No se pueden agregar más de' + ' pestañas.');
+      alert('No se pueden agregar más de ' + this.MAX_NUM_PESTANAS + ' pestañas.');
       return;
     }
-
+  
     const newTabId = Date.now(); // ID único basado en timestamp
     this.tabs.push({ name: `Nodo ${this.tabs.length + 1}`, id: newTabId, isPlaying: false });
-
+  
     setTimeout(() => {
       this.selectTab(newTabId);
     }, 0);
-  }
+  } 
 
   selectTab(tabId: number) {
     this.selectedTabId = tabId;
@@ -214,6 +218,7 @@ export class WorkspaceComponent implements AfterViewInit {
       this.initializeBlockly(tabId);
     }, 0);
     this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) || ''; // TEST
+    this.codigo_testeo_backend = this.text_code.get(tabId.toString()) || ''; // TEST
   }
 
   changeTabName(tabId: number, newName: string) {
@@ -231,7 +236,14 @@ export class WorkspaceComponent implements AfterViewInit {
     // TODO: tests con los nuevos bloques
     // Generación de código python 
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
-      this.codigo_testeo_backend = pythonGenerator.workspaceToCode(this.workspaces[this.selectedTabId]);
+      this.text_code.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
+    }
+
+    // Ejecución del código
+    if (tab !== undefined) {
+      if (tab.isPlaying) {
+        this.executeCode(this.text_code.get(tabId.toString()) || '');
+      }
     }
   }
 
@@ -286,4 +298,31 @@ export class WorkspaceComponent implements AfterViewInit {
         }        
       });
   }
+
+  playAllTabs() {
+    for (const tab of this.tabs) {
+      const tabId = tab.id;
+  
+      if (!this.workspaces[tabId]) continue;
+  
+      const code = pythonGenerator.workspaceToCode(this.workspaces[tabId]);
+      this.text_code.set(tabId.toString(), code);
+  
+      this.http.post<{ output: string; error?: string }>('http://localhost:8000/execute', { code }).subscribe(
+        (response) => {
+          const output = response.output || response.error || "";
+          const previousOutput = this.consoles_output.get(tabId.toString()) || "";
+          this.consoles_output.set(tabId.toString(), previousOutput + output);
+          // Si la pestaña actual es la seleccionada, actualizamos `current_displayed_console_output`
+          if (this.selectedTabId === tabId) {
+            this.current_displayed_console_output = this.consoles_output.get(tabId.toString())!;
+          }
+        },
+        (error) => {
+          console.error(`Error ejecutando código en pestaña ${tabId}:`, error);
+        }
+      );
+    }
+  }
+  
 }
