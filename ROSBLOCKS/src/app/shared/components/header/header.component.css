@@ -5,14 +5,14 @@
     padding: 0px 20px;
     background-color: #011C26;/*TODO */
     color: white;
+    height: 56.69px;
   }
 
-  .logo {
-    font-family: 'Arial', sans-serif;/*TODO */
-    font-size: 18px;
-    font-weight: bold;
-    border-radius: 10px;
-  }
+.logo {
+  height: 50%;
+  margin: 20px;
+  cursor: pointer;
+}
   
   .buttons {
     display: flex;

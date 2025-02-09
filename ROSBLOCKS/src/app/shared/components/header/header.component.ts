@@ -16,4 +16,9 @@ export class HeaderComponent {
       this.mostrarExportar = this.router.url !== '/help';
     });
   }
+
+  reloadPage() {
+    window.location.reload();
+  }
+  
 }

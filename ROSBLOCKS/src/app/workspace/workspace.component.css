@@ -212,6 +212,11 @@ input::selection {
 }
 
 #searchBox {
+  background-image: url('../../assets/search-icon.svg');
+  background-position: 10px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  text-align: left;
   position: absolute;
   margin-bottom: 10px;
   padding: 10px 5px !important;
@@ -224,6 +229,11 @@ input::selection {
   background-color: #2B5465;
   color: #FFF;
   transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+#searchBox:focus,
+#searchBox:not(:placeholder-shown) {
+  background-image: none;
 }
 
 #searchBox:hover {

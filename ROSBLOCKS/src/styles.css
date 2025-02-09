@@ -1,8 +1,94 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;600&display=swap');
 
+/* Fonts */
+@font-face {
+  font-family: 'Kanit';
+  src: url('/assets/fonts/Kanit-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kanit-BlackItalic';
+  src: url('/assets/fonts/Kanit-BlackItalic.ttf') format('truetype');
+  font-weight: 900;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Kanit-Bold';
+  src: url('/assets/fonts/Kanit-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kanit-BoldItalic';
+  src: url('/assets/fonts/Kanit-BoldItalic.ttf') format('truetype');
+  font-weight: bold;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Kanit-ExtraBold';
+  src: url('/assets/fonts/Kanit-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kanit-ExtraBoldItalic';
+  src: url('/assets/fonts/Kanit-ExtraBoldItalic.ttf') format('truetype');
+  font-weight: 800;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Kanit-ExtraLight';
+  src: url('/assets/fonts/Kanit-ExtraLight.ttf') format('truetype');
+  font-weight: 200;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kanit-ExtraLightItalic';
+  src: url('/assets/fonts/Kanit-ExtraLightItalic.ttf') format('truetype');
+  font-weight: 200;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Kanit-Italic';
+  src: url('/assets/fonts/Kanit-Italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Kanit-Light';
+  src: url('/assets/fonts/Kanit-Light.ttf') format('truetype');
+  font-weight: lighter;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kanit-LightItalic';
+  src: url('/assets/fonts/Kanit-LightItalic.ttf') format('truetype');
+  font-weight: lighter;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Kanit-Medium';
+  src: url('/assets/fonts/Kanit-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+
 * {
-  font-family: 'Albert Sans', sans-serif;
+  font-family: 'Kanit', sans-serif;
 }
 /* Scroll bar */
 ::-webkit-scrollbar {

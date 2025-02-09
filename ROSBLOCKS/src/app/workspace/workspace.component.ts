@@ -16,6 +16,7 @@ export class WorkspaceComponent implements AfterViewInit {
   text_code: Map<string, string> = new Map(); // Código de la pestaña
   codigo_testeo_backend: string = ''; // Salida del código de la pestaña actual
   workspaces: { [key: number]: Blockly.WorkspaceSvg } = {}; // Diccionario de workspaces por ID de pestaña
+  
   toolbox = {
     kind: 'categoryToolbox',
     contents: [

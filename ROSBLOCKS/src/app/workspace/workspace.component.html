@@ -35,11 +35,10 @@
           <input
             id="searchBox"
             type="text"
-            placeholder="Buscar"
+            placeholder="Búsqueda"
             (input)="onSearch($event)"
           />
           <img id="createImg" src="../../assets/CreaNuevoNodo.png">
-          <!-- Div de Blockly único por cada pestaña -->
           <div *ngFor="let tab of tabs" 
                [hidden]="tab.id !== selectedTabId" 
                [attr.id]="'blocklyDiv-' + tab.id" 
