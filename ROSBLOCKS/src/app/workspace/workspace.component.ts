@@ -10,12 +10,12 @@ import {pythonGenerator} from 'blockly/python';
 })
 export class WorkspaceComponent implements AfterViewInit {
   constructor(private http: HttpClient) {}
-  MAX_NUM_PESTANAS = 8; // Máximo número de pestañas permitidas
-  consoles_output: Map<string, string> = new Map(); // Salida de la consola por pestaña
-  current_displayed_console_output: string = ''; // Salida de la consola ACTUAL
-  text_code: Map<string, string> = new Map(); // Código de la pestaña
-  codigo_testeo_backend: string = ''; // Salida del código de la pestaña actual
-  workspaces: { [key: number]: Blockly.WorkspaceSvg } = {}; // Diccionario de workspaces por ID de pestaña
+  MAX_NUM_PESTANAS = 8; // Max number of tabs
+  consoles_output: Map<string, string> = new Map(); // Console outputs for each tab
+  current_displayed_console_output: string = ''; // Current console OUTPUT
+  text_code: Map<string, string> = new Map(); // Tab code
+  codigo_testeo_backend: string = ''; // Test output for backend
+  workspaces: { [key: number]: Blockly.WorkspaceSvg } = {}; // Diccionary for workspaces by tab id
   
   toolbox = {
     kind: 'categoryToolbox',
@@ -162,13 +162,30 @@ export class WorkspaceComponent implements AfterViewInit {
 
     if (!blocklyDiv) return;
 
-    // Si ya existe un workspace para esta pestaña, solo lo redimensionamos
+    // If a tab exist, just redimention
     if (this.workspaces[tabId]) {
       Blockly.svgResize(this.workspaces[tabId]);
       return;
     }
 
-    // Si no existe, lo creamos
+    const customTheme = Blockly.Theme.defineTheme('customTheme', {
+      name: 'customTheme',
+      base: Blockly.Themes.Classic,
+      blockStyles: {
+        logic_blocks: { colourPrimary: '#A55A83' }, // Nodos
+        loop_blocks: { colourPrimary: '#3A8439' }, // Servicios
+        math_blocks: { colourPrimary: '#3D65A8' }, // Topicos
+        text_blocks: { colourPrimary: '#6835BB' }, // Mensajes
+        conditional_blocks: { colourPrimary: '#569BBD' }, // Condicionales
+        cycle_blocks: { colourPrimary: '#897099' }, // Ciclos
+        operations_blocks: { colourPrimary: '#B28E34' }, // Operaciones
+        variable_blocks: { colourPrimary: '#B46564' }, // Variables
+        procedure_blocks: { colourPrimary: '#3E7E7E' }, // Funciones
+        text_manipulation_blocks: { colourPrimary: '#E91E63' } // Texto
+      }
+    });
+    
+    
     this.workspaces[tabId] = Blockly.inject(blocklyDiv, {
       toolbox: this.toolbox,
       trashcan: true,
@@ -190,12 +207,13 @@ export class WorkspaceComponent implements AfterViewInit {
       rtl: false,
       horizontalLayout: false,
       renderer: 'zelos',
-      theme: Blockly.Themes.Classic
+      theme: customTheme // Apply the updated theme
     });
-    // Se crea su consola de salida
+    
+    // Creates output console
     this.consoles_output.set(tabId.toString(), '');
 
-    //Se crea su codigo de la pestaña
+    //Creates tab code
     this.text_code.set(tabId.toString(), '');
   }
 
@@ -205,7 +223,7 @@ export class WorkspaceComponent implements AfterViewInit {
       return;
     }
   
-    const newTabId = Date.now(); // ID único basado en timestamp
+    const newTabId = Date.now(); // ID based un timestamp
     this.tabs.push({ name: `Nodo ${this.tabs.length + 1}`, id: newTabId, isPlaying: false });
   
     setTimeout(() => {
@@ -232,15 +250,15 @@ export class WorkspaceComponent implements AfterViewInit {
   playTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (tab) {
-      tab.isPlaying = !tab.isPlaying; // Alterna entre play y stop
+      tab.isPlaying = !tab.isPlaying; // Alternates play & stop
     }
-    // TODO: tests con los nuevos bloques
-    // Generación de código python 
+    // TODO: tests with new blocks
+    // Generación of Python code
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.text_code.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
     }
 
-    // Ejecución del código
+    // Code execution
     if (tab !== undefined) {
       if (tab.isPlaying) {
         this.executeCode(this.text_code.get(tabId.toString()) || '');
@@ -249,17 +267,16 @@ export class WorkspaceComponent implements AfterViewInit {
   }
 
   deleteTab(tabId: number) {
-    // Borrar el workspace asociado
     if (this.workspaces[tabId]) {
-      this.workspaces[tabId].dispose(); // Elimina el workspace de Blockly
-      delete this.workspaces[tabId]; // Remueve del objeto
-      this.consoles_output.delete(tabId.toString()); // Elimina la consola de salida
+      this.workspaces[tabId].dispose(); // Deletes workspace from blockly
+      delete this.workspaces[tabId]; // Removes from object
+      this.consoles_output.delete(tabId.toString()); // Deletes console
     }
 
-    // Eliminar la pestaña
+    //Deletes tab
     this.tabs = this.tabs.filter(tab => tab.id !== tabId);
 
-    // Si la pestaña eliminada estaba seleccionada, cambiar a otra
+    // Change to another tab
     if (this.selectedTabId === tabId) {
       this.selectedTabId = this.tabs.length > 0 ? this.tabs[0].id : null;
       if (this.selectedTabId) {
@@ -271,7 +288,7 @@ export class WorkspaceComponent implements AfterViewInit {
   onSearch(event: any): void {
     const query = event.target.value.toLowerCase();
 
-    // Filtrar categorías y bloques por el texto ingresado
+    // Filter categories by text
     const filteredToolbox = {
       kind: 'categoryToolbox',
       contents: this.toolbox.contents
@@ -282,7 +299,7 @@ export class WorkspaceComponent implements AfterViewInit {
 
           return filteredContents.length > 0 ? { ...category, contents: filteredContents } : null;
         })
-        .filter((category: any) => category !== null), // Eliminar categorías vacías
+        .filter((category: any) => category !== null), // Deletes empty categories
     };
 
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
@@ -314,7 +331,7 @@ export class WorkspaceComponent implements AfterViewInit {
           const output = response.output || response.error || "";
           const previousOutput = this.consoles_output.get(tabId.toString()) || "";
           this.consoles_output.set(tabId.toString(), previousOutput + output);
-          // Si la pestaña actual es la seleccionada, actualizamos `current_displayed_console_output`
+          // If current tab selected, actualize `current_displayed_console_output`
           if (this.selectedTabId === tabId) {
             this.current_displayed_console_output = this.consoles_output.get(tabId.toString())!;
           }
@@ -325,5 +342,6 @@ export class WorkspaceComponent implements AfterViewInit {
       );
     }
   }
+
   
 }

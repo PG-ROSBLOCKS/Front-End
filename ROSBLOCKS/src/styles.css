@@ -126,7 +126,7 @@
   }
 
 
-  /* Estilo para la scrollbar vertical */
+  /* vertical scrollbar */
 #blocklyDiv::-webkit-scrollbar {
   width: 12px;
 }
@@ -144,7 +144,7 @@
   background: #e00808;
 }
 
-/* Estilo para la scrollbar horizontal */
+/*  horizontal scrollbar*/
 #blocklyDiv::-webkit-scrollbar-horizontal {
   height: 12px;
 }
@@ -162,8 +162,8 @@
   background: #db1c1c;
 }
 .console-output-container::-webkit-scrollbar-thumb {
-  background: aliceblue; /* Color del pulgar (la parte que se mueve) */
-  border-radius: 6px; /* Bordes redondeados del pulgar */
+  background: aliceblue;
+  border-radius: 6px;
 }
 
 /* Blockly */
@@ -182,7 +182,7 @@
   border-radius: 5px;
   background-color: #39515c;
   box-shadow: 0px 5px 10px 0px #00000040 inset;
-  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.5s ease; /* Añadido para la animación */
+  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.5s ease;
 }
 
 .blocklyTreeRow:hover {
@@ -205,7 +205,7 @@
 }
 
 .blocklyFlyoutBackground {
-  fill: #bbeaff;
+  fill: #DDF2F1;
   fill-opacity: .8;
 }
 

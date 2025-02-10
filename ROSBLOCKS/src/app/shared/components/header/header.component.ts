@@ -7,13 +7,13 @@ import { Router } from '@angular/router';
   styleUrls: ['./header.component.css']
 })
 export class HeaderComponent {
-  mostrarExportar: boolean = true;
+  showExport: boolean = true;
 
   constructor(private router: Router) {}
 
   ngOnInit() {
     this.router.events.subscribe(() => {
-      this.mostrarExportar = this.router.url !== '/help';
+      this.showExport = this.router.url !== '/help';
     });
   }
 
