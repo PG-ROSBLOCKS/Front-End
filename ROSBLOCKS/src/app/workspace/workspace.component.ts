@@ -1,5 +1,7 @@
 import { Component, AfterViewInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
+import {pythonGenerator} from 'blockly/python';
 
 @Component({
   selector: 'app-workspace',
@@ -7,13 +9,20 @@ import * as Blockly from 'blockly';
   styleUrls: ['./workspace.component.css']
 })
 export class WorkspaceComponent implements AfterViewInit {
-  workspaces: { [key: number]: Blockly.WorkspaceSvg } = {}; // Diccionario de workspaces por ID de pestaña
+  constructor(private http: HttpClient) {}
+  MAX_NUM_PESTANAS = 8; // Max number of tabs
+  consoles_output: Map<string, string> = new Map(); // Console outputs for each tab
+  current_displayed_console_output: string = ''; // Current console OUTPUT
+  text_code: Map<string, string> = new Map(); // Tab code
+  codigo_testeo_backend: string = ''; // Test output for backend
+  workspaces: { [key: number]: Blockly.WorkspaceSvg } = {}; // Diccionary for workspaces by tab id
+  
   toolbox = {
     kind: 'categoryToolbox',
     contents: [
       {
         kind: 'category',
-        name: 'Nodes',
+        name: 'Nodos',
         contents: [
           { kind: 'block', type: 'controls_if' },
           { kind: 'block', type: 'logic_compare' },
@@ -24,7 +33,7 @@ export class WorkspaceComponent implements AfterViewInit {
       },
       {
         kind: 'category',
-        name: 'Services',
+        name: 'Servicios',
         contents: [
           { kind: 'block', type: 'controls_repeat_ext' },
           { kind: 'block', type: 'controls_whileUntil' },
@@ -34,7 +43,7 @@ export class WorkspaceComponent implements AfterViewInit {
       },
       {
         kind: 'category',
-        name: 'Topics',
+        name: 'Topicos',
         contents: [
           { kind: 'block', type: 'math_number' },
           { kind: 'block', type: 'math_arithmetic' },
@@ -45,57 +54,96 @@ export class WorkspaceComponent implements AfterViewInit {
       },
       {
         kind: 'category',
-        name: 'etc',
+        name: 'Mensajes',
         contents: [
-        { kind: "block", type: "controls_if" },
-        { kind: "block", type: "logic_compare" },
-        { kind: "block", type: "logic_operation" },
-        { kind: "block", type: "logic_negate" },
-        { kind: "block", type: "logic_boolean" },
-        { kind: "block", type: "logic_null" },
-        { kind: "block", type: "logic_ternary" },
-        { kind: "block", type: "controls_repeat_ext" },
-        { kind: "block", type: "controls_whileUntil" },
-        { kind: "block", type: "controls_for" },
-        { kind: "block", type: "controls_forEach" },
-        { kind: "block", type: "controls_flow_statements" },
-        { kind: "block", type: "math_number" },
-        { kind: "block", type: "math_arithmetic" },
-        { kind: "block", type: "math_single" },
-        { kind: "block", type: "math_trig" },
-        { kind: "block", type: "math_constant" },
-        { kind: "block", type: "math_number_property" },
-        { kind: "block", type: "math_round" },
-        { kind: "block", type: "math_on_list" },
-        { kind: "block", type: "math_modulo" },
-        { kind: "block", type: "math_constrain" },
-        { kind: "block", type: "math_random_int" },
-        { kind: "block", type: "math_random_float" },
-        { kind: "block", type: "math_atan2" },
-        { kind: "block", type: "text" },
-        { kind: "block", type: "text_join" },
-        { kind: "block", type: "text_append" },
-        { kind: "block", type: "text_length" },
-        { kind: "block", type: "text_isEmpty" },
-        { kind: "block", type: "text_indexOf" },
-        { kind: "block", type: "text_charAt" },
-        { kind: "block", type: "text_getSubstring" },
-        { kind: "block", type: "text_changeCase" },
-        { kind: "block", type: "text_trim" },
-        { kind: "block", type: "text_print" },
-        { kind: "block", type: "text_prompt_ext" },
-        { kind: "block", type: "lists_create_with" },
-        { kind: "block", type: "lists_repeat" },
-        { kind: "block", type: "lists_length" },
-        { kind: "block", type: "lists_isEmpty" },
-        { kind: "block", type: "lists_indexOf" },
-        { kind: "block", type: "lists_getIndex" },
-        { kind: "block", type: "lists_setIndex" },
-        { kind: "block", type: "lists_getSublist" },
-        { kind: "block", type: "lists_split" },
-        { kind: "block", type: "lists_sort" },
+          { kind: 'block', type: 'math_number' },
+          { kind: 'block', type: 'math_arithmetic' },
+          { kind: 'block', type: 'math_single' },
+          { kind: 'block', type: 'math_trig' },
+          { kind: 'block', type: 'math_random_int' },
         ],
       },
+      {
+        kind: 'category',
+        name: 'Condicionales',
+        contents: [
+          { kind: 'block', type: 'controls_if' },
+          { kind: 'block', type: 'controls_ifelse' },
+          { kind: 'block', type: 'logic_compare' },
+          { kind: 'block', type: 'logic_operation' },
+          { kind: 'block', type: 'logic_negate' },
+          { kind: 'block', type: 'logic_boolean' },
+          { kind: "block", type: "logic_ternary" },
+        ],
+      },
+      {
+        kind: 'category',
+        name: 'Ciclos',
+        contents: [
+          { kind: "block", type: "controls_repeat" }, // Repetir un número fijo de veces
+          { kind: "block", type: "controls_repeat_ext" }, // Repetir con un número variable de veces
+          { kind: "block", type: "controls_whileUntil" }, // Ciclo "while" o "until"
+          { kind: "block", type: "controls_for" }, // Ciclo "for" con contador
+          { kind: "block", type: "controls_forEach" }, // Ciclo "for each" para listas
+        ],
+      },
+      {
+        kind: 'category',
+        name: 'Operaciones',
+        contents: [
+          { kind: "block", type: "math_number" }, // Número
+          { kind: "block", type: "math_arithmetic" }, // Operaciones aritméticas (+, -, *, /)
+          { kind: "block", type: "math_single" }, // Funciones matemáticas (raíz cuadrada, valor absoluto, etc.)
+          { kind: "block", type: "math_trig" }, // Funciones trigonométricas (seno, coseno, tangente)
+          { kind: "block", type: "math_round" }, // Redondeo (arriba, abajo, etc.)
+          { kind: "block", type: "math_random_int" }, // Número aleatorio en un rango
+          { kind: "block", type: "math_modulo" }, // Módulo (resto de la división)
+        ],
+      },
+      {
+        kind: 'category',
+        name: 'Variables',
+        contents: [
+          { kind: "block", type: "variables_get" }, // Obtener el valor de una variable
+          { kind: "block", type: "variables_set" }, // Asignar un valor a una variable
+          /*{
+            kind: "block",
+            type: "variables_set_dynamic"
+          }, // Asignar variable con nombre dinámico
+          {
+            kind: "block",
+            type: "variables_get_dynamic"
+          }*/ 
+        ],
+      },
+      {
+        kind: 'category',
+        name: 'Funciones',
+        contents: [
+          { kind: "block", type: "procedures_defnoreturn" }, // Definir una función sin retorno
+          { kind: "block", type: "procedures_defreturn" }, // Definir una función con retorno
+          { kind: "block", type: "procedures_callnoreturn" }, // Llamar a una función sin retorno
+          { kind: "block", type: "procedures_callreturn" }, // Llamar a una función con retorno
+          { kind: "block", type: "procedures_ifreturn" }, // Retorno condicional en una función
+        ],
+      },
+      {
+        kind: 'category',
+        name: 'Texto',
+        contents: [
+          { kind: "block", type: "text" }, // Texto
+          { kind: "block", type: "text_join" }, // Concatenar texto
+          { kind: "block", type: "text_append" }, // Agregar texto
+          { kind: "block", type: "text_length" }, // Longitud de texto
+          { kind: "block", type: "text_isEmpty" }, // Texto vacío
+          { kind: "block", type: "text_indexOf" }, // Índice de texto
+          { kind: "block", type: "text_charAt" }, // Carácter en posición
+          { kind: "block", type: "text_getSubstring" }, // Subcadena
+          { kind: "block", type: "text_changeCase" }, // Cambiar mayúsculas/minúsculas
+          { kind: "block", type: "text_trim" }, // Quitar espacios en blanco
+          { kind: "block", type: "text_print" }, // Imprimir texto
+        ]
+      }
     ],
   };
 
@@ -114,13 +162,30 @@ export class WorkspaceComponent implements AfterViewInit {
 
     if (!blocklyDiv) return;
 
-    // Si ya existe un workspace para esta pestaña, solo lo redimensionamos
+    // If a tab exist, just redimention
     if (this.workspaces[tabId]) {
       Blockly.svgResize(this.workspaces[tabId]);
       return;
     }
 
-    // Si no existe, lo creamos
+    const customTheme = Blockly.Theme.defineTheme('customTheme', {
+      name: 'customTheme',
+      base: Blockly.Themes.Classic,
+      blockStyles: {
+        logic_blocks: { colourPrimary: '#A55A83' }, // Nodos
+        loop_blocks: { colourPrimary: '#3A8439' }, // Servicios
+        math_blocks: { colourPrimary: '#3D65A8' }, // Topicos
+        text_blocks: { colourPrimary: '#6835BB' }, // Mensajes
+        conditional_blocks: { colourPrimary: '#569BBD' }, // Condicionales
+        cycle_blocks: { colourPrimary: '#897099' }, // Ciclos
+        operations_blocks: { colourPrimary: '#B28E34' }, // Operaciones
+        variable_blocks: { colourPrimary: '#B46564' }, // Variables
+        procedure_blocks: { colourPrimary: '#3E7E7E' }, // Funciones
+        text_manipulation_blocks: { colourPrimary: '#E91E63' } // Texto
+      }
+    });
+    
+    
     this.workspaces[tabId] = Blockly.inject(blocklyDiv, {
       toolbox: this.toolbox,
       trashcan: true,
@@ -142,8 +207,14 @@ export class WorkspaceComponent implements AfterViewInit {
       rtl: false,
       horizontalLayout: false,
       renderer: 'zelos',
-      theme: Blockly.Themes.Classic
+      theme: customTheme // Apply the updated theme
     });
+    
+    // Creates output console
+    this.consoles_output.set(tabId.toString(), '');
+
+    //Creates tab code
+    this.text_code.set(tabId.toString(), '');
   }
 
   addTab() {
@@ -151,20 +222,22 @@ export class WorkspaceComponent implements AfterViewInit {
       alert('No se pueden agregar más de 10 pestañas.');
       return;
     }
-
-    const newTabId = Date.now(); // ID único basado en timestamp
+  
+    const newTabId = Date.now(); // ID based un timestamp
     this.tabs.push({ name: `Nodo ${this.tabs.length + 1}`, id: newTabId, isPlaying: false });
-
+  
     setTimeout(() => {
       this.selectTab(newTabId);
     }, 0);
-  }
+  } 
 
   selectTab(tabId: number) {
     this.selectedTabId = tabId;
     setTimeout(() => {
       this.initializeBlockly(tabId);
     }, 0);
+    this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) || ''; // TEST
+    this.codigo_testeo_backend = this.text_code.get(tabId.toString()) || ''; // TEST
   }
 
   changeTabName(tabId: number, newName: string) {
@@ -177,21 +250,33 @@ export class WorkspaceComponent implements AfterViewInit {
   playTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (tab) {
-      tab.isPlaying = !tab.isPlaying; // Alterna entre play y stop
+      tab.isPlaying = !tab.isPlaying; // Alternates play & stop
+    }
+    // TODO: tests with new blocks
+    // Generación of Python code
+    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+      this.text_code.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
+    }
+
+    // Code execution
+    if (tab !== undefined) {
+      if (tab.isPlaying) {
+        this.executeCode(this.text_code.get(tabId.toString()) || '');
+      }
     }
   }
 
   deleteTab(tabId: number) {
-    // Borrar el workspace asociado
     if (this.workspaces[tabId]) {
-      this.workspaces[tabId].dispose(); // Elimina el workspace de Blockly
-      delete this.workspaces[tabId]; // Remueve del objeto
+      this.workspaces[tabId].dispose(); // Deletes workspace from blockly
+      delete this.workspaces[tabId]; // Removes from object
+      this.consoles_output.delete(tabId.toString()); // Deletes console
     }
 
-    // Eliminar la pestaña
+    //Deletes tab
     this.tabs = this.tabs.filter(tab => tab.id !== tabId);
 
-    // Si la pestaña eliminada estaba seleccionada, cambiar a otra
+    // Change to another tab
     if (this.selectedTabId === tabId) {
       this.selectedTabId = this.tabs.length > 0 ? this.tabs[0].id : null;
       if (this.selectedTabId) {
@@ -203,7 +288,7 @@ export class WorkspaceComponent implements AfterViewInit {
   onSearch(event: any): void {
     const query = event.target.value.toLowerCase();
 
-    // Filtrar categorías y bloques por el texto ingresado
+    // Filter categories by text
     const filteredToolbox = {
       kind: 'categoryToolbox',
       contents: this.toolbox.contents
@@ -214,11 +299,49 @@ export class WorkspaceComponent implements AfterViewInit {
 
           return filteredContents.length > 0 ? { ...category, contents: filteredContents } : null;
         })
-        .filter((category: any) => category !== null), // Eliminar categorías vacías
+        .filter((category: any) => category !== null), // Deletes empty categories
     };
 
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.workspaces[this.selectedTabId].updateToolbox(filteredToolbox);
     }
   }
+
+  executeCode(code: string) {
+    this.http.post<{ output: string; error: string }>('http://localhost:8000/execute', { code })
+      .subscribe(response => {
+        this.current_displayed_console_output += (response.output || response.error);
+        if (this.selectedTabId !== null) {
+          this.consoles_output.set(this.selectedTabId.toString(), this.current_displayed_console_output);
+        }        
+      });
+  }
+
+  playAllTabs() {
+    for (const tab of this.tabs) {
+      const tabId = tab.id;
+  
+      if (!this.workspaces[tabId]) continue;
+  
+      const code = pythonGenerator.workspaceToCode(this.workspaces[tabId]);
+      this.text_code.set(tabId.toString(), code);
+  
+      this.http.post<{ output: string; error?: string }>('http://localhost:8000/execute', { code }).subscribe(
+        (response) => {
+          const output = response.output || response.error || "";
+          const previousOutput = this.consoles_output.get(tabId.toString()) || "";
+          this.consoles_output.set(tabId.toString(), previousOutput + output);
+          // If current tab selected, actualize `current_displayed_console_output`
+          if (this.selectedTabId === tabId) {
+            this.current_displayed_console_output = this.consoles_output.get(tabId.toString())!;
+          }
+        },
+        (error) => {
+          console.error(`Error ejecutando código en pestaña ${tabId}:`, error);
+        }
+      );
+    }
+  }
+
+  
 }

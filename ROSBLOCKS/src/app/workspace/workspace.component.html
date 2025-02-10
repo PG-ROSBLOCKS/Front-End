@@ -25,7 +25,7 @@
                 </li>
               </ul>
               <div class="ai">
-                <button class="play-all">▶</button>
+                <button class="play-all" (click)="playAllTabs()">▶</button>
                 <button class="stop-all">◼</button>
               </div>
             </div>
@@ -35,11 +35,10 @@
           <input
             id="searchBox"
             type="text"
-            placeholder="Buscar"
+            placeholder="Búsqueda"
             (input)="onSearch($event)"
           />
           <img id="createImg" src="../../assets/CreaNuevoNodo.png">
-          <!-- Div de Blockly único por cada pestaña -->
           <div *ngFor="let tab of tabs" 
                [hidden]="tab.id !== selectedTabId" 
                [attr.id]="'blocklyDiv-' + tab.id" 
@@ -57,10 +56,16 @@
         <div class="turtlesim">
           <p style="color: aliceblue;">Turtlesim</p>
         </div>
+        <textarea [(ngModel)]="codigo_testeo_backend" placeholder="Escribe tu código aquí"></textarea>
+          <button (click)="executeCode(codigo_testeo_backend)">Ejecutar</button>
         <div class="console">
-          <p style="color: aliceblue;">Console</p>
+          <p id=console_title>Console</p>
+          <div class="console-output-container">
+            <pre>{{ current_displayed_console_output }}</pre>
+          </div>
+          <span id="cursor">|</span>
         </div>
       </div>
     </div>
   </div>
-  
+  <button>Recargar</button>

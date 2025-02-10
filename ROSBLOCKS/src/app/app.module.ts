@@ -9,6 +9,7 @@ import { HeaderComponent } from './shared/components/header/header.component';
 import { ErrorMsgComponent } from './shared/components/error-msg/error-msg.component';
 import { RosblocksHelpComponent } from './rosblocks-help/rosblocks-help.component';
 import { SafePipe } from './safe.pipe';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import { SafePipe } from './safe.pipe';
   imports: [
     BrowserModule,
     FormsModule,
-    AppRoutingModule
+    AppRoutingModule,
+    HttpClientModule,
   ],
   providers: [],
   bootstrap: [AppComponent]
