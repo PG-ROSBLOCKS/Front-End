@@ -6,7 +6,7 @@ import { Component, Input } from '@angular/core';
   styleUrls: ['./error-msg.component.css']
 })
 export class ErrorMsgComponent {
-  @Input() message: string = 'Mensaje de prueba';
+  @Input() message: string = 'Test error message';
   isVisible: boolean = true;
 
   closeMessage() {
