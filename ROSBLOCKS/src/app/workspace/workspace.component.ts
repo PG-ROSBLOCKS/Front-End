@@ -218,18 +218,18 @@ export class WorkspaceComponent implements AfterViewInit {
   }
 
   addTab() {
-    if (this.tabs.length >= 10) {
-      alert('No se pueden agregar más de 10 pestañas.');
-      return;
+    if (this.tabs.length >= 8) {
+        alert('No se pueden agregar más de 8 pestañas.');
+        return;
     }
-  
-    const newTabId = Date.now(); // ID based un timestamp
-    this.tabs.push({ name: `Nodo ${this.tabs.length + 1}`, id: newTabId, isPlaying: false });
-  
+
+    const newTabId = Date.now();
+    this.tabs.push({ name: this.getUniqueTabName(), id: newTabId, isPlaying: false });
+
     setTimeout(() => {
-      this.selectTab(newTabId);
+        this.selectTab(newTabId);
     }, 0);
-  } 
+}
 
   selectTab(tabId: number) {
     this.selectedTabId = tabId;
@@ -242,10 +242,46 @@ export class WorkspaceComponent implements AfterViewInit {
 
   changeTabName(tabId: number, newName: string) {
     const tab = this.tabs.find(tab => tab.id === tabId);
-    if (tab) {
+    if (!tab) return;
+
+    newName = newName.trim();
+
+    const validNameRegex = /^[a-zA-Z0-9 ]+$/;
+
+    if (!newName) {
+        alert("El nombre no puede estar vacío.");
+        tab.name = this.getUniqueTabName();
+        return;
+    }
+    else if (!validNameRegex.test(newName)) {
+        alert("El nombre solo puede contener letras (mayúsculas o minúsculas), números y espacios.");
+        tab.name = this.getUniqueTabName();
+        return;
+    }
+    else if (this.tabs.some(t => t.name === newName && t.id !== tab.id)) {
+        alert("El nombre ya está en uso. Elige otro.");
+        tab.name = this.getUniqueTabName();
+        return;
+    }
+    else {
       tab.name = newName;
     }
+    
+}
+
+
+  getUniqueTabName(): string {
+    let index = 1;
+    const existingNames = new Set(this.tabs.map(tab => tab.name));
+
+    while (existingNames.has(`Nodo ${index}`)) {
+        index++;
+    }
+
+    return `Nodo ${index}`;
   }
+
+
 
   playTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
@@ -343,5 +379,9 @@ export class WorkspaceComponent implements AfterViewInit {
     }
   }
 
-  
+  cleanConsole() {
+    if (this.current_displayed_console_output != '') {
+      this.current_displayed_console_output = 'Consola limpia';
+    }
+  }
 }
