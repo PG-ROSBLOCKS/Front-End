@@ -16,6 +16,108 @@ export class WorkspaceComponent implements AfterViewInit {
   text_code: Map<string, string> = new Map(); // Tab code
   codigo_testeo_backend: string = ''; // Test output for backend
   workspaces: { [key: number]: Blockly.WorkspaceSvg } = {}; // Diccionary for workspaces by tab id
+
+  //Blocks we create must be specified here
+  //TODO: Specify code in Python for the block
+  ngAfterViewInit(): void {
+    Blockly.defineBlocksWithJsonArray([
+      {
+        "type": "custom_action",
+        "message0": "Bloque de prueba: %1 y %2",
+        "args0": [
+          {
+            "type": "input_value",
+            "name": "MESSAGE1",
+            "check": "String"
+          },
+          {
+            "type": "input_value",
+            "name": "MESSAGE2",
+            "check": "String"
+          }
+        ],
+        "previousStatement": null,
+        "nextStatement": null,
+        "colour": 905,
+        "tooltip": "Bloque de prueba",
+        "helpUrl": ""
+      },
+      {
+        "type": "timer",
+        "message0": "Espera %1 milisegundos",
+        "args0": [
+          {
+            "type": "input_value",
+            "name": "TIME",
+            "check": "Number"
+          }
+        ],
+        "previousStatement": null,
+        "nextStatement": null,
+        "colour": 120,
+        "tooltip": "Waits for a specified amount of time in milliseconds.",
+        "helpUrl": "",
+        "inputsInline": true
+      },
+      {
+        "type": "c_if_else",
+        "message0": "Custom service %1 Entrada %2 Salida %3",
+        "args0": [
+          {
+            "type": "input_value",
+            "name": "CONDITION",
+            "check": "Boolean"
+          },
+          {
+            "type": "input_statement",
+            "name": "DO_IF"
+          },
+          {
+            "type": "input_statement",
+            "name": "DO_ELSE"
+          }
+        ],
+        "previousStatement": null,
+        "nextStatement": null,
+        "colour": 230,
+        "tooltip": "If else block in the shape of C.",
+        "helpUrl": "",
+        "inputsInline": false,
+        "extensions": ["colours_custom"]
+      }
+    ]);
+
+    Blockly.Blocks['c_if_else'].init = function() {
+      this.appendValueInput("CONDITION")
+          .setCheck("Boolean")
+          .appendField("Custom Service");
+    
+      this.appendStatementInput("DO_IF")
+          .setCheck(null)
+          .appendField("Entrada");
+    
+      this.appendStatementInput("DO_ELSE")
+          .setCheck(null)
+          .appendField("Salida");
+    
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+    
+      var path = this.getSvgRoot().querySelector('path');
+      if (path) {
+        // Redefine la forma del bloque para que sea una "C"
+        path.setAttribute('d', 'M 10,10 C 40,10 60,40 40,70 C 60,100 40,130 10,130 Z');
+        path.setAttribute('fill', '#66ccff');
+      }
+      this.setStyle('colour_custom');
+    };
+    
+    
+    // Initialize Blockly after the view is set up
+    if (this.tabs.length > 0) {
+      this.selectTab(this.tabs[0].id);
+    }
+  }
   
   toolbox = {
     kind: 'categoryToolbox',
@@ -143,18 +245,21 @@ export class WorkspaceComponent implements AfterViewInit {
           { kind: "block", type: "text_trim" }, // Quitar espacios en blanco
           { kind: "block", type: "text_print" }, // Imprimir texto
         ]
+      },
+      {
+        kind: 'category',
+        name: 'Test',
+        contents: [
+          {kind: 'block',type: 'custom_action'},
+          {kind: 'block',type: 'timer'},
+          {kind: 'block',type: 'c_if_else'},
+        ],
       }
     ],
   };
 
   tabs: { name: string; id: number; isPlaying: boolean }[] = [];
   selectedTabId: number | null = null;
-
-  ngAfterViewInit(): void {
-    if (this.tabs.length > 0) {
-      this.selectTab(this.tabs[0].id);
-    }
-  }
 
   initializeBlockly(tabId: number): void {
     const blocklyDivId = `blocklyDiv-${tabId}`;
