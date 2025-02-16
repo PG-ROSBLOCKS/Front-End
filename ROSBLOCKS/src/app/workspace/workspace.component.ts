@@ -6,6 +6,7 @@ import { definirBloquesROS2, definirGeneradoresROS2 } from '../blocks/ros2-block
 import { CodeService } from '../services/codeService';
 import { Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
+import { sanitizePythonFilename } from '../utilities/sanitizer-tools';
 
 @Component({
   selector: 'app-workspace',
@@ -14,93 +15,25 @@ import { switchMap } from 'rxjs/operators';
 })
 export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   autoScrollEnabled: boolean = true;
-  constructor(private codeService: CodeService) {}
+  constructor(private http: HttpClient) {}
   // TEST 
-  subscriptions: Subscription[] = [];
   ngOnInit(): void {
-    // Suscribirse al observable del string
-    const outputSubscription = this.codeService.getOutputObservable().subscribe((output) => {
-      this.current_displayed_console_output = output;
-    });
-    this.subscriptions.push(outputSubscription);
-  }
-  ngOnDestroy(): void {
-    this.subscriptions.forEach(sub => sub.unsubscribe());
     
   }
-  enviarCodigo() {
-    console.log('Enviando código...');
-    const fileName = 'minimal_publisher.py';
-  const code = `
-import rclpy
-from rclpy.node import Node
-
-from std_msgs.msg import String
-
-
-class MinimalPublisher(Node):
-
-    def __init__(self):
-        super().__init__('minimal_publisher')
-        self.publisher_ = self.create_publisher(String, 'topic', 10)
-        timer_period = 0.5  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.i = 0
-
-    def timer_callback(self):
-        msg = String()
-        msg.data = 'Hello World: %d' % self.i
-        self.publisher_.publish(msg)
-        self.get_logger().info('Publishing: "%s"' % msg.data)
-        self.i += 1
-
-
-def main(args=None):
-    rclpy.init(args=args)
-
-    minimal_publisher = MinimalPublisher()
-
-    rclpy.spin(minimal_publisher)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    minimal_publisher.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()`;
-
-  this.codeService.uploadCode(fileName, code)
-    .pipe(
-      switchMap(() => this.codeService.executeCode(fileName)),
-      switchMap((response) => {
-        console.log('Respuesta del backend:', response);
-        const sessionId = response.session_id;
-        return this.codeService.connectToWebSocket(sessionId);
-      })
-    )
-    .subscribe({
-      next: (response) => {
-        console.log('Mensaje WebSocket:', response.output);
-        if (response.output != this.current_displayed_console_output) {
-          this.current_displayed_console_output += response.output + '\n';
-          if (this.autoScrollEnabled) {
-            setTimeout(() => this.scrollToBottom(), 100);
-          }
-        }        
-      },
-      error: (error) => console.error('Error:', error),
-      complete: () => console.log('Proceso completado')
-    });
-}
+  ngOnDestroy(): void {
+    for (const ws in this.websockets) {
+      this.websockets.get(ws)?.unsubscribe();
+    }    
+  }
   // END TEST AREA
+  private previousNames = new Map<number, string>(); // Almacena nombres anteriores por tabId
   MAX_NUM_PESTANAS = 8; // Max number of tabs
   consoles_output: Map<string, string> = new Map(); // Console outputs for each tab
+  consoles_sessions: Map<string, string> = new Map(); // Sessions for each tab
   consoles_services: Map<string, CodeService> = new Map(); // Services for each tab
-  current_displayed_console_output: string = ''; // Current console OUTPUT
+  websockets: Map<string, Subscription> = new Map(); // Websockets subscriptions for each tab
   text_code: Map<string, string> = new Map(); // Tab code
+  current_displayed_console_output: string = ''; // Current console output
   codigo_testeo_backend: string = ''; // Test output for backend
   workspaces: { [key: number]: Blockly.WorkspaceSvg } = {}; // Diccionary for workspaces by tab id
   
@@ -326,50 +259,98 @@ if __name__ == '__main__':
 
   addTab() {
     if (this.tabs.length >= this.MAX_NUM_PESTANAS) {
-      alert('No se pueden agregar más de ' + this.MAX_NUM_PESTANAS + ' pestañas.');
-      return;
+        alert('No se pueden agregar más de ' + this.MAX_NUM_PESTANAS + ' pestañas.');
+        return;
     }
-  
-    const newTabId = Date.now(); // ID based un timestamp
-    this.tabs.push({ name: `Nodo ${this.tabs.length + 1}`, id: newTabId, isPlaying: false });
-  
+
+    const newTabId = Date.now(); // ID basado en timestamp
+    let baseName = "Nodo";
+    let newTabName = "";
+    let index = 1;
+
+    // Encuentra un nombre único en formato "Nodo_#"
+    do {
+        newTabName = sanitizePythonFilename(`${baseName}_${index}`).replace(/\.py$/, "");
+        index++;
+    } while (this.tabs.some(tab => tab.name === newTabName));
+
+    this.tabs.push({ name: newTabName, id: newTabId, isPlaying: false });
+    this.consoles_services.set(newTabId.toString(), new CodeService(this.http));
+
     setTimeout(() => {
-      this.selectTab(newTabId);
+        this.selectTab(newTabId);
     }, 0);
-  } 
+}
+
 
   selectTab(tabId: number) {
     this.selectedTabId = tabId;
     setTimeout(() => {
       this.initializeBlockly(tabId);
     }, 0);
-    this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) || ''; // TEST
     this.codigo_testeo_backend = this.text_code.get(tabId.toString()) || ''; // TEST
+    this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) || '';
   }
 
+  storePreviousName(tab: any) {
+    this.previousNames.set(tab.id, tab.name);
+  }
+
+  // Función para cambiar el nombre de la pestaña
   changeTabName(tabId: number, newName: string) {
     const tab = this.tabs.find(tab => tab.id === tabId);
-    if (tab) {
-      tab.name = newName;
-    }
-  }
+    if (!tab) return;
 
-  playTab(tabId: number) {
+    const previousName = this.previousNames.get(tabId) || tab.name; // Recupera el nombre anterior
+
+    // Sanitiza el nombre y remueve la extensión `.py`
+    let sanitizedNewName = sanitizePythonFilename(newName).replace(/\.py$/, "");
+
+    if (!sanitizedNewName) {
+        alert('El nombre de la pestaña no puede estar vacío.');
+        tab.name = previousName; // Restaura el nombre anterior
+        return;
+    }
+
+    if (this.tabs.some(t => t.name === sanitizedNewName && t.id !== tabId)) {
+        alert('Ya existe una pestaña con ese nombre.');
+        tab.name = previousName; // Restaura el nombre anterior
+        return;
+    }
+
+    tab.name = sanitizedNewName; // Asigna el nombre sanitizado
+}
+
+
+  playTab(tabId: number, playAllTabs: boolean) {
+    const tab = this.tabs.find(tab => tab.id === tabId);
+    
+    if (!tab) return; // Si el tab no existe, no hace nada
+
+    tab.isPlaying = playAllTabs ? true : !tab.isPlaying; // Alterna solo si no es "play all"
+
+    tab.isPlaying
+        ? this.executeCode(this.text_code.get(tabId.toString()) || '', tabId)
+        : this.stopTab(tabId);
+
+    // TODO: tests with new blocks
+    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+        this.text_code.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
+    }
+}
+
+
+  stopTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (tab) {
-      tab.isPlaying = !tab.isPlaying; // Alternates play & stop
-    }
-    // TODO: tests with new blocks
-    // Generación of Python code
-    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
-      this.text_code.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
-    }
-
-    // Code execution
-    if (tab !== undefined) {
-      if (tab.isPlaying) {
-        this.executeCode(this.text_code.get(tabId.toString()) || '');
+      tab.isPlaying = false; 
+      const session_id = this.consoles_sessions.get(tabId.toString());
+      console.log('Session ID stop:', session_id);
+      if(session_id) {
+        this.consoles_services.get(tabId.toString())?.killExecution(session_id); 
       }
+      this.consoles_services.get(tabId.toString())?.closeConnection();
+      this.websockets.get(tabId.toString())?.unsubscribe();
     }
   }
 
@@ -378,6 +359,10 @@ if __name__ == '__main__':
       this.workspaces[tabId].dispose(); // Deletes workspace from blockly
       delete this.workspaces[tabId]; // Removes from object
       this.consoles_output.delete(tabId.toString()); // Deletes console
+      this.consoles_sessions.delete(tabId.toString()); // Deletes session
+      this.consoles_services.delete(tabId.toString()); // Deletes service
+      this.websockets.delete(tabId.toString()); // Deletes websocket
+      this.text_code.delete(tabId.toString()); // Deletes code
     }
 
     //Deletes tab
@@ -414,10 +399,34 @@ if __name__ == '__main__':
     }
   }
 
-  executeCode(code: string) {
-    /*const code_test = `
-    import rclpy
-from rclpy.executors import ExternalShutdownException
+  executeCode(code: string, tabId?: number) {    
+    if (tabId !== null && tabId !== undefined) {
+      this.enviarCodigo(code, tabId);
+    }
+  }
+
+  playAllTabs() {
+    for (const tab of this.tabs) {
+      const tabId = tab.id;  
+      if (!this.workspaces[tabId]) continue;
+      this.playTab(tabId, true)  
+    }
+  }
+
+  stopAllTabs() {
+    for (const tab of this.tabs) {
+      const tabId = tab.id;  
+      if (!this.workspaces[tabId]) continue;
+      this.stopTab(tabId)  
+    }
+  }
+
+  enviarCodigo(code_to_send: string, tabId: number) {
+    console.log('Enviando código...');
+    const fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Nodo');
+    const codeService = this.consoles_services.get(tabId.toString());
+  const code = `
+import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import String
@@ -441,64 +450,63 @@ class MinimalPublisher(Node):
 
 
 def main(args=None):
-    try:
-        with rclpy.init(args=args):
-            minimal_publisher = MinimalPublisher()
+    rclpy.init(args=args)
 
-            rclpy.spin(minimal_publisher)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        pass
+    minimal_publisher = MinimalPublisher()
+
+    rclpy.spin(minimal_publisher)
+
+    # Destroy the node explicitly
+    # (optional - otherwise it will be done automatically
+    # when the garbage collector destroys the node object)
+    minimal_publisher.destroy_node()
+    rclpy.shutdown()
 
 
 if __name__ == '__main__':
-    main()
-    `;
-    this.codeService.uploadCode("minimal_publisher.py", code_test).subscribe({
-      next: (response) => {
-        console.log('Respuesta del backend:', response);
-        this.current_displayed_console_output = 'Código subido exitosamente.';
-      },
-      error: (error) => {
-        console.error('Error al subir el código:', error);
-        this.current_displayed_console_output = 'Error al subir el código.';
-      }
-    });*/
-    this.enviarCodigo();
-  }
-
-  playAllTabs() {/*
-    for (const tab of this.tabs) {
-      const tabId = tab.id;
-  
-      if (!this.workspaces[tabId]) continue;
-  
-      const code = pythonGenerator.workspaceToCode(this.workspaces[tabId]);
-      this.text_code.set(tabId.toString(), code);
-  
-      this.http.post<{ output: string; error?: string }>('http://localhost:8000/execute', { code }).subscribe(
-        (response) => {
-          const output = response.output || response.error || "";
-          const previousOutput = this.consoles_output.get(tabId.toString()) || "";
-          this.consoles_output.set(tabId.toString(), previousOutput + output);
-          // If current tab selected, actualize `current_displayed_console_output`
-          if (this.selectedTabId === tabId) {
-            this.current_displayed_console_output = this.consoles_output.get(tabId.toString())!;
-          }
+    main()`;
+  if(codeService === undefined) {
+    console.error('No se encontró el servicio para la pestaña', tabId);
+    return;
+  } else { 
+    if(this.websockets.get(tabId.toString())) {
+      this.websockets.get(tabId.toString())?.unsubscribe();
+    }
+    this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code)
+      .pipe(
+        switchMap(() => codeService.executeCode(fileName)),
+        switchMap((response) => {
+          console.log('Respuesta del backend:', response);
+          const sessionId = response.session_id;
+          this.consoles_sessions.set(tabId.toString(), sessionId);
+          console.log('Session ID:', sessionId);
+          return codeService.connectToWebSocket(sessionId);
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          console.log('Mensaje WebSocket:', response.output);
+          if (response.output != this.consoles_output.get(tabId.toString())) {
+            this.consoles_output.set(tabId.toString(), (this.consoles_output.get(tabId.toString()) ?? '') + response.output + '\n'); //Save output
+            if(this.selectedTabId === tabId) {
+              this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? ''; //Update displayed output
+            }
+            if (this.autoScrollEnabled) {
+              setTimeout(() => this.scrollToBottom(), 100);
+            }
+          }        
         },
-        (error) => {
-          console.error(`Error ejecutando código en pestaña ${tabId}:`, error);
-        }
-      );
-    }*/
+        error: (error) => console.error('Error:', error),
+        complete: () => console.log('Proceso completado')
+      }))
   }
+}
   scrollToBottom() {
     const consoleContainer = document.querySelector('.console-output-container');
     if (consoleContainer) {
         consoleContainer.scrollTop = consoleContainer.scrollHeight;
     }
-  }
-
-  
+  }  
 }
 
 

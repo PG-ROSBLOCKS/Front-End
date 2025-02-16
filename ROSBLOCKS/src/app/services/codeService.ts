@@ -8,7 +8,6 @@ import { Observable, BehaviorSubject } from 'rxjs';
 })
 export class CodeService {
   private wsSubject: WebSocketSubject<any> | undefined;
-  private outputSubject = new BehaviorSubject<string>('');
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
@@ -27,7 +26,6 @@ export class CodeService {
 
   executeCode(fileName: string): Observable<any> {
     return this.http.get(`http://localhost:8000/execute/${fileName}`);
-    //return this.http.get(`http://localhost:8000/execute/minimal_publisher.py`);
   }
   
   connectToWebSocket(sessionId: string): WebSocketSubject<any> {
@@ -41,19 +39,18 @@ export class CodeService {
     }
   }
 
+  killExecution(session_id: string) {
+    this.http.get(`http://localhost:8000/kill/${session_id}`, { responseType: 'json' })
+      .subscribe({
+        next: (response) => console.log('Sesión eliminada con éxito:', response),
+        error: (error) => console.error('Error en la solicitud:', error)
+      });
+}
+
+
   closeConnection() {
     if (this.wsSubject) {
       this.wsSubject.complete();
     }
-  }
-  // Método para obtener el observable del string
-  getOutputObservable(): Observable<string> {
-    return this.outputSubject.asObservable();
-  }
-
-  // Método para actualizar el string
-  updateOutput(newOutput: string) {
-    this.outputSubject.next(newOutput);
-    console.log(newOutput);
   }
 }
