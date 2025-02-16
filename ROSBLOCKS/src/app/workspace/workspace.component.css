@@ -11,7 +11,7 @@
 
 .nodebar {
   height: auto;
-  width: calc(100vw - 250px - 270px);
+  width: calc(100vw - 250px - 400px);
   overflow-y: hidden;
 }
 
@@ -37,7 +37,7 @@
 
 .left {
   background-color: #012840;
-  flex-grow: 1;
+  flex-grow: 2;
   height: 100%;
 }
 
@@ -48,6 +48,7 @@
   width: 270px;
   padding: 2px;
   overflow: scroll;
+  flex-grow: 1;
 }
 
 .right-div * {
@@ -73,9 +74,10 @@
 
 .console {
   width: 100%;
-  height: 45vh;
+  height: 40vh;
   background-color: #001117;
   color: aliceblue;
+  position: relative;
 }
 
 .add-map, .sample-map {
@@ -105,7 +107,10 @@
   overflow-y: hidden;
   white-space: nowrap;
   height: 38px;
+  width: 100%;
+  max-width: 100%;
   scrollbar-width: 1px;
+  box-sizing: border-box ;
 }
 
 .tab-list {
@@ -342,6 +347,7 @@ input::selection {
 
 .ai {
   margin-left: auto; /* Empuja los botones a la derecha */
+  align-items: flex-start;
   display: flex;
   gap: 10px;
   padding-right: 10px;
@@ -393,7 +399,7 @@ input::selection {
   color: aliceblue;
   margin: 0;
   padding-top: 0;
-  padding-bottom: 0;
+  padding-bottom: 5%;
   padding-left: 1px;
 }
 
@@ -403,9 +409,10 @@ input::selection {
   }
 }
 .console-output-container {
-  max-height: 38vh;
+  height: 90%;
   overflow-y: auto; 
   padding-right: 10px;
+  margin-top: 5%;
 }
 
 .console_text {

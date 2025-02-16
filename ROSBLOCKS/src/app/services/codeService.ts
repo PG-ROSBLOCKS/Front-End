@@ -26,8 +26,8 @@ export class CodeService {
   }
 
   executeCode(fileName: string): Observable<any> {
-    //return this.http.get(`http://localhost:8000/execute/${fileName}`);
-    return this.http.get(`http://localhost:8000/execute/minimal_publisher.py`);
+    return this.http.get(`http://localhost:8000/execute/${fileName}`);
+    //return this.http.get(`http://localhost:8000/execute/minimal_publisher.py`);
   }
   
   connectToWebSocket(sessionId: string): WebSocketSubject<any> {

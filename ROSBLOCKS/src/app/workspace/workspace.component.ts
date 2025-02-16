@@ -13,6 +13,7 @@ import { switchMap } from 'rxjs/operators';
   styleUrls: ['./workspace.component.css']
 })
 export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
+  autoScrollEnabled: boolean = true;
   constructor(private codeService: CodeService) {}
   // TEST 
   subscriptions: Subscription[] = [];
@@ -29,14 +30,47 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   }
   enviarCodigo() {
     console.log('Enviando código...');
-    const fileName = 'prueba.py';
+    const fileName = 'minimal_publisher.py';
   const code = `
-print("Hola desde Python")
-import time
-while(True):
-  print("Hola desde Angular")
-  time.sleep(3)
-print("Hola desde Angular 2")`;
+import rclpy
+from rclpy.node import Node
+
+from std_msgs.msg import String
+
+
+class MinimalPublisher(Node):
+
+    def __init__(self):
+        super().__init__('minimal_publisher')
+        self.publisher_ = self.create_publisher(String, 'topic', 10)
+        timer_period = 0.5  # seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.i = 0
+
+    def timer_callback(self):
+        msg = String()
+        msg.data = 'Hello World: %d' % self.i
+        self.publisher_.publish(msg)
+        self.get_logger().info('Publishing: "%s"' % msg.data)
+        self.i += 1
+
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    minimal_publisher = MinimalPublisher()
+
+    rclpy.spin(minimal_publisher)
+
+    # Destroy the node explicitly
+    # (optional - otherwise it will be done automatically
+    # when the garbage collector destroys the node object)
+    minimal_publisher.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()`;
 
   this.codeService.uploadCode(fileName, code)
     .pipe(
@@ -52,6 +86,9 @@ print("Hola desde Angular 2")`;
         console.log('Mensaje WebSocket:', response.output);
         if (response.output != this.current_displayed_console_output) {
           this.current_displayed_console_output += response.output + '\n';
+          if (this.autoScrollEnabled) {
+            setTimeout(() => this.scrollToBottom(), 100);
+          }
         }        
       },
       error: (error) => console.error('Error:', error),
@@ -203,6 +240,21 @@ print("Hola desde Angular 2")`;
   ngAfterViewInit(): void {
     if (this.tabs.length > 0) {
       this.selectTab(this.tabs[0].id);
+    }
+    const consoleContainer = document.querySelector('.console-output-container');
+
+    if (consoleContainer) {
+      consoleContainer.addEventListener('scroll', () => {
+        // Verifica si el usuario ha desplazado la consola manualmente
+        const isAtBottom =
+          consoleContainer.scrollHeight - consoleContainer.scrollTop <= consoleContainer.clientHeight + 5;
+
+        if (isAtBottom) {
+          this.autoScrollEnabled = true; // Reactiva el scroll automático si el usuario está en la parte inferior
+        } else {
+          this.autoScrollEnabled = false; // Desactiva el scroll automático si el usuario está desplazándose manualmente
+        }
+      });
     }
   }
 
@@ -438,6 +490,12 @@ if __name__ == '__main__':
         }
       );
     }*/
+  }
+  scrollToBottom() {
+    const consoleContainer = document.querySelector('.console-output-container');
+    if (consoleContainer) {
+        consoleContainer.scrollTop = consoleContainer.scrollHeight;
+    }
   }
 
   

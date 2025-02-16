@@ -59,11 +59,11 @@
         <textarea [(ngModel)]="codigo_testeo_backend" placeholder="Escribe tu código aquí"></textarea>
           <button (click)="executeCode(codigo_testeo_backend)">Ejecutar</button>
         <div class="console">
-          <p id=console_title>Console</p>
+          <p id=console_title>Console</p>          
           <div class="console-output-container">
             <pre>{{ current_displayed_console_output }}</pre>
+            <span id="cursor">|</span>
           </div>
-          <span id="cursor">|</span>
         </div>
       </div>
     </div>
