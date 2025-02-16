@@ -1,17 +1,67 @@
-import { Component, AfterViewInit } from '@angular/core';
+import { Component, AfterViewInit, OnInit, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
 import {pythonGenerator} from 'blockly/python';
+import { definirBloquesROS2, definirGeneradoresROS2 } from '../blocks/ros2-blocks';
+import { CodeService } from '../services/codeService';
+import { Subscription } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
   styleUrls: ['./workspace.component.css']
 })
-export class WorkspaceComponent implements AfterViewInit {
-  constructor(private http: HttpClient) {}
+export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
+  constructor(private codeService: CodeService) {}
+  // TEST 
+  subscriptions: Subscription[] = [];
+  ngOnInit(): void {
+    // Suscribirse al observable del string
+    const outputSubscription = this.codeService.getOutputObservable().subscribe((output) => {
+      this.current_displayed_console_output = output;
+    });
+    this.subscriptions.push(outputSubscription);
+  }
+  ngOnDestroy(): void {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+    
+  }
+  enviarCodigo() {
+    console.log('Enviando código...');
+    const fileName = 'prueba.py';
+  const code = `
+print("Hola desde Python")
+import time
+while(True):
+  print("Hola desde Angular")
+  time.sleep(3)
+print("Hola desde Angular 2")`;
+
+  this.codeService.uploadCode(fileName, code)
+    .pipe(
+      switchMap(() => this.codeService.executeCode(fileName)),
+      switchMap((response) => {
+        console.log('Respuesta del backend:', response);
+        const sessionId = response.session_id;
+        return this.codeService.connectToWebSocket(sessionId);
+      })
+    )
+    .subscribe({
+      next: (response) => {
+        console.log('Mensaje WebSocket:', response.output);
+        if (response.output != this.current_displayed_console_output) {
+          this.current_displayed_console_output += response.output + '\n';
+        }        
+      },
+      error: (error) => console.error('Error:', error),
+      complete: () => console.log('Proceso completado')
+    });
+}
+  // END TEST AREA
   MAX_NUM_PESTANAS = 8; // Max number of tabs
   consoles_output: Map<string, string> = new Map(); // Console outputs for each tab
+  consoles_services: Map<string, CodeService> = new Map(); // Services for each tab
   current_displayed_console_output: string = ''; // Current console OUTPUT
   text_code: Map<string, string> = new Map(); // Tab code
   codigo_testeo_backend: string = ''; // Test output for backend
@@ -24,10 +74,10 @@ export class WorkspaceComponent implements AfterViewInit {
         kind: 'category',
         name: 'Nodos',
         contents: [
-          { kind: 'block', type: 'controls_if' },
-          { kind: 'block', type: 'logic_compare' },
-          { kind: 'block', type: 'logic_operation' },
-          { kind: 'block', type: 'logic_negate' },
+          { kind: 'block', type: 'ros2_create_publisher' },
+          { kind: 'block', type: 'ros2_create_subscriber' },
+          { kind: 'block', type: 'ros2_publish_message' },
+          { kind: 'block', type: 'ros2_timer' },
           { kind: 'block', type: 'logic_boolean' },
         ],
       },
@@ -159,6 +209,11 @@ export class WorkspaceComponent implements AfterViewInit {
   initializeBlockly(tabId: number): void {
     const blocklyDivId = `blocklyDiv-${tabId}`;
     const blocklyDiv = document.getElementById(blocklyDivId);
+    // Definir bloques personalizados
+    definirBloquesROS2();
+
+    // Definir generadores de código
+    definirGeneradoresROS2();
 
     if (!blocklyDiv) return;
 
@@ -308,16 +363,58 @@ export class WorkspaceComponent implements AfterViewInit {
   }
 
   executeCode(code: string) {
-    this.http.post<{ output: string; error: string }>('http://localhost:8000/execute', { code })
-      .subscribe(response => {
-        this.current_displayed_console_output += (response.output || response.error);
-        if (this.selectedTabId !== null) {
-          this.consoles_output.set(this.selectedTabId.toString(), this.current_displayed_console_output);
-        }        
-      });
+    /*const code_test = `
+    import rclpy
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+
+from std_msgs.msg import String
+
+
+class MinimalPublisher(Node):
+
+    def __init__(self):
+        super().__init__('minimal_publisher')
+        self.publisher_ = self.create_publisher(String, 'topic', 10)
+        timer_period = 0.5  # seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.i = 0
+
+    def timer_callback(self):
+        msg = String()
+        msg.data = 'Hello World: %d' % self.i
+        self.publisher_.publish(msg)
+        self.get_logger().info('Publishing: "%s"' % msg.data)
+        self.i += 1
+
+
+def main(args=None):
+    try:
+        with rclpy.init(args=args):
+            minimal_publisher = MinimalPublisher()
+
+            rclpy.spin(minimal_publisher)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+
+
+if __name__ == '__main__':
+    main()
+    `;
+    this.codeService.uploadCode("minimal_publisher.py", code_test).subscribe({
+      next: (response) => {
+        console.log('Respuesta del backend:', response);
+        this.current_displayed_console_output = 'Código subido exitosamente.';
+      },
+      error: (error) => {
+        console.error('Error al subir el código:', error);
+        this.current_displayed_console_output = 'Error al subir el código.';
+      }
+    });*/
+    this.enviarCodigo();
   }
 
-  playAllTabs() {
+  playAllTabs() {/*
     for (const tab of this.tabs) {
       const tabId = tab.id;
   
@@ -340,8 +437,10 @@ export class WorkspaceComponent implements AfterViewInit {
           console.error(`Error ejecutando código en pestaña ${tabId}:`, error);
         }
       );
-    }
+    }*/
   }
 
   
 }
+
+
