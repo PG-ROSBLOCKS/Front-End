@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnInit, OnDestroy } from '@angular/core';
+import { Component, AfterViewInit, OnInit, OnDestroy,ElementRef, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
 import {pythonGenerator} from 'blockly/python';
@@ -14,6 +14,34 @@ import { sanitizePythonFilename } from '../utilities/sanitizer-tools';
   styleUrls: ['./workspace.component.css']
 })
 export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
+  @ViewChild('resizer') resizer!: ElementRef;
+  @ViewChild('leftSection') leftSection!: ElementRef;
+  @ViewChild('rightSection') rightSection!: ElementRef;
+
+  isResizing = false;
+
+  handleMouseMove = (event: MouseEvent) => {
+    if (!this.isResizing) return;
+    let newWidth = event.clientX;
+    let containerWidth = document.getElementById('workspace-container')!.offsetWidth;
+
+    if (newWidth > 100 && newWidth < containerWidth * 0.8) {
+      this.leftSection.nativeElement.style.width = `${newWidth}px`;
+      this.rightSection.nativeElement.style.flex = '1'; // Mantiene la derecha flexible
+    }
+    if(this.selectedTabId) {
+      this.selectTab(this.selectedTabId)
+    }
+  };
+
+  stopResizing = () => {
+    this.isResizing = false;
+    document.removeEventListener('mousemove', this.handleMouseMove);
+    document.removeEventListener('mouseup', this.stopResizing);
+    
+      
+  };
+
   autoScrollEnabled: boolean = true;
   constructor(private http: HttpClient) {}
   // TEST 
@@ -171,6 +199,16 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   selectedTabId: number | null = null;
 
   ngAfterViewInit(): void {
+    const resizer = this.resizer.nativeElement;
+    const leftSection = this.leftSection.nativeElement;
+    const rightSection = this.rightSection.nativeElement;
+
+    resizer.addEventListener('mousedown', (event: MouseEvent) => {
+      this.isResizing = true;
+      document.addEventListener('mousemove', this.handleMouseMove);
+      document.addEventListener('mouseup', this.stopResizing);
+    });
+
     if (this.tabs.length > 0) {
       this.selectTab(this.tabs[0].id);
     }
