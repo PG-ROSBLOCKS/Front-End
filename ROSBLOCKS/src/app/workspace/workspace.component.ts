@@ -459,6 +459,12 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     }
   }
 
+  cleanConsole() {
+    if (this.current_displayed_console_output != '') {
+      this.current_displayed_console_output = 'Consola limpia';
+    }
+  }
+
   enviarCodigo(code_to_send: string, tabId: number) {
     console.log('Enviando código...');
     const fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Nodo');
