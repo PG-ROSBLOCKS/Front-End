@@ -351,13 +351,13 @@ getUniqueTabName(): string {
 
     if (!sanitizedNewName) {
         alert('El nombre de la pestaña no puede estar vacío.');
-        tab.name = this.getUniqueTabName(); // Restaura el nombre anterior
+        tab.name = previousName; // Restaura el nombre anterior
         return;
     }
 
     if (this.tabs.some(t => t.name === sanitizedNewName && t.id !== tabId)) {
         alert('Ya existe una pestaña con ese nombre.');
-        tab.name = this.getUniqueTabName(); // Restaura el nombre anterior
+        tab.name = previousName; // Restaura el nombre anterior
         return;
     }
 
