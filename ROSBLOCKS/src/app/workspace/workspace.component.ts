@@ -302,22 +302,27 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     }
 
     const newTabId = Date.now(); // ID basado en timestamp
-    let baseName = "Nodo";
-    let newTabName = "";
-    let index = 1;
+    
 
-    // Encuentra un nombre único en formato "Nodo_#"
-    do {
-        newTabName = sanitizePythonFilename(`${baseName}_${index}`).replace(/\.py$/, "");
-        index++;
-    } while (this.tabs.some(tab => tab.name === newTabName));
-
-    this.tabs.push({ name: newTabName, id: newTabId, isPlaying: false });
+    this.tabs.push({ name: this.getUniqueTabName(), id: newTabId, isPlaying: false });
     this.consoles_services.set(newTabId.toString(), new CodeService(this.http));
 
     setTimeout(() => {
         this.selectTab(newTabId);
     }, 0);
+}
+
+getUniqueTabName(): string {
+  let baseName = "Nodo";
+  let newTabName = "";
+  let index = 1;
+
+    // Encuentra un nombre único en formato "Nodo_#"
+    do {
+        newTabName = sanitizePythonFilename(`${baseName}_${index}`).replace(/\.py$/, "");
+        index++;
+    } while (this.tabs.some(tab => tab.name === newTabName))
+  return newTabName
 }
 
 
@@ -346,13 +351,13 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
     if (!sanitizedNewName) {
         alert('El nombre de la pestaña no puede estar vacío.');
-        tab.name = previousName; // Restaura el nombre anterior
+        tab.name = this.getUniqueTabName(); // Restaura el nombre anterior
         return;
     }
 
     if (this.tabs.some(t => t.name === sanitizedNewName && t.id !== tabId)) {
         alert('Ya existe una pestaña con ese nombre.');
-        tab.name = previousName; // Restaura el nombre anterior
+        tab.name = this.getUniqueTabName(); // Restaura el nombre anterior
         return;
     }
 
@@ -460,7 +465,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   }
 
   cleanConsole() {
-    if (this.current_displayed_console_output != '') {
+    if (this.current_displayed_console_output != '' && this.selectedTabId) {
+      this.consoles_output.set(this.selectedTabId.toString(), '');
       this.current_displayed_console_output = 'Consola limpia';
     }
   }
