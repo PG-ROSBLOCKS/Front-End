@@ -41,6 +41,7 @@ app-header {
 .right-section {
   flex: 1;
   background-color: #253942;
+  overflow-x: scroll;
   min-width: 100px;
 }
 

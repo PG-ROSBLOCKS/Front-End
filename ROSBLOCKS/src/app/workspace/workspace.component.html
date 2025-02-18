@@ -12,7 +12,7 @@
                           'z-index': tab.id === selectedTabId ? 999 : i + 1
                           }"
                           (click)="selectTab(tab.id)">
-                              <input type="text" [(ngModel)]="tab.name" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
+                              <input type="text" [(ngModel)]="tab.name" (focus)="storePreviousName(tab)" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
                               <button class="delete-button" (click)="deleteTab(tab.id)">✖</button>
                               <button class="play-button" (click)="playTab(tab.id, false)">
                                       {{ tab.isPlaying ? '◼' : '▶' }}
@@ -24,7 +24,7 @@
                       </ul>
                       <div class="ai">
                           <button class="play-all" (click)="playAllTabs()">▶</button>
-                          <button class="stop-all">◼</button>
+                          <button class="stop-all" (click)="stopAllTabs()">◼</button>
                       </div>
                   </div>
               </div>
