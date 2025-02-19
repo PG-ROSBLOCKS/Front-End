@@ -434,3 +434,22 @@ input::selection {
   margin: 0;
   line-height: 0;
 }
+
+.btn-clean {
+  position: relative;
+  top: -32px;
+  left: 5px;
+  background-color: #015C66;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 15px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.btn-clean:hover {
+  background-color: #006b77;
+  transform: scale(1.02);
+}

@@ -394,27 +394,25 @@ getUniqueTabName(): string {
 
   deleteTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
-    if(confirm('Estas seguro de que quieres eliminar el nodo ' + tab?.name)) {
-      if (this.workspaces[tabId]) {
-        this.workspaces[tabId].dispose(); // Deletes workspace from blockly
-        delete this.workspaces[tabId]; // Removes from object
-        this.consoles_output.delete(tabId.toString()); // Deletes console
-        this.consoles_sessions.delete(tabId.toString()); // Deletes session
-        this.consoles_services.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || ''); // Deletes file
-        this.consoles_services.delete(tabId.toString()); // Deletes service
-        this.websockets.delete(tabId.toString()); // Deletes websocket
-        this.text_code.delete(tabId.toString()); // Deletes code
-      }
+    if (this.workspaces[tabId]) {
+      this.workspaces[tabId].dispose(); // Deletes workspace from blockly
+      delete this.workspaces[tabId]; // Removes from object
+      this.consoles_output.delete(tabId.toString()); // Deletes console
+      this.consoles_sessions.delete(tabId.toString()); // Deletes session
+      this.consoles_services.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || ''); // Deletes file
+      this.consoles_services.delete(tabId.toString()); // Deletes service
+      this.websockets.delete(tabId.toString()); // Deletes websocket
+      this.text_code.delete(tabId.toString()); // Deletes code
+    }
   
-      //Deletes tab
-      this.tabs = this.tabs.filter(tab => tab.id !== tabId);
+    //Deletes tab
+    this.tabs = this.tabs.filter(tab => tab.id !== tabId);
   
-      // Change to another tab
-      if (this.selectedTabId === tabId) {
-        this.selectedTabId = this.tabs.length > 0 ? this.tabs[0].id : null;
-        if (this.selectedTabId) {
-          this.selectTab(this.selectedTabId);
-        }
+    // Change to another tab
+    if (this.selectedTabId === tabId) {
+      this.selectedTabId = this.tabs.length > 0 ? this.tabs[0].id : null;
+      if (this.selectedTabId) {
+        this.selectTab(this.selectedTabId);
       }
     }
   }
@@ -516,7 +514,27 @@ getUniqueTabName(): string {
     if (consoleContainer) {
         consoleContainer.scrollTop = consoleContainer.scrollHeight;
     }
-  }  
+  }
+
+  candidateTabToDelete: number | null = null;
+// Propiedad para almacenar el nombre del tab candidato a eliminar
+  candidateTabName: string = '';
+  
+  confirmDeleteTab(tabId: number) {
+    const tab = this.tabs.find(tab => tab.id === tabId);
+    if (tab) {
+      this.candidateTabToDelete = tabId;
+      this.candidateTabName = tab.name;
+    }
+  }
+
+  handleDeleteConfirmation(response: boolean) {
+    const tabId = this.candidateTabToDelete;
+    this.candidateTabToDelete = null;
+    if(response && tabId) {
+      this.deleteTab(tabId)
+    }
+  }
 }
 
 

@@ -13,7 +13,7 @@
                           }"
                           (click)="selectTab(tab.id)">
                               <input type="text" [(ngModel)]="tab.name" (focus)="storePreviousName(tab)" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
-                              <button class="delete-button" (click)="deleteTab(tab.id)">✖</button>
+                              <button class="delete-button" (click)="confirmDeleteTab(tab.id)">✖</button>
                               <button class="play-button" (click)="playTab(tab.id, false)">
                                       {{ tab.isPlaying ? '◼' : '▶' }}
                               </button>
@@ -68,7 +68,13 @@
                   <span id="cursor">|</span>
               </div>              
           </div>
-          <button (click)="cleanConsole()">Limpiar consola</button>
+          <button (click)="cleanConsole()" class="btn-clean">Limpiar consola</button>
       </div>
   </div>
 </div>
+<app-confirm
+  *ngIf="candidateTabToDelete !== null"
+  [message]="'¿Eliminar el nodo \'' + candidateTabName + '\'? Esta acción no se puede deshacer'"
+  (confirm)="handleDeleteConfirmation($event)">
+</app-confirm>
+
