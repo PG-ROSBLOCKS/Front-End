@@ -393,25 +393,28 @@ getUniqueTabName(): string {
   }
 
   deleteTab(tabId: number) {
-    if (this.workspaces[tabId]) {
-      this.workspaces[tabId].dispose(); // Deletes workspace from blockly
-      delete this.workspaces[tabId]; // Removes from object
-      this.consoles_output.delete(tabId.toString()); // Deletes console
-      this.consoles_sessions.delete(tabId.toString()); // Deletes session
-      this.consoles_services.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || ''); // Deletes file
-      this.consoles_services.delete(tabId.toString()); // Deletes service
-      this.websockets.delete(tabId.toString()); // Deletes websocket
-      this.text_code.delete(tabId.toString()); // Deletes code
-    }
-
-    //Deletes tab
-    this.tabs = this.tabs.filter(tab => tab.id !== tabId);
-
-    // Change to another tab
-    if (this.selectedTabId === tabId) {
-      this.selectedTabId = this.tabs.length > 0 ? this.tabs[0].id : null;
-      if (this.selectedTabId) {
-        this.selectTab(this.selectedTabId);
+    const tab = this.tabs.find(tab => tab.id === tabId);
+    if(confirm('Estas seguro de que quieres eliminar el nodo ' + tab?.name)) {
+      if (this.workspaces[tabId]) {
+        this.workspaces[tabId].dispose(); // Deletes workspace from blockly
+        delete this.workspaces[tabId]; // Removes from object
+        this.consoles_output.delete(tabId.toString()); // Deletes console
+        this.consoles_sessions.delete(tabId.toString()); // Deletes session
+        this.consoles_services.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || ''); // Deletes file
+        this.consoles_services.delete(tabId.toString()); // Deletes service
+        this.websockets.delete(tabId.toString()); // Deletes websocket
+        this.text_code.delete(tabId.toString()); // Deletes code
+      }
+  
+      //Deletes tab
+      this.tabs = this.tabs.filter(tab => tab.id !== tabId);
+  
+      // Change to another tab
+      if (this.selectedTabId === tabId) {
+        this.selectedTabId = this.tabs.length > 0 ? this.tabs[0].id : null;
+        if (this.selectedTabId) {
+          this.selectTab(this.selectedTabId);
+        }
       }
     }
   }
