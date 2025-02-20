@@ -416,7 +416,7 @@ input::selection {
   }
 }
 .console-output-container {
-  height: 41.5vh;
+  height: calc(100% - 75px);
   overflow-y: auto; 
   padding-right: 10px;
 }
