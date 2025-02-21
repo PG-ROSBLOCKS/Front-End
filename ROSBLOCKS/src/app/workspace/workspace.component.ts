@@ -92,7 +92,10 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         name: 'Topicos',
         contents: [
           { kind: 'block', type: 'ros2_create_publisher' },
-          { kind: 'block', type: 'ros2_create_subscriber' },
+          { kind: 'block', type: 'ros2_minimal_publisher' },
+          { kind: 'block', type: 'ros2_minimal_subscriber' },
+          { kind: 'block', type: 'ros2_subscriber_msg_data' },
+          { kind: 'block', type: 'ros2_turtlesim_pose_field' },
           { kind: 'block', type: 'ros2_publish_message' },
         ],
       },
