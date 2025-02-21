@@ -453,3 +453,48 @@ input::selection {
   background-color: #006b77;
   transform: scale(1.02);
 }
+
+.map-insight {
+  display: none;
+}
+.sample-map:hover .map-insight {
+  display: block;
+}
+
+.map-insight {
+  position: absolute;
+  margin: 0px -75px !important;
+  width: 200px;
+  height: 200px;
+  background-color: #015c6694;
+  border: 3px solid #3bdbdb;
+  box-shadow: 0px 0px 5px #3bdbdb61;
+  top: 130px;
+  padding: 5px;
+}
+
+.map-insight img {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  left: -1.8px;
+  padding: 2px;
+}
+
+.delete-custom-map {
+  width: 15px;
+  height: 15px;
+  position: fixed;
+  background-color: brown;
+  margin: -35px 35px !important;
+  border-radius: 100%;
+  font-size: 11px;
+}
+
+.added-map {
+  background-color: #058057 !important;
+}
+
+.added-map:hover {
+  background-color: #07a166 !important;
+}

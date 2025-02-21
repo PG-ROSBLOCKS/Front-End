@@ -538,6 +538,23 @@ getUniqueTabName(): string {
       this.deleteTab(tabId)
     }
   }
+
+  imageSrc: string | ArrayBuffer | null = null;
+
+  onFileSelected(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+      const file = target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        // Al leer la imagen se asigna el resultado a la variable imageSrc
+        this.imageSrc = reader.result;
+      };
+
+      reader.readAsDataURL(file);
+    }
+  }
 }
 
 
