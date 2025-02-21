@@ -7,6 +7,7 @@ import { CodeService } from '../services/codeService';
 import { Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { sanitizePythonFilename } from '../utilities/sanitizer-tools';
+import { create_publisher } from '../blocks/code-generator';
 
 @Component({
   selector: 'app-workspace',
@@ -72,11 +73,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         kind: 'category',
         name: 'Nodos',
         contents: [
-          { kind: 'block', type: 'ros2_create_publisher' },
-          { kind: 'block', type: 'ros2_create_subscriber' },
-          { kind: 'block', type: 'ros2_publish_message' },
           { kind: 'block', type: 'ros2_timer' },
-          { kind: 'block', type: 'logic_boolean' },
+          { kind: 'block', type: 'ros2_log' },
         ],
       },
       {
@@ -93,11 +91,12 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         kind: 'category',
         name: 'Topicos',
         contents: [
-          { kind: 'block', type: 'math_number' },
-          { kind: 'block', type: 'math_arithmetic' },
-          { kind: 'block', type: 'math_single' },
-          { kind: 'block', type: 'math_trig' },
-          { kind: 'block', type: 'math_random_int' },
+          { kind: 'block', type: 'ros2_create_publisher' },
+          { kind: 'block', type: 'ros2_minimal_publisher' },
+          { kind: 'block', type: 'ros2_minimal_subscriber' },
+          { kind: 'block', type: 'ros2_subscriber_msg_data' },
+          { kind: 'block', type: 'ros2_turtlesim_pose_field' },
+          { kind: 'block', type: 'ros2_publish_message' },
         ],
       },
       {
@@ -369,17 +368,16 @@ getUniqueTabName(): string {
     const tab = this.tabs.find(tab => tab.id === tabId);
     
     if (!tab) return; // Si el tab no existe, no hace nada
+    // TODO: tests with new blocks
+    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+      this.text_code.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
+  }
 
     tab.isPlaying = playAllTabs ? true : !tab.isPlaying; // Alterna solo si no es "play all"
 
     tab.isPlaying
         ? this.executeCode(this.text_code.get(tabId.toString()) || '', tabId)
         : this.stopTab(tabId);
-
-    // TODO: tests with new blocks
-    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
-        this.text_code.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
-    }
 }
 
 
@@ -398,19 +396,21 @@ getUniqueTabName(): string {
   }
 
   deleteTab(tabId: number) {
+    const tab = this.tabs.find(tab => tab.id === tabId);
     if (this.workspaces[tabId]) {
       this.workspaces[tabId].dispose(); // Deletes workspace from blockly
       delete this.workspaces[tabId]; // Removes from object
       this.consoles_output.delete(tabId.toString()); // Deletes console
       this.consoles_sessions.delete(tabId.toString()); // Deletes session
+      this.consoles_services.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || ''); // Deletes file
       this.consoles_services.delete(tabId.toString()); // Deletes service
       this.websockets.delete(tabId.toString()); // Deletes websocket
       this.text_code.delete(tabId.toString()); // Deletes code
     }
-
+  
     //Deletes tab
     this.tabs = this.tabs.filter(tab => tab.id !== tabId);
-
+  
     // Change to another tab
     if (this.selectedTabId === tabId) {
       this.selectedTabId = this.tabs.length > 0 ? this.tabs[0].id : null;
@@ -475,46 +475,7 @@ getUniqueTabName(): string {
     console.log('Enviando código...');
     const fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Nodo');
     const codeService = this.consoles_services.get(tabId.toString());
-  const code = `
-import rclpy
-from rclpy.node import Node
-
-from std_msgs.msg import String
-
-
-class MinimalPublisher(Node):
-
-    def __init__(self):
-        super().__init__('minimal_publisher')
-        self.publisher_ = self.create_publisher(String, 'topic', 10)
-        timer_period = 0.5  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.i = 0
-
-    def timer_callback(self):
-        msg = String()
-        msg.data = 'Hello World: %d' % self.i
-        self.publisher_.publish(msg)
-        self.get_logger().info('Publishing: "%s"' % msg.data)
-        self.i += 1
-
-
-def main(args=None):
-    rclpy.init(args=args)
-
-    minimal_publisher = MinimalPublisher()
-
-    rclpy.spin(minimal_publisher)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    minimal_publisher.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()`;
+  const code = create_publisher(code_to_send, fileName);
   if(codeService === undefined) {
     console.error('No se encontró el servicio para la pestaña', tabId);
     return;
@@ -556,7 +517,44 @@ if __name__ == '__main__':
     if (consoleContainer) {
         consoleContainer.scrollTop = consoleContainer.scrollHeight;
     }
-  }  
+  }
+
+  candidateTabToDelete: number | null = null;
+// Propiedad para almacenar el nombre del tab candidato a eliminar
+  candidateTabName: string = '';
+  
+  confirmDeleteTab(tabId: number) {
+    const tab = this.tabs.find(tab => tab.id === tabId);
+    if (tab) {
+      this.candidateTabToDelete = tabId;
+      this.candidateTabName = tab.name;
+    }
+  }
+
+  handleDeleteConfirmation(response: boolean) {
+    const tabId = this.candidateTabToDelete;
+    this.candidateTabToDelete = null;
+    if(response && tabId) {
+      this.deleteTab(tabId)
+    }
+  }
+
+  imageSrc: string | ArrayBuffer | null = null;
+
+  onFileSelected(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+      const file = target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        // Al leer la imagen se asigna el resultado a la variable imageSrc
+        this.imageSrc = reader.result;
+      };
+
+      reader.readAsDataURL(file);
+    }
+  }
 }
 
 

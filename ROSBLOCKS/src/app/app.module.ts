@@ -10,6 +10,7 @@ import { ErrorMsgComponent } from './shared/components/error-msg/error-msg.compo
 import { RosblocksHelpComponent } from './rosblocks-help/rosblocks-help.component';
 import { SafePipe } from './safe.pipe';
 import { HttpClientModule } from '@angular/common/http';
+import { ConfirmComponent } from './shared/components/confirm/confirm.component';
 
 @NgModule({
   declarations: [
@@ -19,6 +20,7 @@ import { HttpClientModule } from '@angular/common/http';
     ErrorMsgComponent,
     RosblocksHelpComponent,
     SafePipe,
+    ConfirmComponent,
   ],
   imports: [
     BrowserModule,

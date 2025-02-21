@@ -416,7 +416,7 @@ input::selection {
   }
 }
 .console-output-container {
-  max-height: 38vh;
+  height: calc(100% - 75px);
   overflow-y: auto; 
   padding-right: 10px;
 }
@@ -433,4 +433,70 @@ input::selection {
   padding-left: 5px;
   margin: 0;
   line-height: 0;
+}
+
+.btn-clean {
+  position: relative;
+  top: -32px;
+  left: 5px;
+  background-color: #015C66;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 15px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.btn-clean:hover {
+  background-color: #006b77;
+  transform: scale(1.02);
+}
+
+.map-insight {
+  position: absolute;
+  margin: 0px -75px !important;
+  width: 200px;
+  height: 200px;
+  background-color: #015c6694;
+  border: 3px solid #3bdbdb;
+  box-shadow: 0px 0px 5px #3bdbdb61;
+  top: 130px;
+  padding: 5px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.1s ease-in-out, visibility 0.08s;
+}
+
+.sample-map:hover .map-insight {
+  opacity: 1;
+  visibility: visible;
+}
+
+
+.map-insight img {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  left: -1.8px;
+  padding: 2px;
+}
+
+.delete-custom-map {
+  width: 15px;
+  height: 15px;
+  position: fixed;
+  background-color: brown;
+  margin: -35px 35px !important;
+  border-radius: 100%;
+  font-size: 11px;
+}
+
+.added-map {
+  background-color: #058057 !important;
+}
+
+.added-map:hover {
+  background-color: #07a166 !important;
 }

@@ -1,56 +1,66 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { WebSocketSubject, webSocket } from 'rxjs/webSocket';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CodeService {
   private wsSubject: WebSocketSubject<any> | undefined;
+  private API_URL = 'http://localhost:8000';
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
   }
 
-  uploadCode(fileName: string, code: string) {
-    const payload = {
-      file_name: fileName,
-      code: code,
-    };
-  
-    return this.http.post('http://localhost:8000/upload/', payload, {
+  uploadCode(fileName: string, code: string): Observable<any> {
+    const payload = { file_name: fileName, code: code };
+    return this.http.post(`${this.API_URL}/upload/`, payload, {
       headers: { 'Content-Type': 'application/json' }, 
     });
   }
 
   executeCode(fileName: string): Observable<any> {
-    return this.http.get(`http://localhost:8000/execute/${fileName}`);
+    return this.http.get(`${this.API_URL}/execute/${fileName}`);
   }
   
   connectToWebSocket(sessionId: string): WebSocketSubject<any> {
-    this.wsSubject = webSocket(`ws://localhost:8000/ws/${sessionId}`);
+    this.wsSubject = webSocket(`${this.API_URL.replace('http', 'ws')}/ws/${sessionId}`);
     return this.wsSubject;
   }
 
-  sendMessage(message: string) {
+  sendMessage(message: string): void {
     if (this.wsSubject) {
       this.wsSubject.next(message);
     }
   }
 
-  killExecution(session_id: string) {
-    this.http.get(`http://localhost:8000/kill/${session_id}`, { responseType: 'json' })
+  killExecution(session_id: string): void {
+    this.http.get(`${this.API_URL}/kill/${session_id}`, { responseType: 'json' })
       .subscribe({
-        next: (response) => console.log('Sesión eliminada con éxito:', response),
-        error: (error) => console.error('Error en la solicitud:', error)
+        next: (response) => {
+          console.log('Sesión eliminada con éxito:', response);
+          this.closeConnection(); 
+        },
+        error: (error) => console.error('Error al matar la sesión:', error)
       });
-}
-
-
-  closeConnection() {
+  }
+  closeConnection(): void {
     if (this.wsSubject) {
       this.wsSubject.complete();
+      this.wsSubject = undefined;
     }
+  }
+
+  deleteFile(fileName: string): void {
+    this.http.delete(`${this.API_URL}/cleanup/${fileName}`, { responseType: 'json' })
+      .subscribe({
+        next: (response) => {
+          console.log(`Archivo ${fileName} eliminado con éxito:`, response);
+          this.closeConnection(); 
+        },
+        error: (error) => console.error(`Error al eliminar ${fileName}:`, error)
+      });
   }
 }

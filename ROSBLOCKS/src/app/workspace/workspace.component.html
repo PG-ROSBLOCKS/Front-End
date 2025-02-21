@@ -13,7 +13,7 @@
                           }"
                           (click)="selectTab(tab.id)">
                               <input type="text" [(ngModel)]="tab.name" (focus)="storePreviousName(tab)" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
-                              <button class="delete-button" (click)="deleteTab(tab.id)">✖</button>
+                              <button class="delete-button" (click)="confirmDeleteTab(tab.id)">✖</button>
                               <button class="play-button" (click)="playTab(tab.id, false)">
                                       {{ tab.isPlaying ? '◼' : '▶' }}
                               </button>
@@ -50,10 +50,32 @@
       <div #resizer class="resizer"></div> <!-- Barra de arrastre -->
       <div #rightSection class="right-section">
           <div class="maps">
-              <button class="sample-map">1</button>
-              <button class="sample-map">2</button>
-              <button class="sample-map">3</button>
-              <button class="add-map">+</button>
+                <button class="sample-map">
+                    <p>1</p>
+                    <div class="map-insight">
+                        <img src="https://i.pinimg.com/474x/6b/12/58/6b1258ef83f85684be67d2b28b25617c.jpg">
+                    </div>
+                </button>
+                <button class="sample-map">
+                    <p>2</p>
+                    <div class="map-insight">
+                        <img src="https://i.pinimg.com/474x/6b/12/58/6b1258ef83f85684be67d2b28b25617c.jpg">
+                    </div>
+                </button>
+                <button class="sample-map">
+                    <p>3</p>
+                    <div class="map-insight">
+                        <img src="https://i.pinimg.com/474x/6b/12/58/6b1258ef83f85684be67d2b28b25617c.jpg">
+                    </div>
+                </button>
+                <button (click)="fileInput.click()" class="sample-map add-map"
+                    [ngClass]="{'added-map': imageSrc}">
+                    <p>+</p>
+                    <div *ngIf="imageSrc" class="map-insight">
+                        <img [src]="imageSrc" alt="Imagen cargada">
+                    </div>
+                </button>
+                <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none;">
           </div>
           <div class="turtlesim">
               <p style="color: aliceblue;">Turtlesim</p>
@@ -65,10 +87,16 @@
               <br>
               <div class="console-output-container">
                   <pre>{{ current_displayed_console_output }}</pre>
-              </div>
-              <span id="cursor">|</span>
+                  <span id="cursor">|</span>
+              </div>              
           </div>
-          <button (click)="cleanConsole()">Limpiar consola</button>
+          <button (click)="cleanConsole()" class="btn-clean">Limpiar consola</button>
       </div>
   </div>
 </div>
+<app-confirm
+  *ngIf="candidateTabToDelete !== null"
+  [message]="'¿Eliminar el nodo \'' + candidateTabName + '\'? Esta acción no se puede deshacer'"
+  (confirm)="handleDeleteConfirmation($event)">
+</app-confirm>
+
