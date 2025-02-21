@@ -96,6 +96,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           { kind: 'block', type: 'ros2_minimal_subscriber' },
           { kind: 'block', type: 'ros2_subscriber_msg_data' },
           { kind: 'block', type: 'ros2_turtlesim_pose_field' },
+          { kind: 'block', type: 'ros2_print_msg_type' },
           { kind: 'block', type: 'ros2_publish_message' },
         ],
       },
