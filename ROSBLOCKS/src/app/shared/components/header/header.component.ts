@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { CodeService } from 'src/app/services/codeService';
 
 @Component({
   selector: 'app-header',
@@ -7,9 +8,10 @@ import { Router } from '@angular/router';
   styleUrls: ['./header.component.css']
 })
 export class HeaderComponent {
+
   showExport: boolean = true;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private service: CodeService) {}
 
   ngOnInit() {
     this.router.events.subscribe(() => {
@@ -20,5 +22,8 @@ export class HeaderComponent {
   reloadPage() {
     window.location.reload();
   }
-  
+
+  export() {
+    this.service.exportProject();
+  }
 }
