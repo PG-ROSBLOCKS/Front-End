@@ -1,13 +1,17 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { WebSocketSubject, webSocket } from 'rxjs/webSocket';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CodeService {
   private wsSubject: WebSocketSubject<any> | undefined;
+  private workspaceChangedSubject = new BehaviorSubject<boolean>(false);
+  private noTabsSubject = new BehaviorSubject<boolean>(true);
+  workspaceChanged$ = this.workspaceChangedSubject.asObservable();
+  noTabs$ = this.noTabsSubject.asObservable();
   private API_URL = 'http://localhost:8000';
 
   constructor(private http: HttpClient) {
@@ -64,6 +68,14 @@ export class CodeService {
       });
   }
 
+  setWorkspaceChanged(flag: boolean) {
+    this.workspaceChangedSubject.next(flag);
+  }
+
+  setNoTabs(flag: boolean) {
+    this.noTabsSubject.next(flag);
+  }
+  
   
   exportProject(): void {
     this.http.get(`${this.API_URL}/export-project/`, { responseType: 'blob' }).subscribe(response => {

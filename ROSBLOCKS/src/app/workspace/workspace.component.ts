@@ -44,7 +44,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   };
 
   autoScrollEnabled: boolean = true;
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private codeService: CodeService) {}
   // TEST 
   ngOnInit(): void {
     
@@ -287,7 +287,23 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       renderer: 'zelos',
       theme: customTheme // Apply the updated theme
     });
-    
+
+
+    // Agrega el listener para detectar solo los eventos relevantes:
+    this.workspaces[tabId].addChangeListener((event) => {
+      if (event.type === Blockly.Events.BLOCK_CHANGE) {
+        this.codeService.setWorkspaceChanged(true);
+        console.log('Evento detectado: BLOCK_CHANGE. Flag actualizado.');
+      } else if (event.type === Blockly.Events.BLOCK_CREATE) {
+        this.codeService.setWorkspaceChanged(true);
+        console.log('Evento detectado: BLOCK_CREATE. Flag actualizado.');
+      } else if (event.type === Blockly.Events.BLOCK_DELETE) {
+        this.codeService.setWorkspaceChanged(true);
+        console.log('Evento detectado: BLOCK_DELETE. Flag actualizado.');
+      }
+      //TODO: Cuando se conecta un bloque a otro        
+    });
+
     // Creates output console
     this.consoles_output.set(tabId.toString(), '');
 
@@ -300,7 +316,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         alert('No se pueden agregar más de ' + this.MAX_NUM_PESTANAS + ' pestañas.');
         return;
     }
-
     const newTabId = Date.now(); // ID basado en timestamp
     
 
@@ -310,6 +325,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     setTimeout(() => {
         this.selectTab(newTabId);
     }, 0);
+    this.codeService.setNoTabs(false);
+
 }
 
 getUniqueTabName(): string {
@@ -377,7 +394,8 @@ getUniqueTabName(): string {
     tab.isPlaying = playAllTabs ? true : !tab.isPlaying; // Alterna solo si no es "play all"
 
     tab.isPlaying
-        ? this.executeCode(this.text_code.get(tabId.toString()) || '', tabId)
+        ? (this.executeCode(this.text_code.get(tabId.toString()) || '', tabId),
+        this.codeService.setWorkspaceChanged(false))
         : this.stopTab(tabId);
 }
 
@@ -418,6 +436,9 @@ getUniqueTabName(): string {
       if (this.selectedTabId) {
         this.selectTab(this.selectedTabId);
       }
+    }
+    if (this.tabs.length === 0) {
+      this.codeService.setNoTabs(true);
     }
   }
 
