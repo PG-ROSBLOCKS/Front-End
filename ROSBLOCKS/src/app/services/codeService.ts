@@ -10,8 +10,10 @@ export class CodeService {
   private wsSubject: WebSocketSubject<any> | undefined;
   private workspaceChangedSubject = new BehaviorSubject<boolean>(false);
   private noTabsSubject = new BehaviorSubject<boolean>(true);
+  private noBlocksSubject = new BehaviorSubject<boolean>(true);
   workspaceChanged$ = this.workspaceChangedSubject.asObservable();
   noTabs$ = this.noTabsSubject.asObservable();
+  noBlocks$ = this.noBlocksSubject.asObservable();
   private API_URL = 'http://localhost:8000';
 
   constructor(private http: HttpClient) {
@@ -75,7 +77,10 @@ export class CodeService {
   setNoTabs(flag: boolean) {
     this.noTabsSubject.next(flag);
   }
-  
+
+  setNoBlocks(flag: boolean) {
+    this.noBlocksSubject.next(flag);
+  }
   
   exportProject(): void {
     this.http.get(`${this.API_URL}/export-project/`, { responseType: 'blob' }).subscribe(response => {

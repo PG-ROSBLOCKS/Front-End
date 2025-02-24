@@ -1,3 +1,4 @@
+import { AlertService } from './../shared/components/alert/alert.service';
 import { Component, AfterViewInit, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
@@ -44,7 +45,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   };
 
   autoScrollEnabled: boolean = true;
-  constructor(private http: HttpClient, private codeService: CodeService) { }
+  constructor(private http: HttpClient, private codeService: CodeService, private alertService: AlertService) { }
   // TEST 
   ngOnInit(): void {
 
@@ -304,8 +305,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       //TODO: Cuando se conecta un bloque a otro        
     });
 
-    //ELIMINAR SUSCRIPTOR
-    this.workspaces[tabId].addChangeListener((event) => {
+    //ELIMINAR SUSCRIPTOR y PUBLICADOR
+    this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE) {
         //Verificar si es instancia de BlockDelete
         if (event instanceof Blockly.Events.BlockDelete) {
@@ -314,12 +315,23 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           if (event.oldXml) {
             let xmlString = Blockly.Xml.domToText(event.oldXml);
             //Verificar si el type es 'ros2_minimal_subscriber'
-            if (xmlString.includes('ros2_minimal_subscriber')) {
-              console.log('Vamos Kevin tu puedes máquina, toro, bestia, animal');
+            if (xmlString.includes('ros2_minimal_subscriber') || xmlString.includes('ros2_minimal_publisher') || xmlString.includes('ros2_create_publisher') || xmlString.includes('ros2_subscriber_msg_data') || xmlString.includes('ros2_publish_message')) {
+              console.log('Bloque de publicador o suscriptor eliminado');
+              //alerta acabas de eliminar un bloque de publicador o suscriptor, por ende la sesión terminará
+              const resultado = await this.alertService.showAlert('Acabas de eliminar un bloque de publicador o suscriptor, por ende la sesión terminará');
+              console.log('El usuario presionó OK:', resultado);
+              this.stopTab(tabId);
+              //eliminamos 
+              this.consoles_sessions.delete(tabId.toString()); // Deletes session
+              this.consoles_services.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || ''); // Deletes file
             }
           }
         }
       }
+      //realizamos un conteo de bloques en el workspace
+      this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
+
+
     });
 
 
@@ -331,9 +343,9 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     this.text_code.set(tabId.toString(), '');
   }
 
-  addTab() {
+  async addTab() {
     if (this.tabs.length >= this.MAX_NUM_PESTANAS) {
-      alert('No se pueden agregar más de ' + this.MAX_NUM_PESTANAS + ' pestañas.');
+      const resultado = await this.alertService.showAlert('No se pueden agregar más de ' + this.MAX_NUM_PESTANAS + ' pestañas.');
       return;
     }
     const newTabId = Date.now(); // ID basado en timestamp
@@ -377,7 +389,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   }
 
   // Función para cambiar el nombre de la pestaña
-  changeTabName(tabId: number, newName: string) {
+  async changeTabName(tabId: number, newName: string) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (!tab) return;
 
@@ -387,13 +399,13 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     let sanitizedNewName = sanitizePythonFilename(newName).replace(/\.py$/, "");
 
     if (!sanitizedNewName) {
-      alert('El nombre de la pestaña no puede estar vacío.');
+      const resultado = await this.alertService.showAlert('El nombre de la pestaña no puede estar vacío.');
       tab.name = previousName; // Restaura el nombre anterior
       return;
     }
 
     if (this.tabs.some(t => t.name === sanitizedNewName && t.id !== tabId)) {
-      alert('Ya existe una pestaña con ese nombre.');
+      const resultado = await this.alertService.showAlert('Ya existe una pestaña con ese nombre.');
       tab.name = previousName; // Restaura el nombre anterior
       return;
     }
@@ -515,6 +527,13 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
   enviarCodigo(code_to_send: string, tabId: number) {
     console.log('Enviando código...');
+    // Verifica que en el workspace del tab actual existan bloques.
+    const workspace = this.workspaces[tabId];
+    if (!workspace) {
+      console.error('No existe la workspace para el tab', tabId);
+      return;
+    }
+    
     const fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Nodo');
     const codeService = this.consoles_services.get(tabId.toString());
     const code = create_publisher(code_to_send, fileName);
