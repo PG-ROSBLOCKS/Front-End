@@ -617,5 +617,3 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     }
   }
 }
-
-
