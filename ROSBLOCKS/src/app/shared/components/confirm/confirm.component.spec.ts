@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ErrorMsgComponent } from './error-msg.component';
+import { ConfirmComponent } from './confirm.component';
 
-describe('ErrorMsgComponent', () => {
-  let component: ErrorMsgComponent;
-  let fixture: ComponentFixture<ErrorMsgComponent>;
+describe('ConfirmComponent', () => {
+  let component: ConfirmComponent;
+  let fixture: ComponentFixture<ConfirmComponent>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [ErrorMsgComponent]
+      declarations: [ConfirmComponent]
     });
-    fixture = TestBed.createComponent(ErrorMsgComponent);
+    fixture = TestBed.createComponent(ConfirmComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
