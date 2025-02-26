@@ -74,19 +74,21 @@ export function definirBloquesROS2() {
             ["Odometry (nav_msgs)", "nav_msgs.msg.Odometry"],
             ["Pose (turtlesim)", "turtlesim.msg.Pose"]
           ]), "MSG_TYPE");
-      
-      // C-shaped input: allows nesting more blocks inside the callback
+  
+      // C-shaped input: permite anidar más bloques dentro del callback
       this.appendStatementInput("CALLBACK")
           .setCheck(null)
           .appendField("Callback");
   
-      this.setPreviousStatement(true, null);
+      // Se elimina la conexión previa para que no pueda unirse por un bloque superior
+      // this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(160);
       this.setTooltip("Crea un nodo suscriptor de ROS2 con un callback para procesar mensajes entrantes.");
       this.setHelpUrl("");
     }
   };
+  
   
   Blockly.Blocks['ros2_subscriber_msg_data'] = {
     init: function() {
@@ -100,6 +102,17 @@ export function definirBloquesROS2() {
     }
   };
   
+  Blockly.Blocks['ros2_print_msg_type'] = {
+    init: function() {
+      this.appendDummyInput()
+          .appendField("Imprimir tipo de dato recibido");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(230);
+      this.setTooltip("Imprime en la consola el tipo de dato del mensaje recibido.");
+      this.setHelpUrl("");
+    }
+  };
   
   
 
@@ -279,7 +292,7 @@ export function definirGeneradoresROS2() {
   pythonGenerator.forBlock['ros2_minimal_subscriber'] = function(block) {
     const topic = block.getFieldValue('TOPIC_NAME');
     const msgType = block.getFieldValue('MSG_TYPE');
-    // This is the code that the user places in the "Callback" section
+    // "Callback"
     const callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK');
     const msgClass = addImport(msgType);
   
@@ -288,13 +301,20 @@ export function definirGeneradoresROS2() {
     
     code += `${TAB_SPACE}def listener_callback(self, msg):\n`;
     
-    // If the user does not place any code in the callback, add 'pass' to avoid indentation error
+    // checks received type
+    code += `${TAB_SPACE}${TAB_SPACE}if not isinstance(msg, ${msgClass}):\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error: Tipo de mensaje incorrecto. Se esperaba ${msgClass}.")\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}return\n\n`;
+    
+    // try/except to catch excepcions
+    code += `${TAB_SPACE}${TAB_SPACE}try:\n`;
     if (!callbackCode.trim()) {
-      code += `${TAB_SPACE}${TAB_SPACE}pass\n`;
+      code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}pass\n`;
     } else {
-      // If there are nested blocks, insert them with proper indentation
-      code += pythonGenerator.prefixLines(callbackCode, `${TAB_SPACE}${TAB_SPACE}`);
+      code += pythonGenerator.prefixLines(callbackCode, `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}`);
     }
+    code += `${TAB_SPACE}${TAB_SPACE}except Exception as e:\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error en el callback: {}".format(e))\n`;
   
     return code;
   };
@@ -303,6 +323,12 @@ export function definirGeneradoresROS2() {
     const code = 'msg.data';
     return [code, Order.ATOMIC];
   };
+
+  pythonGenerator.forBlock['ros2_print_msg_type'] = function(block) {
+    const code = `print("Tipo de dato recibido:", type(msg))\n`;
+    return code;
+  };
+  
   
   
 

@@ -1,7 +1,8 @@
-import { Component, AfterViewInit, OnInit, OnDestroy,ElementRef, ViewChild } from '@angular/core';
+import { AlertService } from './../shared/components/alert/alert.service';
+import { Component, AfterViewInit, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
-import {pythonGenerator} from 'blockly/python';
+import { pythonGenerator } from 'blockly/python';
 import { definirBloquesROS2, definirGeneradoresROS2 } from '../blocks/ros2-blocks';
 import { CodeService } from '../services/codeService';
 import { Subscription } from 'rxjs';
@@ -30,7 +31,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       this.leftSection.nativeElement.style.width = `${newWidth}px`;
       this.rightSection.nativeElement.style.flex = '1'; // Mantiene la derecha flexible
     }
-    if(this.selectedTabId) {
+    if (this.selectedTabId) {
       this.selectTab(this.selectedTabId)
     }
   };
@@ -39,20 +40,20 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     this.isResizing = false;
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.stopResizing);
-    
-      
+
+
   };
 
   autoScrollEnabled: boolean = true;
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private codeService: CodeService, private alertService: AlertService) { }
   // TEST 
   ngOnInit(): void {
-    
+
   }
   ngOnDestroy(): void {
     for (const ws in this.websockets) {
       this.websockets.get(ws)?.unsubscribe();
-    }    
+    }
   }
   // END TEST AREA
   private previousNames = new Map<number, string>(); // Almacena nombres anteriores por tabId
@@ -65,7 +66,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   current_displayed_console_output: string = ''; // Current console output
   codigo_testeo_backend: string = ''; // Test output for backend
   workspaces: { [key: number]: Blockly.WorkspaceSvg } = {}; // Diccionary for workspaces by tab id
-  
+
   toolbox = {
     kind: 'categoryToolbox',
     contents: [
@@ -96,6 +97,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           { kind: 'block', type: 'ros2_minimal_subscriber' },
           { kind: 'block', type: 'ros2_subscriber_msg_data' },
           { kind: 'block', type: 'ros2_turtlesim_pose_field' },
+          { kind: 'block', type: 'ros2_print_msg_type' },
           { kind: 'block', type: 'ros2_publish_message' },
         ],
       },
@@ -160,7 +162,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           {
             kind: "block",
             type: "variables_get_dynamic"
-          }*/ 
+          }*/
         ],
       },
       {
@@ -261,8 +263,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         text_manipulation_blocks: { colourPrimary: '#E91E63' } // Texto
       }
     });
-    
-    
+
+
     this.workspaces[tabId] = Blockly.inject(blocklyDiv, {
       toolbox: this.toolbox,
       trashcan: true,
@@ -286,7 +288,54 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       renderer: 'zelos',
       theme: customTheme // Apply the updated theme
     });
-    
+
+
+    // Agrega el listener para detectar solo los eventos relevantes:
+    this.workspaces[tabId].addChangeListener((event) => {
+      if (event.type === Blockly.Events.BLOCK_CHANGE) {
+        this.codeService.setWorkspaceChanged(true);
+        console.log('Evento detectado: BLOCK_CHANGE. Flag actualizado.');
+      } else if (event.type === Blockly.Events.BLOCK_CREATE) {
+        this.codeService.setWorkspaceChanged(true);
+        console.log('Evento detectado: BLOCK_CREATE. Flag actualizado.');
+      } else if (event.type === Blockly.Events.BLOCK_DELETE) {
+        this.codeService.setWorkspaceChanged(true);
+        console.log('Evento detectado: BLOCK_DELETE. Flag actualizado.');
+      }
+      //TODO: Cuando se conecta un bloque a otro        
+    });
+
+    //ELIMINAR SUSCRIPTOR y PUBLICADOR
+    this.workspaces[tabId].addChangeListener(async (event) => {
+      if (event.type === Blockly.Events.BLOCK_DELETE) {
+        //Verificar si es instancia de BlockDelete
+        if (event instanceof Blockly.Events.BlockDelete) {
+          console.log('XML antiguo:', event.oldXml);
+          //Convertir el XML a cadena 
+          if (event.oldXml) {
+            let xmlString = Blockly.Xml.domToText(event.oldXml);
+            //Verificar si el type es 'ros2_minimal_subscriber'
+            if (xmlString.includes('ros2_minimal_subscriber') || xmlString.includes('ros2_minimal_publisher') || xmlString.includes('ros2_create_publisher') || xmlString.includes('ros2_subscriber_msg_data') || xmlString.includes('ros2_publish_message')) {
+              console.log('Bloque de publicador o suscriptor eliminado');
+              //alerta acabas de eliminar un bloque de publicador o suscriptor, por ende la sesión terminará
+              const resultado = await this.alertService.showAlert('Acabas de eliminar un bloque de publicador o suscriptor, por ende la sesión terminará');
+              console.log('El usuario presionó OK:', resultado);
+              this.stopTab(tabId);
+              //eliminamos 
+              this.consoles_sessions.delete(tabId.toString()); // Deletes session
+              this.consoles_services.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || ''); // Deletes file
+            }
+          }
+        }
+      }
+      //realizamos un conteo de bloques en el workspace
+      this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
+
+
+    });
+
+
+
     // Creates output console
     this.consoles_output.set(tabId.toString(), '');
 
@@ -294,35 +343,36 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     this.text_code.set(tabId.toString(), '');
   }
 
-  addTab() {
+  async addTab() {
     if (this.tabs.length >= this.MAX_NUM_PESTANAS) {
-        alert('No se pueden agregar más de ' + this.MAX_NUM_PESTANAS + ' pestañas.');
-        return;
+      const resultado = await this.alertService.showAlert('No se pueden agregar más de ' + this.MAX_NUM_PESTANAS + ' pestañas.');
+      return;
     }
-
     const newTabId = Date.now(); // ID basado en timestamp
-    
+
 
     this.tabs.push({ name: this.getUniqueTabName(), id: newTabId, isPlaying: false });
     this.consoles_services.set(newTabId.toString(), new CodeService(this.http));
 
     setTimeout(() => {
-        this.selectTab(newTabId);
+      this.selectTab(newTabId);
     }, 0);
-}
+    this.codeService.setNoTabs(false);
 
-getUniqueTabName(): string {
-  let baseName = "Nodo";
-  let newTabName = "";
-  let index = 1;
+  }
+
+  getUniqueTabName(): string {
+    let baseName = "Nodo";
+    let newTabName = "";
+    let index = 1;
 
     // Encuentra un nombre único en formato "Nodo_#"
     do {
-        newTabName = sanitizePythonFilename(`${baseName}_${index}`).replace(/\.py$/, "");
-        index++;
+      newTabName = sanitizePythonFilename(`${baseName}_${index}`).replace(/\.py$/, "");
+      index++;
     } while (this.tabs.some(tab => tab.name === newTabName))
-  return newTabName
-}
+    return newTabName
+  }
 
 
   selectTab(tabId: number) {
@@ -339,7 +389,7 @@ getUniqueTabName(): string {
   }
 
   // Función para cambiar el nombre de la pestaña
-  changeTabName(tabId: number, newName: string) {
+  async changeTabName(tabId: number, newName: string) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (!tab) return;
 
@@ -349,46 +399,47 @@ getUniqueTabName(): string {
     let sanitizedNewName = sanitizePythonFilename(newName).replace(/\.py$/, "");
 
     if (!sanitizedNewName) {
-        alert('El nombre de la pestaña no puede estar vacío.');
-        tab.name = previousName; // Restaura el nombre anterior
-        return;
+      const resultado = await this.alertService.showAlert('El nombre de la pestaña no puede estar vacío.');
+      tab.name = previousName; // Restaura el nombre anterior
+      return;
     }
 
     if (this.tabs.some(t => t.name === sanitizedNewName && t.id !== tabId)) {
-        alert('Ya existe una pestaña con ese nombre.');
-        tab.name = previousName; // Restaura el nombre anterior
-        return;
+      const resultado = await this.alertService.showAlert('Ya existe una pestaña con ese nombre.');
+      tab.name = previousName; // Restaura el nombre anterior
+      return;
     }
 
     tab.name = sanitizedNewName; // Asigna el nombre sanitizado
-}
+  }
 
 
   playTab(tabId: number, playAllTabs: boolean) {
     const tab = this.tabs.find(tab => tab.id === tabId);
-    
+
     if (!tab) return; // Si el tab no existe, no hace nada
     // TODO: tests with new blocks
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.text_code.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
-  }
+    }
 
     tab.isPlaying = playAllTabs ? true : !tab.isPlaying; // Alterna solo si no es "play all"
 
     tab.isPlaying
-        ? this.executeCode(this.text_code.get(tabId.toString()) || '', tabId)
-        : this.stopTab(tabId);
-}
+      ? (this.executeCode(this.text_code.get(tabId.toString()) || '', tabId),
+        this.codeService.setWorkspaceChanged(false))
+      : this.stopTab(tabId);
+  }
 
 
   stopTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (tab) {
-      tab.isPlaying = false; 
+      tab.isPlaying = false;
       const session_id = this.consoles_sessions.get(tabId.toString());
       console.log('Session ID stop:', session_id);
-      if(session_id) {
-        this.consoles_services.get(tabId.toString())?.killExecution(session_id); 
+      if (session_id) {
+        this.consoles_services.get(tabId.toString())?.killExecution(session_id);
       }
       this.consoles_services.get(tabId.toString())?.closeConnection();
       this.websockets.get(tabId.toString())?.unsubscribe();
@@ -407,16 +458,19 @@ getUniqueTabName(): string {
       this.websockets.delete(tabId.toString()); // Deletes websocket
       this.text_code.delete(tabId.toString()); // Deletes code
     }
-  
+
     //Deletes tab
     this.tabs = this.tabs.filter(tab => tab.id !== tabId);
-  
+
     // Change to another tab
     if (this.selectedTabId === tabId) {
       this.selectedTabId = this.tabs.length > 0 ? this.tabs[0].id : null;
       if (this.selectedTabId) {
         this.selectTab(this.selectedTabId);
       }
+    }
+    if (this.tabs.length === 0) {
+      this.codeService.setNoTabs(true);
     }
   }
 
@@ -442,7 +496,7 @@ getUniqueTabName(): string {
     }
   }
 
-  executeCode(code: string, tabId?: number) {    
+  executeCode(code: string, tabId?: number) {
     if (tabId !== null && tabId !== undefined) {
       this.enviarCodigo(code, tabId);
     }
@@ -450,17 +504,17 @@ getUniqueTabName(): string {
 
   playAllTabs() {
     for (const tab of this.tabs) {
-      const tabId = tab.id;  
+      const tabId = tab.id;
       if (!this.workspaces[tabId]) continue;
-      this.playTab(tabId, true)  
+      this.playTab(tabId, true)
     }
   }
 
   stopAllTabs() {
     for (const tab of this.tabs) {
-      const tabId = tab.id;  
+      const tabId = tab.id;
       if (!this.workspaces[tabId]) continue;
-      this.stopTab(tabId)  
+      this.stopTab(tabId)
     }
   }
 
@@ -473,56 +527,63 @@ getUniqueTabName(): string {
 
   enviarCodigo(code_to_send: string, tabId: number) {
     console.log('Enviando código...');
+    // Verifica que en el workspace del tab actual existan bloques.
+    const workspace = this.workspaces[tabId];
+    if (!workspace) {
+      console.error('No existe la workspace para el tab', tabId);
+      return;
+    }
+    
     const fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Nodo');
     const codeService = this.consoles_services.get(tabId.toString());
-  const code = create_publisher(code_to_send, fileName);
-  if(codeService === undefined) {
-    console.error('No se encontró el servicio para la pestaña', tabId);
-    return;
-  } else { 
-    if(this.websockets.get(tabId.toString())) {
-      this.websockets.get(tabId.toString())?.unsubscribe();
+    const code = create_publisher(code_to_send, fileName);
+    if (codeService === undefined) {
+      console.error('No se encontró el servicio para la pestaña', tabId);
+      return;
+    } else {
+      if (this.websockets.get(tabId.toString())) {
+        this.websockets.get(tabId.toString())?.unsubscribe();
+      }
+      this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code)
+        .pipe(
+          switchMap(() => codeService.executeCode(fileName)),
+          switchMap((response) => {
+            console.log('Respuesta del backend:', response);
+            const sessionId = response.session_id;
+            this.consoles_sessions.set(tabId.toString(), sessionId);
+            console.log('Session ID:', sessionId);
+            return codeService.connectToWebSocket(sessionId);
+          })
+        )
+        .subscribe({
+          next: (response) => {
+            console.log('Mensaje WebSocket:', response.output);
+            if (response.output != this.consoles_output.get(tabId.toString())) {
+              this.consoles_output.set(tabId.toString(), (this.consoles_output.get(tabId.toString()) ?? '') + response.output + '\n'); //Save output
+              if (this.selectedTabId === tabId) {
+                this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? ''; //Update displayed output
+              }
+              if (this.autoScrollEnabled) {
+                setTimeout(() => this.scrollToBottom(), 100);
+              }
+            }
+          },
+          error: (error) => console.error('Error:', error),
+          complete: () => console.log('Proceso completado')
+        }))
     }
-    this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code)
-      .pipe(
-        switchMap(() => codeService.executeCode(fileName)),
-        switchMap((response) => {
-          console.log('Respuesta del backend:', response);
-          const sessionId = response.session_id;
-          this.consoles_sessions.set(tabId.toString(), sessionId);
-          console.log('Session ID:', sessionId);
-          return codeService.connectToWebSocket(sessionId);
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          console.log('Mensaje WebSocket:', response.output);
-          if (response.output != this.consoles_output.get(tabId.toString())) {
-            this.consoles_output.set(tabId.toString(), (this.consoles_output.get(tabId.toString()) ?? '') + response.output + '\n'); //Save output
-            if(this.selectedTabId === tabId) {
-              this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? ''; //Update displayed output
-            }
-            if (this.autoScrollEnabled) {
-              setTimeout(() => this.scrollToBottom(), 100);
-            }
-          }        
-        },
-        error: (error) => console.error('Error:', error),
-        complete: () => console.log('Proceso completado')
-      }))
   }
-}
   scrollToBottom() {
     const consoleContainer = document.querySelector('.console-output-container');
     if (consoleContainer) {
-        consoleContainer.scrollTop = consoleContainer.scrollHeight;
+      consoleContainer.scrollTop = consoleContainer.scrollHeight;
     }
   }
 
   candidateTabToDelete: number | null = null;
-// Propiedad para almacenar el nombre del tab candidato a eliminar
+  // Propiedad para almacenar el nombre del tab candidato a eliminar
   candidateTabName: string = '';
-  
+
   confirmDeleteTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (tab) {
@@ -534,7 +595,7 @@ getUniqueTabName(): string {
   handleDeleteConfirmation(response: boolean) {
     const tabId = this.candidateTabToDelete;
     this.candidateTabToDelete = null;
-    if(response && tabId) {
+    if (response && tabId) {
       this.deleteTab(tabId)
     }
   }
