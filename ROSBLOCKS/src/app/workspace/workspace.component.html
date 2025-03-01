@@ -86,8 +86,16 @@
               <p id=console_title>Console</p>
               <br>
               <div class="console-output-container">
-                  <pre>{{ current_displayed_console_output }}</pre>
-                  <span id="cursor">|</span>
+                <pre class="console_lines_pre" *ngFor="let line of getConsoleLines()">
+                    <span class="console_lines" [ngStyle]="{
+                      'color': line.startsWith('[INFO]') ? 'blue' : 
+                               line.startsWith('[ERROR]') ? 'red' : 
+                               line.startsWith('[WARNING]') ? 'orange' : 
+                               line.startsWith('[DEBUG]') ? 'gray' : 'white'
+                    }">{{ line.trimStart() }}</span>
+                </pre>
+                <p></p>
+                <span id="cursor">|</span>
               </div>              
           </div>
           <button (click)="cleanConsole()" class="btn-clean">Limpiar consola</button>

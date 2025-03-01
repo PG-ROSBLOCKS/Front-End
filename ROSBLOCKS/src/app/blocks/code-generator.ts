@@ -1,7 +1,8 @@
 import { getImports } from './ros2-blocks';
 export function create_publisher(code: string, name: string): string {
     const nameWithoutExtension = name.replace(/\.py$/, '');
-    return `${getImports()}
+    return `# Archivo ${nameWithoutExtension}.py generado por ROSBlocks
+${getImports()}
 
 
 class ${nameWithoutExtension.toUpperCase()}(Node):

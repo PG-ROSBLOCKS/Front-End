@@ -7,8 +7,9 @@ import { definirBloquesROS2, definirGeneradoresROS2 } from '../blocks/ros2-block
 import { CodeService } from '../services/codeService';
 import { Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { sanitizePythonFilename } from '../utilities/sanitizer-tools';
+import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename } from '../utilities/sanitizer-tools';
 import { create_publisher } from '../blocks/code-generator';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-workspace',
@@ -82,10 +83,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         kind: 'category',
         name: 'Servicios',
         contents: [
-          { kind: 'block', type: 'controls_repeat_ext' },
-          { kind: 'block', type: 'controls_whileUntil' },
-          { kind: 'block', type: 'controls_for' },
-          { kind: 'block', type: 'controls_flow_statements' },
+          { kind: 'block', type: 'ros2_service_block' },
+          { kind: 'block', type: 'ros2_named_message' },
         ],
       },
       {
@@ -94,7 +93,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         contents: [
           { kind: 'block', type: 'ros2_create_publisher' },
           { kind: 'block', type: 'ros2_minimal_publisher' },
-          { kind: 'block', type: 'ros2_minimal_subscriber' },
+          { kind: 'block', type: 'ros2_create_subscriber' },
           { kind: 'block', type: 'ros2_subscriber_msg_data' },
           { kind: 'block', type: 'ros2_turtlesim_pose_field' },
           { kind: 'block', type: 'ros2_print_msg_type' },
@@ -105,11 +104,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         kind: 'category',
         name: 'Mensajes',
         contents: [
-          { kind: 'block', type: 'math_number' },
-          { kind: 'block', type: 'math_arithmetic' },
-          { kind: 'block', type: 'math_single' },
-          { kind: 'block', type: 'math_trig' },
-          { kind: 'block', type: 'math_random_int' },
+          { kind: 'block', type: 'ros2_message_block' },
+          { kind: 'block', type: 'ros2_named_message' }
         ],
       },
       {
@@ -155,14 +151,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         contents: [
           { kind: "block", type: "variables_get" }, // Obtener el valor de una variable
           { kind: "block", type: "variables_set" }, // Asignar un valor a una variable
-          /*{
-            kind: "block",
-            type: "variables_set_dynamic"
-          }, // Asignar variable con nombre dinámico
-          {
-            kind: "block",
-            type: "variables_get_dynamic"
-          }*/
         ],
       },
       {
@@ -314,8 +302,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           //Convertir el XML a cadena 
           if (event.oldXml) {
             let xmlString = Blockly.Xml.domToText(event.oldXml);
-            //Verificar si el type es 'ros2_minimal_subscriber'
-            if (xmlString.includes('ros2_minimal_subscriber') || xmlString.includes('ros2_minimal_publisher') || xmlString.includes('ros2_create_publisher') || xmlString.includes('ros2_subscriber_msg_data') || xmlString.includes('ros2_publish_message')) {
+            //Verificar si el type es 'ros2_create_subscriber'
+            if (xmlString.includes('ros2_create_subscriber') || xmlString.includes('ros2_minimal_publisher') || xmlString.includes('ros2_create_publisher') || xmlString.includes('ros2_subscriber_msg_data') || xmlString.includes('ros2_publish_message')) {
               console.log('Bloque de publicador o suscriptor eliminado');
               //alerta acabas de eliminar un bloque de publicador o suscriptor, por ende la sesión terminará
               const resultado = await this.alertService.showAlert('Acabas de eliminar un bloque de publicador o suscriptor, por ende la sesión terminará');
@@ -533,10 +521,25 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       console.error('No existe la workspace para el tab', tabId);
       return;
     }
-    
-    const fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Nodo');
+    var code = '';
+    var fileName = '';
+    var type = '';
+    // firstLine: refiere al tipo, remainingText: refiere al código
+    const { firstLine, remainingText } = extractFirstLine(code_to_send);
+    type = firstLine;
+    code = remainingText;
+    if (type == "pub_sub") {
+      fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Nodo');
+      code = create_publisher(code, fileName);
+    } else if (type == "srv") {
+      fileName = sanitizeSrvFilename(extractServiceFilename(code) || 'Servicio.srv');
+      code = replaceServiceFilename(code, fileName);
+    } else if (type == "msg") {
+      fileName = sanitizeMsgFilename(extractMessageFilename(code) || 'FailedMsg.msg');
+      code = replaceMessageFilename(code, fileName);
+    }
     const codeService = this.consoles_services.get(tabId.toString());
-    const code = create_publisher(code_to_send, fileName);
+    
     if (codeService === undefined) {
       console.error('No se encontró el servicio para la pestaña', tabId);
       return;
@@ -544,33 +547,71 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       if (this.websockets.get(tabId.toString())) {
         this.websockets.get(tabId.toString())?.unsubscribe();
       }
-      this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code)
-        .pipe(
-          switchMap(() => codeService.executeCode(fileName)),
-          switchMap((response) => {
-            console.log('Respuesta del backend:', response);
-            const sessionId = response.session_id;
-            this.consoles_sessions.set(tabId.toString(), sessionId);
-            console.log('Session ID:', sessionId);
-            return codeService.connectToWebSocket(sessionId);
-          })
-        )
-        .subscribe({
-          next: (response) => {
-            console.log('Mensaje WebSocket:', response.output);
-            if (response.output != this.consoles_output.get(tabId.toString())) {
-              this.consoles_output.set(tabId.toString(), (this.consoles_output.get(tabId.toString()) ?? '') + response.output + '\n'); //Save output
-              if (this.selectedTabId === tabId) {
-                this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? ''; //Update displayed output
-              }
-              if (this.autoScrollEnabled) {
-                setTimeout(() => this.scrollToBottom(), 100);
-              }
+      this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code, type)
+      .pipe(
+        switchMap(() => {
+          if (type === "srv") {
+            console.log("El archivo es un servicio (.srv), deteniendo ejecución después de uploadCode.");
+            const confirmationMessage = `Servicio ${fileName} creado correctamente.`;
+            this.consoles_output.set(tabId.toString(), 
+              (this.consoles_output.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
+
+            // Actualizar la consola en la pestaña activa
+            if (this.selectedTabId === tabId) {
+              this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
             }
-          },
-          error: (error) => console.error('Error:', error),
-          complete: () => console.log('Proceso completado')
-        }))
+
+            // Asegurar auto-scroll si está habilitado
+            if (this.autoScrollEnabled) {
+              setTimeout(() => this.scrollToBottom(), 100);
+            }
+            return of(null); // Se detiene la ejecución del pipe aquí
+          } else if (type === "msg") {
+            console.log("El archivo es un servicio (.msg), deteniendo ejecución después de uploadCode.");
+            const confirmationMessage = `Mensaje ${fileName} creado correctamente.`;
+            this.consoles_output.set(tabId.toString(), 
+              (this.consoles_output.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
+
+            // Actualizar la consola en la pestaña activa
+            if (this.selectedTabId === tabId) {
+              this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
+            }
+
+            // Asegurar auto-scroll si está habilitado
+            if (this.autoScrollEnabled) {
+              setTimeout(() => this.scrollToBottom(), 100);
+            }
+            return of(null); // Se detiene la ejecución del pipe aquí
+          }
+          return codeService.executeCode(fileName); // Solo ejecuta si es pub_sub
+        }),
+        switchMap((response) => {
+          if (!response) return of(null); // Si response es null (por ser .srv), no sigue ejecutando
+          
+          console.log('Respuesta del backend:', response);
+          const sessionId = response.session_id;
+          this.consoles_sessions.set(tabId.toString(), sessionId);
+          console.log('Session ID:', sessionId);
+          return codeService.connectToWebSocket(sessionId);
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          if (!response) return; // Si es null, no hace nada más
+          console.log('Mensaje WebSocket:', response.output);
+          if (response.output != this.consoles_output.get(tabId.toString())) {
+            this.consoles_output.set(tabId.toString(), (this.consoles_output.get(tabId.toString()) ?? '') + response.output + '\n');
+            if (this.selectedTabId === tabId) {
+              this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
+            }
+            if (this.autoScrollEnabled) {
+              setTimeout(() => this.scrollToBottom(), 100);
+            }
+          }
+        },
+        error: (error) => console.error('Error:', error),
+        complete: () => console.log('Proceso completado')
+      }));
     }
   }
   scrollToBottom() {
@@ -616,6 +657,14 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       reader.readAsDataURL(file);
     }
   }
+  getConsoleLines(): string[] {
+    return this.current_displayed_console_output
+      ? this.current_displayed_console_output
+          .trimEnd() // 🔹 Elimina espacios y saltos de línea extra al final
+          .split('\n')
+      : [];
+  }
+  
 }
 
 

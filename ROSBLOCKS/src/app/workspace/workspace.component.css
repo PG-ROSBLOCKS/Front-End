@@ -408,6 +408,8 @@ input::selection {
   padding-top: 0;
   padding-bottom: 0;
   padding-left: 1px;
+  display: inline-block;
+  vertical-align: baseline;
 }
 
 @keyframes blink {
@@ -415,10 +417,26 @@ input::selection {
     opacity: 0;
   }
 }
+.console_lines {
+  margin: 0;
+  padding: 0;
+  display: block;
+  line-height: 1;
+  white-space: pre-wrap;
+}
+.console_lines_pre {
+  margin: 0;
+  padding: 0;
+  display: inline-block;
+  line-height: 0;
+  white-space: pre-wrap;
+}
 .console-output-container {
   height: calc(100% - 75px);
   overflow-y: auto; 
   padding-right: 10px;
+  text-align: left;
+  align-items: flex-start;
 }
 
 .console_text {

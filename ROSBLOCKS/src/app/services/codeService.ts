@@ -20,8 +20,8 @@ export class CodeService {
     this.wsSubject = undefined;
   }
 
-  uploadCode(fileName: string, code: string): Observable<any> {
-    const payload = { file_name: fileName, code: code };
+  uploadCode(fileName: string, code: string, type: string): Observable<any> {
+    const payload = { file_name: fileName, code: code, type: type };
     return this.http.post(`${this.API_URL}/upload/`, payload, {
       headers: { 'Content-Type': 'application/json' }, 
     });
