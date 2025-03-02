@@ -79,8 +79,11 @@ app-header {
 .turtlesim {
   margin-top: 20px;
   width: 100%;
-  height: 20pc;
-  background-color: #001117;
+  height: 300px;
+  display: flex; 
+  justify-content: baseline; 
+  align-items: center; 
+  padding: 0 20px;
 }
 
 .console {
@@ -499,4 +502,10 @@ input::selection {
 
 .added-map:hover {
   background-color: #07a166 !important;
+}
+
+iframe {
+  width: 100%; 
+  height: 100%; 
+  border: none;
 }
