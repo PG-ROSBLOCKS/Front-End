@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
 import { definirBloquesROS2, definirGeneradoresROS2 } from '../blocks/ros2-blocks';
-import { CodeService } from '../services/codeService';
+import { CodeService } from '../services/code.service';
 import { Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename } from '../utilities/sanitizer-tools';
@@ -16,7 +16,7 @@ import { of } from 'rxjs';
   templateUrl: './workspace.component.html',
   styleUrls: ['./workspace.component.css']
 })
-export class WorkspaceComponent implements OnInit, OnDestroy, AfterViewInit {
+export class WorkspaceComponent implements OnInit, OnDestroy {
   @ViewChild('resizer') resizer!: ElementRef;
   @ViewChild('leftSection') leftSection!: ElementRef;
   @ViewChild('rightSection') rightSection!: ElementRef;
@@ -52,56 +52,6 @@ export class WorkspaceComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     }
     // END TEST AREA
-    ngAfterViewInit(): void {
-      const resizer = this.resizer.nativeElement;
-      const leftSection = this.leftSection.nativeElement;
-      const rightSection = this.rightSection.nativeElement;
-  
-      resizer.addEventListener('mousedown', (event: MouseEvent) => {
-        this.isResizing = true;
-        document.addEventListener('mousemove', this.handleMouseMove);
-        document.addEventListener('mouseup', this.stopResizing);
-      });
-  
-      if (this.tabs.length > 0) {
-        this.selectTab(this.tabs[0].id);
-      }
-      const consoleContainer = document.querySelector('.console-output-container');
-  
-      if (consoleContainer) {
-        consoleContainer.addEventListener('scroll', () => {
-          // Verifica si el usuario ha desplazado la consola manualmente
-          const isAtBottom =
-            consoleContainer.scrollHeight - consoleContainer.scrollTop <= consoleContainer.clientHeight + 5;
-  
-          if (isAtBottom) {
-            this.autoScrollEnabled = true; // Reactiva el scroll automático si el usuario está en la parte inferior
-          } else {
-            this.autoScrollEnabled = false; // Desactiva el scroll automático si el usuario está desplazándose manualmente
-          }
-        });
-      }
-    }
-
-  handleMouseMove = (event: MouseEvent) => {
-    if (!this.isResizing) return;
-    let newWidth = event.clientX;
-    let containerWidth = document.getElementById('workspace-container')!.offsetWidth;
-
-    if (newWidth > 100 && newWidth < containerWidth * 0.8) {
-      this.leftSection.nativeElement.style.width = `${newWidth}px`;
-      this.rightSection.nativeElement.style.flex = '1'; // Mantiene la derecha flexible
-    }
-    if (this.selectedTabId) {
-      this.selectTab(this.selectedTabId)
-    }
-  };
-
-  stopResizing = () => {
-    this.isResizing = false;
-    document.removeEventListener('mousemove', this.handleMouseMove);
-    document.removeEventListener('mouseup', this.stopResizing);
-  };
 
   toolbox = {
     kind: 'categoryToolbox',

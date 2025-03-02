@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { CodeService } from 'src/app/services/codeService';
+import { CodeService } from 'src/app/services/code.service';
 import { AlertService } from '../alert/alert.service';
 
 @Component({
