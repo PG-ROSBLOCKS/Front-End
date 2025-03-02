@@ -16,12 +16,72 @@ import { of } from 'rxjs';
   templateUrl: './workspace.component.html',
   styleUrls: ['./workspace.component.css']
 })
-export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
+export class WorkspaceComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('resizer') resizer!: ElementRef;
   @ViewChild('leftSection') leftSection!: ElementRef;
   @ViewChild('rightSection') rightSection!: ElementRef;
 
   isResizing = false;
+  private previousNames = new Map<number, string>(); // Almacena nombres anteriores por tabId
+  MAX_NUM_PESTANAS = 8; // Max number of tabs
+  consoles_output: Map<string, string> = new Map(); // Console outputs for each tab
+  consoles_sessions: Map<string, string> = new Map(); // Sessions for each tab
+  consoles_services: Map<string, CodeService> = new Map(); // Services for each tab
+  websockets: Map<string, Subscription> = new Map(); // Websockets subscriptions for each tab
+  text_code: Map<string, string> = new Map(); // Tab code
+  current_displayed_console_output: string = ''; // Current console output
+  codigo_testeo_backend: string = ''; // Test output for backend
+  workspaces: { [key: number]: Blockly.WorkspaceSvg } = {}; // Diccionary for workspaces by tab id
+  autoScrollEnabled: boolean = true;
+  tabs: { name: string; id: number; isPlaying: boolean }[] = [];
+  selectedTabId: number | null = null;
+
+  constructor(
+    private http: HttpClient, 
+    private codeService: CodeService, 
+    private alertService: AlertService
+  ) { }
+
+    // TEST 
+    ngOnInit(): void {
+
+    }
+    ngOnDestroy(): void {
+      for (const ws in this.websockets) {
+        this.websockets.get(ws)?.unsubscribe();
+      }
+    }
+    // END TEST AREA
+    ngAfterViewInit(): void {
+      const resizer = this.resizer.nativeElement;
+      const leftSection = this.leftSection.nativeElement;
+      const rightSection = this.rightSection.nativeElement;
+  
+      resizer.addEventListener('mousedown', (event: MouseEvent) => {
+        this.isResizing = true;
+        document.addEventListener('mousemove', this.handleMouseMove);
+        document.addEventListener('mouseup', this.stopResizing);
+      });
+  
+      if (this.tabs.length > 0) {
+        this.selectTab(this.tabs[0].id);
+      }
+      const consoleContainer = document.querySelector('.console-output-container');
+  
+      if (consoleContainer) {
+        consoleContainer.addEventListener('scroll', () => {
+          // Verifica si el usuario ha desplazado la consola manualmente
+          const isAtBottom =
+            consoleContainer.scrollHeight - consoleContainer.scrollTop <= consoleContainer.clientHeight + 5;
+  
+          if (isAtBottom) {
+            this.autoScrollEnabled = true; // Reactiva el scroll automático si el usuario está en la parte inferior
+          } else {
+            this.autoScrollEnabled = false; // Desactiva el scroll automático si el usuario está desplazándose manualmente
+          }
+        });
+      }
+    }
 
   handleMouseMove = (event: MouseEvent) => {
     if (!this.isResizing) return;
@@ -41,32 +101,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     this.isResizing = false;
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.stopResizing);
-
-
   };
-
-  autoScrollEnabled: boolean = true;
-  constructor(private http: HttpClient, private codeService: CodeService, private alertService: AlertService) { }
-  // TEST 
-  ngOnInit(): void {
-
-  }
-  ngOnDestroy(): void {
-    for (const ws in this.websockets) {
-      this.websockets.get(ws)?.unsubscribe();
-    }
-  }
-  // END TEST AREA
-  private previousNames = new Map<number, string>(); // Almacena nombres anteriores por tabId
-  MAX_NUM_PESTANAS = 8; // Max number of tabs
-  consoles_output: Map<string, string> = new Map(); // Console outputs for each tab
-  consoles_sessions: Map<string, string> = new Map(); // Sessions for each tab
-  consoles_services: Map<string, CodeService> = new Map(); // Services for each tab
-  websockets: Map<string, Subscription> = new Map(); // Websockets subscriptions for each tab
-  text_code: Map<string, string> = new Map(); // Tab code
-  current_displayed_console_output: string = ''; // Current console output
-  codigo_testeo_backend: string = ''; // Test output for backend
-  workspaces: { [key: number]: Blockly.WorkspaceSvg } = {}; // Diccionary for workspaces by tab id
 
   toolbox = {
     kind: 'categoryToolbox',
@@ -184,40 +219,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     ],
   };
 
-  tabs: { name: string; id: number; isPlaying: boolean }[] = [];
-  selectedTabId: number | null = null;
-
-  ngAfterViewInit(): void {
-    const resizer = this.resizer.nativeElement;
-    const leftSection = this.leftSection.nativeElement;
-    const rightSection = this.rightSection.nativeElement;
-
-    resizer.addEventListener('mousedown', (event: MouseEvent) => {
-      this.isResizing = true;
-      document.addEventListener('mousemove', this.handleMouseMove);
-      document.addEventListener('mouseup', this.stopResizing);
-    });
-
-    if (this.tabs.length > 0) {
-      this.selectTab(this.tabs[0].id);
-    }
-    const consoleContainer = document.querySelector('.console-output-container');
-
-    if (consoleContainer) {
-      consoleContainer.addEventListener('scroll', () => {
-        // Verifica si el usuario ha desplazado la consola manualmente
-        const isAtBottom =
-          consoleContainer.scrollHeight - consoleContainer.scrollTop <= consoleContainer.clientHeight + 5;
-
-        if (isAtBottom) {
-          this.autoScrollEnabled = true; // Reactiva el scroll automático si el usuario está en la parte inferior
-        } else {
-          this.autoScrollEnabled = false; // Desactiva el scroll automático si el usuario está desplazándose manualmente
-        }
-      });
-    }
-  }
-
   initializeBlockly(tabId: number): void {
     const blocklyDivId = `blocklyDiv-${tabId}`;
     const blocklyDiv = document.getElementById(blocklyDivId);
@@ -318,11 +319,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       }
       //realizamos un conteo de bloques en el workspace
       this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
-
-
     });
-
-
 
     // Creates output console
     this.consoles_output.set(tabId.toString(), '');
@@ -337,23 +334,18 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       return;
     }
     const newTabId = Date.now(); // ID basado en timestamp
-
-
     this.tabs.push({ name: this.getUniqueTabName(), id: newTabId, isPlaying: false });
     this.consoles_services.set(newTabId.toString(), new CodeService(this.http));
-
     setTimeout(() => {
       this.selectTab(newTabId);
     }, 0);
     this.codeService.setNoTabs(false);
-
   }
 
   getUniqueTabName(): string {
     let baseName = "Nodo";
     let newTabName = "";
     let index = 1;
-
     // Encuentra un nombre único en formato "Nodo_#"
     do {
       newTabName = sanitizePythonFilename(`${baseName}_${index}`).replace(/\.py$/, "");
@@ -361,7 +353,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     } while (this.tabs.some(tab => tab.name === newTabName))
     return newTabName
   }
-
 
   selectTab(tabId: number) {
     this.selectedTabId = tabId;
@@ -380,39 +371,31 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   async changeTabName(tabId: number, newName: string) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (!tab) return;
-
     const previousName = this.previousNames.get(tabId) || tab.name; // Recupera el nombre anterior
-
     // Sanitiza el nombre y remueve la extensión `.py`
     let sanitizedNewName = sanitizePythonFilename(newName).replace(/\.py$/, "");
-
     if (!sanitizedNewName) {
       const resultado = await this.alertService.showAlert('El nombre de la pestaña no puede estar vacío.');
       tab.name = previousName; // Restaura el nombre anterior
       return;
     }
-
     if (this.tabs.some(t => t.name === sanitizedNewName && t.id !== tabId)) {
       const resultado = await this.alertService.showAlert('Ya existe una pestaña con ese nombre.');
       tab.name = previousName; // Restaura el nombre anterior
       return;
     }
-
     tab.name = sanitizedNewName; // Asigna el nombre sanitizado
   }
 
 
   playTab(tabId: number, playAllTabs: boolean) {
     const tab = this.tabs.find(tab => tab.id === tabId);
-
     if (!tab) return; // Si el tab no existe, no hace nada
     // TODO: tests with new blocks
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.text_code.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
     }
-
     tab.isPlaying = playAllTabs ? true : !tab.isPlaying; // Alterna solo si no es "play all"
-
     tab.isPlaying
       ? (this.executeCode(this.text_code.get(tabId.toString()) || '', tabId),
         this.codeService.setWorkspaceChanged(false))
@@ -555,12 +538,10 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
             const confirmationMessage = `Servicio ${fileName} creado correctamente.`;
             this.consoles_output.set(tabId.toString(), 
               (this.consoles_output.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
-
             // Actualizar la consola en la pestaña activa
             if (this.selectedTabId === tabId) {
               this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
             }
-
             // Asegurar auto-scroll si está habilitado
             if (this.autoScrollEnabled) {
               setTimeout(() => this.scrollToBottom(), 100);
@@ -571,12 +552,10 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
             const confirmationMessage = `Mensaje ${fileName} creado correctamente.`;
             this.consoles_output.set(tabId.toString(), 
               (this.consoles_output.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
-
             // Actualizar la consola en la pestaña activa
             if (this.selectedTabId === tabId) {
               this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
             }
-
             // Asegurar auto-scroll si está habilitado
             if (this.autoScrollEnabled) {
               setTimeout(() => this.scrollToBottom(), 100);
@@ -648,12 +627,10 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     if (target.files && target.files[0]) {
       const file = target.files[0];
       const reader = new FileReader();
-
       reader.onload = () => {
         // Al leer la imagen se asigna el resultado a la variable imageSrc
         this.imageSrc = reader.result;
       };
-
       reader.readAsDataURL(file);
     }
   }

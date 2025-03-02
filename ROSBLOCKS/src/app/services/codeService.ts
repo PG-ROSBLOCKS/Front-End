@@ -28,11 +28,11 @@ export class CodeService {
   }
 
   executeCode(fileName: string): Observable<any> {
-    return this.http.get(`${this.API_URL}/execute/${fileName}`);
+    return this.http.get(`${this.API_URL}/execution/execute/${fileName}`);
   }
   
   connectToWebSocket(sessionId: string): WebSocketSubject<any> {
-    this.wsSubject = webSocket(`${this.API_URL.replace('http', 'ws')}/ws/${sessionId}`);
+    this.wsSubject = webSocket(`${this.API_URL.replace('http', 'ws')}/execution/ws/${sessionId}`);
     return this.wsSubject;
   }
 
@@ -43,7 +43,7 @@ export class CodeService {
   }
 
   killExecution(session_id: string): void {
-    this.http.get(`${this.API_URL}/kill/${session_id}`, { responseType: 'json' })
+    this.http.get(`${this.API_URL}/execution/kill/${session_id}`, { responseType: 'json' })
       .subscribe({
         next: (response) => {
           console.log('Sesión eliminada con éxito:', response);
@@ -60,7 +60,7 @@ export class CodeService {
   }
 
   deleteFile(fileName: string): void {
-    this.http.delete(`${this.API_URL}/cleanup/${fileName}`, { responseType: 'json' })
+    this.http.delete(`${this.API_URL}/execution/cleanup/${fileName}`, { responseType: 'json' })
       .subscribe({
         next: (response) => {
           console.log(`Archivo ${fileName} eliminado con éxito:`, response);
