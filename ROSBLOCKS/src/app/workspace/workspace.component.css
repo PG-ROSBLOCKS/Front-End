@@ -80,7 +80,11 @@ app-header {
   margin-top: 20px;
   width: 100%;
   height: 20pc;
-  background-color: #001117;
+  height: 300px;
+  display: flex; 
+  justify-content: baseline; 
+  align-items: center; 
+  padding: 0 20px;
 }
 
 .console {
@@ -483,3 +487,20 @@ input::selection {
 .added-map:hover {
   background-color: #07a166 !important;
 }
+
+iframe {
+  width: 315px; 
+  height: 100%; 
+  border: none;
+  margin: 0 auto;
+}
+
+/* Para cubrir la barra de noVNC */
+.barTurtle {
+  width: 100%;
+  height: 28px;
+  background: #253942;
+  position: fixed;
+  top: 122px;
+}
+
