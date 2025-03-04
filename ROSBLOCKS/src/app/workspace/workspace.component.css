@@ -4,6 +4,10 @@
   box-sizing: border-box;
 }
 
+img {
+  pointer-events: none;
+}
+
 .container {
   display: flex;
   flex-direction: column;

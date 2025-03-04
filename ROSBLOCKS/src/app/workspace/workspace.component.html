@@ -38,7 +38,7 @@
                       placeholder="Búsqueda"
                       (input)="onSearch($event)"
                   />
-                  <img id="createImg" src="../../assets/CreaNuevoNodo.png">
+                  <img id="createImg" class="no-select" src="../../assets/CreaNuevoNodo.png">
                   <div *ngFor="let tab of tabs" 
                       [hidden]="tab.id !== selectedTabId" 
                       [attr.id]="'blocklyDiv-' + tab.id" 
