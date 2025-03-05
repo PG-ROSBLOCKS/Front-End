@@ -1,28 +1,23 @@
-.console-output-container {
-  height: calc(100% - 75px);
-  overflow-y: auto;
-  overflow-x: auto; /* Permite el scroll horizontal */
-  padding-right: 10px;
-  text-align: left;
-  align-items: flex-start;
-}
-
-
-/* Estilos para las líneas de la consola */
-.console_lines_pre {
-  margin: 0;
-  padding: 0;
-  display: block; /* Cambiado de inline-block a block */
-  white-space: pre-wrap;
-}
-
-
 .console_lines {
   margin: 0;
   padding: 0;
   display: block;
   line-height: 1;
   white-space: pre-wrap;
+}
+.console_lines_pre {
+  margin: 0;
+  padding: 0;
+  display: block;
+  line-height: 0;
+  white-space: pre-wrap;
+}
+.console-output-container {
+  height: calc(100% - 75px);
+  overflow-y: auto; 
+  padding-right: 10px;
+  text-align: left;
+  align-items: flex-start;
 }
 
 /* Estilo para el cursor parpadeante */
