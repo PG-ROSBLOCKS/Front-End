@@ -172,6 +172,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
         contents: [
           { kind: "block", type: "ros2_publish_twist" },
           { kind: "block", type: "ros2_rotate_turtle" },
+          { kind: "block", type: "ros2_turtle_set_pose" },
         ]
       }
     ],

@@ -282,40 +282,76 @@ export function definirBloquesROS2() {
     }
   };
   
+  Blockly.Blocks['ros2_turtle_set_pose'] = {
+    init: function() {
+      this.setInputsInline(true);
+      this.appendDummyInput()
+          .appendField("Posicionar tortuga");
+      this.appendValueInput("X")
+          .setCheck("Number")
+          .appendField("X:");
+      this.appendValueInput("Y")
+          .setCheck("Number")
+          .appendField("Y:");
+      this.appendValueInput("THETA")
+          .setCheck("Number")
+          .appendField("Theta:");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(160);
+      this.setTooltip("Posiciona la tortuga en una posición y orientación específicas.");
+      this.setHelpUrl("");
+    }
+  };
 }
 type ImportsDictionary = {
   [key: string]: Set<string>;
 };
 
-// Private object with strict typing
-const importsDict: ImportsDictionary = {
+const importsDictMsgs: ImportsDictionary = {
   'std_msgs': new Set(),
   'geometry_msgs': new Set(),
   'nav_msgs': new Set(),
   'turtlesim': new Set()
 };
 
-function addImport(msgType: string): string {
-  const parts = msgType.split('.msg.');
-  if (parts.length === 2) {
-      const packageName = parts[0];
-      const msgName = parts[1];
+const importsDictSrvs: ImportsDictionary = {
+  'turtlesim': new Set()
+};
 
-      if (importsDict[packageName]) {
-          importsDict[packageName].add(msgName);
-      }
-      return msgName;
+function addImport(msgType: string): string {
+  const msgParts = msgType.split('.msg.');
+  const srvParts = msgType.split('.srv.');
+
+  if (msgParts.length === 2) {
+    const [packageName, msgName] = msgParts;
+    if (importsDictMsgs[packageName]) {
+      importsDictMsgs[packageName].add(msgName);
+    }
+    return msgName;
+  } else if (srvParts.length === 2) {
+    const [packageName, srvName] = srvParts;
+    if (importsDictSrvs[packageName]) {
+      importsDictSrvs[packageName].add(srvName);
+    }
+    return srvName;
   }
+
   return msgType;
 }
-
 
 function getImports(): string {
   let importCode = `import rclpy\nfrom rclpy.node import Node\n`;
 
-  for (const [pkg, msgs] of Object.entries(importsDict)) {
+  for (const [pkg, msgs] of Object.entries(importsDictMsgs)) {
       if (msgs.size > 0) {
           importCode += `from ${pkg}.msg import ${Array.from(msgs).join(', ')}\n`;
+      }
+  }
+
+  for (const [pkg, srvs] of Object.entries(importsDictSrvs)) {
+      if (srvs.size > 0) {
+          importCode += `from ${pkg}.srv import ${Array.from(srvs).join(', ')}\n`;
       }
   }
 
@@ -323,41 +359,20 @@ function getImports(): string {
 }
 
 function clearImports(): void {
-  for (const key in importsDict) {
-      importsDict[key].clear();
+  for (const key in importsDictMsgs) {
+      importsDictMsgs[key].clear();
+  }
+  for (const key in importsDictSrvs) {
+      importsDictSrvs[key].clear();
   }
 }
 
-// We export only the necessary functions with their types
 export { addImport, getImports, clearImports };
 
 
 
-export function definirGeneradoresROS2() {
-  pythonGenerator.forBlock['ros2_teleport_absolute'] = function(block) {
-    const x = pythonGenerator.valueToCode(block, 'X', Order.ATOMIC) || '0';
-    const y = pythonGenerator.valueToCode(block, 'Y', Order.ATOMIC) || '0';
-    const theta = pythonGenerator.valueToCode(block, 'Theta', Order.ATOMIC) || '0';
-  
-    let code = `${TAB_SPACE}${TAB_SPACE}# Cliente para el servicio teleport_absolute\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.teleport_client = self.create_client(TeleportAbsolute, 'turtle1/teleport_absolute')\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}while not self.teleport_client.wait_for_service(timeout_sec=1.0):\n`;
-    // Se agrega una indentación extra (TAB_SPACE) a la línea interna del while
-    code += pythonGenerator.prefixLines(
-      `self.get_logger().info('Waiting for teleport_absolute service...')\n`, 
-      TAB_SPACE + TAB_SPACE
-    );
-    code += `${TAB_SPACE}${TAB_SPACE}req = TeleportAbsolute.Request()\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}req.x = ${x}\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}req.y = ${y}\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}req.theta = ${theta}\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.teleport_client.call_async(req)\n`;
-    return code;
-  };
-  
-  
-  
 
+export function definirGeneradoresROS2() {
     // Code generator for the block "Crear publicador"
     pythonGenerator.forBlock['ros2_create_publisher'] = function(block) {
       const topicName: string = block.getFieldValue('TOPIC_NAME');
@@ -430,9 +445,6 @@ export function definirGeneradoresROS2() {
     const code = `print("Tipo de dato recibido:", type(msg))\n`;
     return code;
   };
-  
-  
-  
 
   // Code generator for the block "Publicar mensaje"
   pythonGenerator.forBlock['ros2_publish_message'] = function(block) {
@@ -447,7 +459,6 @@ export function definirGeneradoresROS2() {
     code += `${TAB_SPACE}${TAB_SPACE}self.publisher_.publish(msg)\n`;
     return code;
   };
-
 
   // Code generator for the block "Crear Timer"
   pythonGenerator.forBlock['ros2_timer'] = function(block) {
@@ -533,5 +544,23 @@ export function definirGeneradoresROS2() {
     code += `self.get_logger().info('Rotando tortuga ${degrees} grados.')\n`;
   
     return code;
+  };
+
+  pythonGenerator.forBlock['ros2_turtle_set_pose'] = function(block) {
+    const x = pythonGenerator.valueToCode(block, 'X', Order.ATOMIC) || '0';
+    const y = pythonGenerator.valueToCode(block, 'Y', Order.ATOMIC) || '0';
+    const theta = pythonGenerator.valueToCode(block, 'THETA', Order.ATOMIC) || '0';
+  
+    const srvClass = addImport('turtlesim.srv.TeleportAbsolute');
+  
+    let code = `self.teleport_client = self.create_client(${srvClass}, 'turtle1/teleport_absolute')\n`;
+    code += `req = ${srvClass}.Request()\n`;
+    code += `req.x = float(${x})\n`;
+    code += `req.y = float(${y})\n`;
+    code += `req.theta = float(${theta})\n`;
+    code += `self.teleport_client.call_async(req)\n`;
+    code += `self.get_logger().info('Posicionando tortuga en (${x}, ${y}) con orientación ${theta}.')\n`;
+  
+    return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
   };
 }
