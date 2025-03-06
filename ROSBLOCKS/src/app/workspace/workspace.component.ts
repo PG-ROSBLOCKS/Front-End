@@ -165,6 +165,14 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
           { kind: "block", type: "text_trim" }, // Quitar espacios en blanco
           { kind: "block", type: "text_print" }, // Imprimir texto
         ]
+      },
+      {
+        kind: 'category',
+        name: 'Turtlesim',
+        contents: [
+          { kind: "block", type: "ros2_publish_twist" },
+          { kind: "block", type: "ros2_rotate_turtle" },
+        ]
       }
     ],
   };

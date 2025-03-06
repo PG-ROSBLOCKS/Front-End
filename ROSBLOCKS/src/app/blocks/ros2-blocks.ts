@@ -244,6 +244,43 @@ export function definirBloquesROS2() {
       this.setHelpUrl("");
     }
   };
+
+  Blockly.Blocks['ros2_publish_twist'] = {
+    init: function() {
+      // Esta línea indica que todos los inputs se van a mostrar en la misma línea
+      this.setInputsInline(true);
+      
+      this.appendDummyInput()
+          .appendField("Publicar Twist");
+      this.appendValueInput("LINEAR")
+          .setCheck("Number")
+          .appendField("Velocidad Lineal:");
+      this.appendValueInput("ANGULAR")
+          .setCheck("Number")
+          .appendField("Velocidad Angular:");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(230);
+      this.setTooltip("Publica un mensaje Twist con velocidades lineal y angular definidas por el usuario y registra el mensaje en el log");
+      this.setHelpUrl("");
+    }
+  };
+
+  Blockly.Blocks['ros2_rotate_turtle'] = {
+    init: function() {
+      this.setInputsInline(true);
+      this.appendDummyInput()
+          .appendField("Rotar tortuga");
+      this.appendValueInput("GRADOS")
+          .setCheck("Number")
+          .appendField("Grados:");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(160);
+      this.setTooltip("Rota la tortuga un número de grados especificado.");
+      this.setHelpUrl("");
+    }
+  };
   
 }
 type ImportsDictionary = {
@@ -297,6 +334,30 @@ export { addImport, getImports, clearImports };
 
 
 export function definirGeneradoresROS2() {
+  pythonGenerator.forBlock['ros2_teleport_absolute'] = function(block) {
+    const x = pythonGenerator.valueToCode(block, 'X', Order.ATOMIC) || '0';
+    const y = pythonGenerator.valueToCode(block, 'Y', Order.ATOMIC) || '0';
+    const theta = pythonGenerator.valueToCode(block, 'Theta', Order.ATOMIC) || '0';
+  
+    let code = `${TAB_SPACE}${TAB_SPACE}# Cliente para el servicio teleport_absolute\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.teleport_client = self.create_client(TeleportAbsolute, 'turtle1/teleport_absolute')\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}while not self.teleport_client.wait_for_service(timeout_sec=1.0):\n`;
+    // Se agrega una indentación extra (TAB_SPACE) a la línea interna del while
+    code += pythonGenerator.prefixLines(
+      `self.get_logger().info('Waiting for teleport_absolute service...')\n`, 
+      TAB_SPACE + TAB_SPACE
+    );
+    code += `${TAB_SPACE}${TAB_SPACE}req = TeleportAbsolute.Request()\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}req.x = ${x}\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}req.y = ${y}\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}req.theta = ${theta}\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.teleport_client.call_async(req)\n`;
+    return code;
+  };
+  
+  
+  
+
     // Code generator for the block "Crear publicador"
     pythonGenerator.forBlock['ros2_create_publisher'] = function(block) {
       const topicName: string = block.getFieldValue('TOPIC_NAME');
@@ -446,6 +507,31 @@ export function definirGeneradoresROS2() {
         .join('\n');
   
     var code = `msg\n# Archivo ${message_name}.msg generado por ROSBlocks\n${message_fields}`;
+    return code;
+  };
+
+  pythonGenerator.forBlock['ros2_publish_twist'] = function(block) {
+    const msgClass = addImport('geometry_msgs.msg.Twist');
+    let linear = pythonGenerator.valueToCode(block, 'LINEAR', Order.ATOMIC) || '0.0';
+    let angular = pythonGenerator.valueToCode(block, 'ANGULAR', Order.ATOMIC) || '0.0';
+    let code = `${TAB_SPACE}${TAB_SPACE}msg = ${msgClass}()\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}msg.linear.x = float(${linear})\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}msg.angular.z = float(${angular})\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.publisher_.publish(msg)\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.get_logger().info("Mensaje Twist publicado")\n`;
+    return code;
+  };
+
+  pythonGenerator.forBlock['ros2_rotate_turtle'] = function(block) {
+    const degrees = pythonGenerator.valueToCode(block, 'GRADOS', Order.ATOMIC) || '0';
+    
+    const msgClass = addImport('geometry_msgs.msg.Twist');
+  
+    let code = `msg = ${msgClass}()\n`;
+    code += `msg.angular.z = float(${degrees})\n`;
+    code += `self.publisher_.publish(msg)\n`;
+    code += `self.get_logger().info('Rotando tortuga ${degrees} grados.')\n`;
+  
     return code;
   };
 }
