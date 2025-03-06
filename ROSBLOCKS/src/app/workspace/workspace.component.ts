@@ -8,8 +8,9 @@ import { CodeService } from '../services/code.service';
 import { Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename } from '../utilities/sanitizer-tools';
-import { create_publisher } from '../blocks/code-generator';
+import { create_publisher, create_server } from '../blocks/code-generator';
 import { of } from 'rxjs';
+import { srvList, SrvInfo } from '../shared/srv-list';
 
 @Component({
   selector: 'app-workspace',
@@ -36,22 +37,23 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   tabs: { name: string; id: number; isPlaying: boolean }[] = [];
   selectedTabId: number | null = null;
 
+
   constructor(
-    private http: HttpClient, 
-    private codeService: CodeService, 
+    private http: HttpClient,
+    private codeService: CodeService,
     private alertService: AlertService
   ) { }
 
-    // TEST 
-    ngOnInit(): void {
+  // TEST 
+  ngOnInit(): void {
 
+  }
+  ngOnDestroy(): void {
+    for (const ws in this.websockets) {
+      this.websockets.get(ws)?.unsubscribe();
     }
-    ngOnDestroy(): void {
-      for (const ws in this.websockets) {
-        this.websockets.get(ws)?.unsubscribe();
-      }
-    }
-    // END TEST AREA
+  }
+  // END TEST AREA
 
   toolbox = {
     kind: 'categoryToolbox',
@@ -70,6 +72,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
         contents: [
           { kind: 'block', type: 'ros2_service_block' },
           { kind: 'block', type: 'ros2_named_message' },
+          { kind: 'block', type: 'ros_create_server' },
         ],
       },
       {
@@ -271,6 +274,30 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
     });
 
+    // Listener para verificar la creación de bloques de tipo "ros_create_server"
+    this.workspaces[tabId].addChangeListener(async (event) => {
+      // Verificamos que el evento sea de tipo BLOCK_CREATE y sea una instancia de BLOCK_CREATE
+      if (event.type === Blockly.Events.BLOCK_CREATE && event instanceof Blockly.Events.BlockCreate) {
+        // En eventos de creación, la propiedad con la definición del bloque es "xml"
+        if (event.xml) {
+          const xmlString = Blockly.Xml.domToText(event.xml);
+          // Verificamos si el bloque creado es de tipo "ros_create_server"
+          if (xmlString.includes("ros_create_server")) {
+            // Realizamos la verificación al backend a través del CodeService
+            this.codeService.checkSrvFiles().subscribe(response => {
+              if (!response.exists) {
+                // Si no existen archivos .srv, mostramos la alerta al usuario
+                this.alertService.showAlert("No se han encontrado archivos .srv en el proyecto. Deberías crear un servicio antes de usar el bloque 'Crear Servidor'.");
+              }
+            }, error => {
+              console.error("Error al consultar archivos .srv:", error);
+            });
+          }
+        }
+      }
+    });
+
+
     // Creates output console
     this.consoles_output.set(tabId.toString(), '');
 
@@ -345,6 +372,8 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.text_code.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
     }
+    // Actualiza la lista de archivos .srv antes de ejecutar la pestaña
+    this.updateSrvList();
     tab.isPlaying = playAllTabs ? true : !tab.isPlaying; // Alterna solo si no es "play all"
     tab.isPlaying
       ? (this.executeCode(this.text_code.get(tabId.toString()) || '', tabId),
@@ -464,6 +493,9 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     if (type == "pub_sub") {
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Nodo');
       code = create_publisher(code, fileName);
+    } else if (type == "server") {  // Usamos "server" para identificar los nodos servidores
+      fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Servidor');
+      code = create_server(code, fileName);
     } else if (type == "srv") {
       fileName = sanitizeSrvFilename(extractServiceFilename(code) || 'Servicio.srv');
       code = replaceServiceFilename(code, fileName);
@@ -472,7 +504,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       code = replaceMessageFilename(code, fileName);
     }
     const codeService = this.consoles_services.get(tabId.toString());
-    
+
     if (codeService === undefined) {
       console.error('No se encontró el servicio para la pestaña', tabId);
       return;
@@ -481,66 +513,66 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
         this.websockets.get(tabId.toString())?.unsubscribe();
       }
       this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code, type)
-      .pipe(
-        switchMap(() => {
-          if (type === "srv") {
-            console.log("El archivo es un servicio (.srv), deteniendo ejecución después de uploadCode.");
-            const confirmationMessage = `Servicio ${fileName} creado correctamente.`;
-            this.consoles_output.set(tabId.toString(), 
-              (this.consoles_output.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
-            // Actualizar la consola en la pestaña activa
-            if (this.selectedTabId === tabId) {
-              this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
+        .pipe(
+          switchMap(() => {
+            if (type === "srv") {
+              console.log("El archivo es un servicio (.srv), deteniendo ejecución después de uploadCode.");
+              const confirmationMessage = `Servicio ${fileName} creado correctamente.`;
+              this.consoles_output.set(tabId.toString(),
+                (this.consoles_output.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
+              // Actualizar la consola en la pestaña activa
+              if (this.selectedTabId === tabId) {
+                this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
+              }
+              // Asegurar auto-scroll si está habilitado
+              if (this.autoScrollEnabled) {
+                setTimeout(() => this.scrollToBottom(), 100);
+              }
+              return of(null); // Se detiene la ejecución del pipe aquí
+            } else if (type === "msg") {
+              console.log("El archivo es un servicio (.msg), deteniendo ejecución después de uploadCode.");
+              const confirmationMessage = `Mensaje ${fileName} creado correctamente.`;
+              this.consoles_output.set(tabId.toString(),
+                (this.consoles_output.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
+              // Actualizar la consola en la pestaña activa
+              if (this.selectedTabId === tabId) {
+                this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
+              }
+              // Asegurar auto-scroll si está habilitado
+              if (this.autoScrollEnabled) {
+                setTimeout(() => this.scrollToBottom(), 100);
+              }
+              return of(null); // Se detiene la ejecución del pipe aquí
             }
-            // Asegurar auto-scroll si está habilitado
-            if (this.autoScrollEnabled) {
-              setTimeout(() => this.scrollToBottom(), 100);
+            return codeService.executeCode(fileName); // Solo ejecuta si es pub_sub
+          }),
+          switchMap((response) => {
+            if (!response) return of(null); // Si response es null (por ser .srv), no sigue ejecutando
+
+            console.log('Respuesta del backend:', response);
+            const sessionId = response.session_id;
+            this.consoles_sessions.set(tabId.toString(), sessionId);
+            console.log('Session ID:', sessionId);
+            return codeService.connectToWebSocket(sessionId);
+          })
+        )
+        .subscribe({
+          next: (response) => {
+            if (!response) return; // Si es null, no hace nada más
+            console.log('Mensaje WebSocket:', response.output);
+            if (response.output != this.consoles_output.get(tabId.toString())) {
+              this.consoles_output.set(tabId.toString(), (this.consoles_output.get(tabId.toString()) ?? '') + response.output + '\n');
+              if (this.selectedTabId === tabId) {
+                this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
+              }
+              if (this.autoScrollEnabled) {
+                setTimeout(() => this.scrollToBottom(), 100);
+              }
             }
-            return of(null); // Se detiene la ejecución del pipe aquí
-          } else if (type === "msg") {
-            console.log("El archivo es un servicio (.msg), deteniendo ejecución después de uploadCode.");
-            const confirmationMessage = `Mensaje ${fileName} creado correctamente.`;
-            this.consoles_output.set(tabId.toString(), 
-              (this.consoles_output.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
-            // Actualizar la consola en la pestaña activa
-            if (this.selectedTabId === tabId) {
-              this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
-            }
-            // Asegurar auto-scroll si está habilitado
-            if (this.autoScrollEnabled) {
-              setTimeout(() => this.scrollToBottom(), 100);
-            }
-            return of(null); // Se detiene la ejecución del pipe aquí
-          }
-          return codeService.executeCode(fileName); // Solo ejecuta si es pub_sub
-        }),
-        switchMap((response) => {
-          if (!response) return of(null); // Si response es null (por ser .srv), no sigue ejecutando
-          
-          console.log('Respuesta del backend:', response);
-          const sessionId = response.session_id;
-          this.consoles_sessions.set(tabId.toString(), sessionId);
-          console.log('Session ID:', sessionId);
-          return codeService.connectToWebSocket(sessionId);
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          if (!response) return; // Si es null, no hace nada más
-          console.log('Mensaje WebSocket:', response.output);
-          if (response.output != this.consoles_output.get(tabId.toString())) {
-            this.consoles_output.set(tabId.toString(), (this.consoles_output.get(tabId.toString()) ?? '') + response.output + '\n');
-            if (this.selectedTabId === tabId) {
-              this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
-            }
-            if (this.autoScrollEnabled) {
-              setTimeout(() => this.scrollToBottom(), 100);
-            }
-          }
-        },
-        error: (error) => console.error('Error:', error),
-        complete: () => console.log('Proceso completado')
-      }));
+          },
+          error: (error) => console.error('Error:', error),
+          complete: () => console.log('Proceso completado')
+        }));
     }
   }
   scrollToBottom() {
@@ -587,11 +619,94 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   getConsoleLines(): string[] {
     return this.current_displayed_console_output
       ? this.current_displayed_console_output
-          .trimEnd() // 🔹 Elimina espacios y saltos de línea extra al final
-          .split('\n')
+        .trimEnd() // 🔹 Elimina espacios y saltos de línea extra al final
+        .split('\n')
       : [];
   }
   
+
+// Método auxiliar para crear un bloque 'srv_variable' con los campos de nombre y tipo.
+private createSrvVariableBlock(variable: any) {
+  return {
+    kind: 'block',
+    type: 'srv_variable',
+    fields: {
+      VAR_NAME: variable.name,    // Se mostrará en lugar de "nombreVar"
+      VAR_TYPE: variable.type     // Se mostrará en lugar de "tipoVar"
+    }
+  };
 }
 
+// Función para actualizar la categoría "Variables de Servicio" en el toolbox
+updateSrvVariablesCategory(): void {
+  const toolboxObj = this.toolbox.contents && this.toolbox.contents.length > 0
+    ? { ...this.toolbox }
+    : { kind: 'categoryToolbox', contents: [] };
+
+    const srvVariablesCategory = {
+      kind: 'category',
+      type: 'category',
+      name: 'Variables de Servicio',
+      contents: srvList.map((service: SrvInfo) => {
+        // Extraer variables de request y response
+        const requestBlocks = service.variables?.request?.map((variable: any) => this.createSrvVariableBlock(variable)) || [];
+        const responseBlocks = service.variables?.response?.map((variable: any) => this.createSrvVariableBlock(variable)) || [];
+    
+        return {
+          kind: 'category',
+          type: 'category',
+          // Se muestra solo el nombre del servicio sin extensión
+          name: service.name ? service.name.replace(/\.srv$/, "") : "",
+          contents: [
+            { kind: 'label', text: "Solicitud:" },
+            ...requestBlocks,
+            { kind: 'label', text: "Respuesta:" },
+            ...responseBlocks
+          ]
+        };
+      })
+    };
+
+  const contents = toolboxObj.contents;
+  const existingIdx = contents.findIndex((cat: any) => cat.name === "Variables de Servicio");
+  if (existingIdx !== -1) {
+    contents[existingIdx] = srvVariablesCategory;
+  } else {
+    contents.push(srvVariablesCategory);
+  }
+
+  if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+    this.workspaces[this.selectedTabId].updateToolbox({
+      kind: 'categoryToolbox',
+      contents: contents
+    });
+  }
+}
+
+  
+
+  // Función para actualizar la lista de archivos srv
+  updateSrvList(): void {
+    this.codeService.checkSrvFiles().subscribe(response => {
+      if (response.exists) {
+        // Vaciar la lista global y poblarla con los objetos recibidos
+        srvList.length = 0;
+        response.files.forEach((file: any) => {
+          // Aquí se asume que el backend ya devuelve el formato adecuado
+          srvList.push(file);
+        });
+      } else {
+        srvList.length = 0;
+      }
+      console.log("srvList actualizada:", srvList);
+      // Si deseas también actualizar alguna categoría en el toolbox con las variables,
+      // puedes invocar un método para reconstruir esa parte del toolbox.
+      this.updateSrvVariablesCategory();
+    }, error => {
+      console.error("Error al obtener la lista de archivos srv:", error);
+      srvList.length = 0;
+    });
+  }
+  
+}
 

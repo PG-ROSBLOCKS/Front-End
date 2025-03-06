@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { WebSocketSubject, webSocket } from 'rxjs/webSocket';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -98,4 +98,12 @@ export class CodeService {
       console.error('Error al exportar el proyecto:', error);
     });
   }
+  
+  checkSrvFiles(): Observable<{ exists: boolean, files: string[] }> {
+    return this.http.get<{ exists: boolean, files: string[] }>(`${this.API_URL}/srvfiles`)
+      .pipe(
+        tap(response => console.log('checkSrvFiles returns:', response))
+      );
+  }
+  
 }

@@ -1,6 +1,7 @@
 import * as Blockly from 'blockly/core';
 import {pythonGenerator, Order, PythonGenerator} from 'blockly/python';
 import { removeIndentation } from '../utilities/sanitizer-tools';
+import { srvList } from '../shared/srv-list';
 
 const TAB_SPACE = '    '; // Tab space
 const common_msgs: [string, string][] = [
@@ -245,6 +246,63 @@ export function definirBloquesROS2() {
     }
   };
   
+// En ros2-blocks.ts
+Blockly.Blocks['ros_create_server'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("Crear Servidor")
+        .appendField(new Blockly.FieldTextInput("MiServidor"), "SERVER_NAME")
+        .appendField("Tipo")
+        // Usamos una función que retorne la lista actualizada con solo el nombre (sin extensión)
+        .appendField(new Blockly.FieldDropdown(() => {
+          if (srvList.length > 0) {
+            // Para cada servicio, usamos su nombre sin extensión
+            return srvList.map(srv => {
+              // Removemos la extensión .srv si está presente
+              const displayName = srv.name.replace(/\.srv$/, "");
+              return [displayName, displayName];
+            });
+          } else {
+            return [["Sin servicios", ""]];
+          }
+        }), "SERVER_TYPE");
+        
+    this.appendStatementInput("CALLBACK")
+        .setCheck("Callback")
+        .appendField("Respuesta");
+    this.setColour(230);
+    this.setTooltip("Bloque para crear un servidor en ROS2");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['srv_variable'] = {
+  init: function() {
+    this.jsonInit({
+      "type": "srv_variable",
+      "message0": "%1 (%2)",   // Muestra: nombre (tipo)
+      "args0": [
+        {
+          "type": "field_label_serializable",
+          "name": "VAR_NAME",
+          "text": "nombreVar"
+        },
+        {
+          "type": "field_label_serializable",
+          "name": "VAR_TYPE",
+          "text": "tipoVar"
+        }
+      ],
+      "output": null,  // Bloque de salida (redondo)
+      "colour": 230,
+      "tooltip": "Variable definida en el servicio (.srv)",
+      "helpUrl": ""
+    });
+  }
+};
+
+
+
 }
 type ImportsDictionary = {
   [key: string]: Set<string>;
