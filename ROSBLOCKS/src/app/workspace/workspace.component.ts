@@ -486,16 +486,27 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     var code = '';
     var fileName = '';
     var type = '';
+    var serverType = ''; // para extraerlo si es un nodo servidor
     // firstLine: refiere al tipo, remainingText: refiere al código
     const { firstLine, remainingText } = extractFirstLine(code_to_send);
-    type = firstLine;
+    // Si la primera línea contiene un pipe, lo separamos
+    
+    if (firstLine.indexOf('|') !== -1) {
+      const parts = firstLine.split('|');
+      type = parts[0]; // "server"
+      serverType = parts[1]; // por ejemplo, "AddTwoInts"
+    } else {
+      type = firstLine;
+    }
+
     code = remainingText;
     if (type == "pub_sub") {
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Nodo');
       code = create_publisher(code, fileName);
     } else if (type == "server") {  // Usamos "server" para identificar los nodos servidores
+      console.log('Creando servidor...');
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Servidor');
-      code = create_server(code, fileName);
+      code = create_server(code, fileName, serverType);
     } else if (type == "srv") {
       fileName = sanitizeSrvFilename(extractServiceFilename(code) || 'Servicio.srv');
       code = replaceServiceFilename(code, fileName);
@@ -623,67 +634,86 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
         .split('\n')
       : [];
   }
-  
 
-// Método auxiliar para crear un bloque 'srv_variable' con los campos de nombre y tipo.
-private createSrvVariableBlock(variable: any) {
-  return {
-    kind: 'block',
-    type: 'srv_variable',
-    fields: {
-      VAR_NAME: variable.name,    // Se mostrará en lugar de "nombreVar"
-      VAR_TYPE: variable.type     // Se mostrará en lugar de "tipoVar"
-    }
-  };
-}
 
-// Función para actualizar la categoría "Variables de Servicio" en el toolbox
-updateSrvVariablesCategory(): void {
-  const toolboxObj = this.toolbox.contents && this.toolbox.contents.length > 0
-    ? { ...this.toolbox }
-    : { kind: 'categoryToolbox', contents: [] };
+  // Método auxiliar para crear un bloque 'srv_variable' con los campos de nombre y tipo.
+  private createSrvVariableBlock(variable: any, section: string): any {
+    return {
+      kind: 'block',
+      type: 'srv_variable',
+      fields: {
+        VAR_SECTION: section,   // "request" o "response"
+        VAR_NAME: variable.name,
+        VAR_TYPE: variable.type
+      }
+    };
+  }
 
+
+  // Función para actualizar la categoría "Variables de Servicio" en el toolbox
+  updateSrvVariablesCategory(): void {
+    const toolboxObj = this.toolbox.contents && this.toolbox.contents.length > 0
+      ? { ...this.toolbox }
+      : { kind: 'categoryToolbox', contents: [] };
+
+    // Construir la categoría "Variables de Servicio" a partir de srvList
     const srvVariablesCategory = {
       kind: 'category',
       type: 'category',
       name: 'Variables de Servicio',
       contents: srvList.map((service: SrvInfo) => {
-        // Extraer variables de request y response
-        const requestBlocks = service.variables?.request?.map((variable: any) => this.createSrvVariableBlock(variable)) || [];
-        const responseBlocks = service.variables?.response?.map((variable: any) => this.createSrvVariableBlock(variable)) || [];
-    
+        // Extraer variables de request y response, usando la función auxiliar que incluye la sección
+        const requestBlocks = service.variables?.request?.map((variable: any) =>
+          this.createSrvVariableBlock(variable, "request")
+        ) || [];
+        const responseBlocks = service.variables?.response?.map((variable: any) =>
+          this.createSrvVariableBlock(variable, "response")
+        ) || [];
+
+        // Bloque adicional para asignar un valor a un campo del response.
+        // Puedes configurar el campo FIELD_NAME con un valor por defecto (por ejemplo, "campo")
+        const responseAssignBlock = {
+          kind: 'block',
+          type: 'srv_response_set_field',
+          fields: {
+            FIELD_NAME: "campo"
+          }
+        };
+
         return {
           kind: 'category',
           type: 'category',
-          // Se muestra solo el nombre del servicio sin extensión
           name: service.name ? service.name.replace(/\.srv$/, "") : "",
           contents: [
             { kind: 'label', text: "Solicitud:" },
             ...requestBlocks,
             { kind: 'label', text: "Respuesta:" },
+            // Agregamos el bloque para asignación de response antes de las variables de response
+            responseAssignBlock,
             ...responseBlocks
           ]
         };
       })
     };
 
-  const contents = toolboxObj.contents;
-  const existingIdx = contents.findIndex((cat: any) => cat.name === "Variables de Servicio");
-  if (existingIdx !== -1) {
-    contents[existingIdx] = srvVariablesCategory;
-  } else {
-    contents.push(srvVariablesCategory);
+    const contents = toolboxObj.contents;
+    const existingIdx = contents.findIndex((cat: any) => cat.name === "Variables de Servicio");
+    if (existingIdx !== -1) {
+      contents[existingIdx] = srvVariablesCategory;
+    } else {
+      contents.push(srvVariablesCategory);
+    }
+
+    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+      this.workspaces[this.selectedTabId].updateToolbox({
+        kind: 'categoryToolbox',
+        contents: contents
+      });
+    }
   }
 
-  if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
-    this.workspaces[this.selectedTabId].updateToolbox({
-      kind: 'categoryToolbox',
-      contents: contents
-    });
-  }
-}
 
-  
+
 
   // Función para actualizar la lista de archivos srv
   updateSrvList(): void {
@@ -707,6 +737,6 @@ updateSrvVariablesCategory(): void {
       srvList.length = 0;
     });
   }
-  
+
 }
 

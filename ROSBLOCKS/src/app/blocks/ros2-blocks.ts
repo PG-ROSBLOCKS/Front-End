@@ -276,12 +276,18 @@ Blockly.Blocks['ros_create_server'] = {
   }
 };
 
+
 Blockly.Blocks['srv_variable'] = {
   init: function() {
     this.jsonInit({
       "type": "srv_variable",
-      "message0": "%1 (%2)",   // Muestra: nombre (tipo)
+      "message0": "%1: %2 (%3)",   // Muestra: section: nombre (tipo)
       "args0": [
+        {
+          "type": "field_label_serializable",
+          "name": "VAR_SECTION",
+          "text": "section"
+        },
         {
           "type": "field_label_serializable",
           "name": "VAR_NAME",
@@ -293,11 +299,35 @@ Blockly.Blocks['srv_variable'] = {
           "text": "tipoVar"
         }
       ],
-      "output": null,  // Bloque de salida (redondo)
+      "output": null,
       "colour": 230,
       "tooltip": "Variable definida en el servicio (.srv)",
       "helpUrl": ""
     });
+  }
+};
+
+Blockly.Blocks['srv_response_set_field'] = {
+  init: function() {
+    // Primer input para la variable de response, p.ej. un bloque que devuelva "response.sum"
+    this.appendValueInput("RESPONSE_FIELD")
+        .setCheck(null)
+        .appendField("Asignar");
+    // Pequeña etiqueta para "a"
+    this.appendDummyInput()
+        .appendField("a");
+    // Segundo input para la expresión que se asignará
+    this.appendValueInput("VALUE")
+        .setCheck(null);
+
+    // Si quieres que se vean en una sola línea:
+    this.setInputsInline(true);
+
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setColour(230);
+    this.setTooltip("Asigna un valor a un campo del objeto response en el callback.");
+    this.setHelpUrl("");
   }
 };
 
@@ -506,4 +536,53 @@ export function definirGeneradoresROS2() {
     var code = `msg\n# Archivo ${message_name}.msg generado por ROSBlocks\n${message_fields}`;
     return code;
   };
+
+  // Python generator for the block "Crear Servidor"
+  pythonGenerator.forBlock['ros_create_server'] = function(block) {
+    const serviceName = block.getFieldValue('SERVER_NAME');
+    const serviceType = block.getFieldValue('SERVER_TYPE'); 
+    let callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK');
+  
+    // Normalizamos el código del callback para eliminar indentación extra
+    callbackCode = removeIndentation(callbackCode);
+  
+    let code = `server|${serviceType}\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.service_ = self.create_service(${serviceType}, '${serviceName}', self.service_callback)\n\n`;
+    code += `def service_callback(self, request, response):\n`;
+    code += `${TAB_SPACE}try:\n`;
+    
+    if (!callbackCode.trim()) {
+      code += `${TAB_SPACE}${TAB_SPACE}pass\n`;
+    } else {
+      // Aplica dos niveles de indentación al código del callback ya normalizado
+      code += pythonGenerator.prefixLines(callbackCode, `${TAB_SPACE}${TAB_SPACE}`);
+      code += `${TAB_SPACE}${TAB_SPACE}return response\n`;
+    }
+    
+    code += `${TAB_SPACE}except Exception as e:\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error en el callback: {}".format(e))\n`;
+    
+    return code;
+  };
+  
+  
+pythonGenerator.forBlock['srv_variable'] = function(block) {
+  // Lee el campo VAR_SECTION (ya definido en el bloque al crearse desde el toolbox)
+  const section = block.getFieldValue('VAR_SECTION');
+  const varName = block.getFieldValue('VAR_NAME');
+  // Se devuelve, por ejemplo, "request.a" o "response.sum"
+  return [`${section}.${varName}`, Order.ATOMIC];
+};
+
+pythonGenerator.forBlock['srv_response_set_field'] = function(block) {
+  const fieldCode = pythonGenerator.valueToCode(block, 'RESPONSE_FIELD', Order.NONE) || "response.campo";
+  const valueCode = pythonGenerator.valueToCode(block, 'VALUE', Order.NONE) || "0";
+
+  // Genera algo como:  response.sum = request.a + request.b
+  const code = `${fieldCode} = ${valueCode}\n`;
+  return code;
+};
+
+  
+
 }
