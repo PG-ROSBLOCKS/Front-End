@@ -755,9 +755,6 @@ export function definirGeneradoresROS2() {
     const nodeName = serviceName;
 
     let code = `server|${serviceType}\n`;
-    code += `class ${nodeName}(Node):\n`;
-    code += `${TAB_SPACE}def __init__(self):\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}super().__init__('${nodeName.toLowerCase()}')\n`;
     code += `${TAB_SPACE}${TAB_SPACE}self.service_ = self.create_service(${serviceType}, '${serviceName}', self.service_callback)\n\n`;
 
     code += `${TAB_SPACE}def service_callback(self, request, response):\n`;
@@ -812,7 +809,7 @@ export function definirGeneradoresROS2() {
     clientType = clientType.replace('.srv', '');
     // 3) Generar la clase y el constructor
     let code = `client|${clientType}\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.client_ = self.create_client(${clientType}, '${clientName}')\n\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.cli = self.create_client(${clientType}, '${clientName}')\n\n`;
 
     code += `${TAB_SPACE}${TAB_SPACE}try:\n`;
     if (!callbackCode.trim()) {
@@ -863,7 +860,6 @@ export function definirGeneradoresROS2() {
     for (const field of requestFields) {
       // Usa el mismo identificador que usaste en el updateShape_
       const value = block.getFieldValue(field.name) || "0";
-      assignments += `node.req.${field.name} = ${value}\n`;
       values.push(`${field.name} = ${value}\n`);
     }
 
@@ -872,8 +868,10 @@ export function definirGeneradoresROS2() {
     code += assignments;
 
     //por cada atributo del request, enviarlo al método de la forma a= input, b = input
-    code += `future = node.send_request(//TODO)\n`;
-    code += `rclpy.spin_until_future_complete(self, future)\n`;
+    let request =  `future = node.send_request(${values.join(', ')})\n`;
+    code += request;
+
+    code += `rclpy.spin_until_future_complete(node, future)\n`;
     code += `response = future.result()\n`;
     code += `node.get_logger().info("Respuesta: {}".format(response))\n`;
     return code;
