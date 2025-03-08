@@ -8,7 +8,7 @@ import { CodeService } from '../services/code.service';
 import { Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename } from '../utilities/sanitizer-tools';
-import { create_publisher, create_server } from '../blocks/code-generator';
+import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { of } from 'rxjs';
 import { srvList, SrvInfo } from '../shared/srv-list';
 
@@ -73,6 +73,9 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
           { kind: 'block', type: 'ros2_service_block' },
           { kind: 'block', type: 'ros2_named_message' },
           { kind: 'block', type: 'ros_create_server' },
+          { kind: 'block', type: 'ros_create_client' },
+          { kind: 'block', type: 'ros2_service_available' },
+          { kind: 'block', type: 'ros_send_request' },
         ],
       },
       {
@@ -310,6 +313,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       const resultado = await this.alertService.showAlert('No se pueden agregar más de ' + this.MAX_NUM_PESTANAS + ' pestañas.');
       return;
     }
+    this.updateSrvList();
     const newTabId = Date.now(); // ID basado en timestamp
     this.tabs.push({ name: this.getUniqueTabName(), id: newTabId, isPlaying: false });
     this.consoles_services.set(newTabId.toString(), new CodeService(this.http));
@@ -514,6 +518,11 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       fileName = sanitizeMsgFilename(extractMessageFilename(code) || 'FailedMsg.msg');
       code = replaceMessageFilename(code, fileName);
     }
+      else if (type == "client") {
+      console.log('Creando cliente...');
+      fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Cliente');
+      code = create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType);
+    }
     const codeService = this.consoles_services.get(tabId.toString());
 
     if (codeService === undefined) {
@@ -712,9 +721,6 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     }
   }
 
-
-
-
   // Función para actualizar la lista de archivos srv
   updateSrvList(): void {
     this.codeService.checkSrvFiles().subscribe(response => {
@@ -739,4 +745,26 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   }
 
 }
+
+export function linesBeforeComment(code: string): string {
+  const marker = "#main-sendrequest";
+  const index = code.indexOf(marker);
+  if (index === -1) {
+    // Si no se encuentra el marcador, se retorna todo el código
+    return code.trimEnd();
+  }
+  return code.substring(0, index).trimEnd();
+}
+
+export function linesAfter(code: string): string {
+  const marker = "#main-sendrequest";
+  const index = code.indexOf(marker);
+  if (index === -1) {
+    // Si no se encuentra el marcador, se retorna una cadena vacía
+    return "";
+  }
+  return code.substring(index + marker.length).trimStart();
+}
+
+
 
