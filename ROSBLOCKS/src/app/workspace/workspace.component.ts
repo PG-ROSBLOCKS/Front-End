@@ -5,11 +5,12 @@ import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
 import { definirBloquesROS2, definirGeneradoresROS2 } from '../blocks/ros2-blocks';
 import { CodeService } from '../services/code.service';
-import { Subscription } from 'rxjs';
+import { interval, Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename } from '../utilities/sanitizer-tools';
 import { create_publisher } from '../blocks/code-generator';
 import { of } from 'rxjs';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-workspace',
@@ -36,21 +37,59 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   tabs: { name: string; id: number; isPlaying: boolean }[] = [];
   selectedTabId: number | null = null;
 
+  vncBaseUrl: string = 'http://localhost:8080/vnc_auto.html';
+  sanitizedVncUrl!: SafeResourceUrl;
+  private vncRefreshSubscription!: Subscription;
+
   constructor(
     private http: HttpClient, 
     private codeService: CodeService, 
-    private alertService: AlertService
+    private alertService: AlertService,
+    private sanitizer: DomSanitizer
   ) { }
 
     // TEST 
     ngOnInit(): void {
-
     }
+  
     ngOnDestroy(): void {
       for (const ws in this.websockets) {
         this.websockets.get(ws)?.unsubscribe();
       }
     }
+
+    reloadVncIframe(): void {
+      const timestamp = new Date().getTime();
+      const newUrl = `${this.vncBaseUrl}?t=${timestamp}`;
+      this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(newUrl);
+    }
+
+    resetTurtleContainer(): void {
+      // Llamada al endpoint para reiniciar el contenedor
+      this.http.post('http://localhost:8000/reset/', {}).subscribe({
+        next: (response) => {
+          console.log("Contenedor reiniciado:", response);
+          // Espera 5 segundos y luego recarga el iframe
+          setTimeout(() => {
+            const timestamp = new Date().getTime();
+            const newUrl = `${this.vncBaseUrl}?t=${timestamp}`;
+            this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(newUrl);
+          }, 5000);
+        },
+        error: (error) => {
+          console.error("Error al reiniciar el contenedor:", error);
+          // Incluso en caso de error, se puede intentar recargar el iframe
+          setTimeout(() => {
+            const timestamp = new Date().getTime();
+            const newUrl = `${this.vncBaseUrl}?t=${timestamp}`;
+            this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(newUrl);
+          }, 5000);
+        }
+      });
+    }
+    
+
+    
     // END TEST AREA
 
   toolbox = {
@@ -446,6 +485,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       if (!this.workspaces[tabId]) continue;
       this.stopTab(tabId)
     }
+    this.resetTurtleContainer();
   }
 
   cleanConsole() {

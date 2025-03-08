@@ -508,3 +508,19 @@ iframe {
   top: 122px;
 }
 
+.resetTurtleDiv {
+  width: 100%;
+  text-align: center;
+}
+
+.resetTurtleDiv * {
+  margin: 10px 20px;
+  background-color: #015C66;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 15px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}

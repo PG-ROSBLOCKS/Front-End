@@ -81,8 +81,12 @@
             <div class="barTurtle">
 
             </div>
-            <iframe _ngcontent-ng-c809167999="" src="http://localhost:8080/vnc_auto.html" title="VNC"></iframe>
+            <iframe [src]="sanitizedVncUrl" _ngcontent-ng-c809167999="" src="http://localhost:8080/vnc_auto.html" title="VNC"></iframe>
           </div>
+            <div class="resetTurtleDiv">
+                <button (click)="resetTurtleContainer()">Reiniciar</button>
+                <button (click)="reloadVncIframe()">Recargar</button>
+            </div>
           <textarea [(ngModel)]="codigo_testeo_backend" placeholder="Escribe tu código aquí"></textarea>
               <button (click)="executeCode(codigo_testeo_backend)">Ejecutar</button>
           <div class="console">
