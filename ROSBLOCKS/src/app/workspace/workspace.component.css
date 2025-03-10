@@ -81,7 +81,6 @@ app-header {
 }
 
 .turtlesim {
-  margin-top: 20px;
   width: 100%;
   height: 20pc;
   height: 300px;
@@ -457,6 +456,7 @@ input::selection {
   padding: 5px;
   opacity: 0;
   visibility: hidden;
+  z-index: 9999;
   transition: opacity 0.1s ease-in-out, visibility 0.08s;
 }
 
@@ -501,11 +501,11 @@ iframe {
 
 /* Para cubrir la barra de noVNC */
 .barTurtle {
+  background: #253942;
   width: 100%;
   height: 28px;
-  background: #253942;
-  position: fixed;
-  top: 122px;
+  position: relative;
+  top: 28px;
 }
 
 .resetTurtleDiv {
