@@ -49,19 +49,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       },
       {
         kind: 'category',
-        name: 'Servicios',
-        contents: [
-          { kind: 'block', type: 'ros2_service_block' },
-          { kind: 'block', type: 'ros2_named_message' },
-          { kind: 'block', type: 'ros_create_server' },
-          { kind: 'block', type: 'ros_create_client' },
-          { kind: 'block', type: 'ros2_service_available' },
-          { kind: 'block', type: 'ros_send_request' },
-        ],
-      },
-      {
-        kind: 'category',
-        name: 'Topicos',
+        name: 'Tópicos',
         contents: [
           { kind: 'block', type: 'ros2_create_publisher' },
           { kind: 'block', type: 'ros2_minimal_publisher' },
@@ -70,6 +58,24 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
           { kind: 'block', type: 'ros2_turtlesim_pose_field' },
           { kind: 'block', type: 'ros2_print_msg_type' },
           { kind: 'block', type: 'ros2_publish_message' },
+        ],
+      },
+      {
+        kind: 'category',
+        name: 'Servicios',
+        contents: [
+          { kind: 'block', type: 'ros2_service_block' },
+          { kind: 'block', type: 'ros2_named_message' },
+          { kind: 'block', type: 'ros_create_server' },
+          { kind: 'block', type: 'ros2_service_available' },
+        ],
+      },
+      {
+        kind: 'category',
+        name: 'Clientes',
+        contents: [
+          { kind: 'block', type: 'ros_create_client' },
+          { kind: 'block', type: 'ros_send_request' },
         ],
       },
       {
@@ -771,8 +777,9 @@ this.workspaces[tabId].addChangeListener(async (event) => {
             { kind: 'label', text: "Solicitud:" },
             ...requestBlocks,
             { kind: 'label', text: "Respuesta:" },
-            responseAssignBlock,
-            ...responseBlocks
+            ...responseBlocks,
+            { kind: 'label', text: "Asignar campo de respuesta:" },
+            responseAssignBlock
           ]
         };
       })
