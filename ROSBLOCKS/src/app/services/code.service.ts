@@ -106,12 +106,10 @@ export class CodeService {
       );
   }
 
-  // Función genérica para eliminar un nodo (cliente, servidor, publicador, etc.)
-  deleteNode(nodeName: string): Observable<any> {
-    return this.http.delete(`${this.API_URL}/node/${nodeName}`, { responseType: 'json' })
-      .pipe(
-        tap(response => console.log('deleteNode returns:', response))
-      );
-  }
+    //Función para eliminar un .srv o un .msg del proyecto 
+    deleteInterfaceFile(fileType: 'srv' | 'msg', fileName: string): Observable<any> {
+      console.log('El endpoint es:', `${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);
+      return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
+    }
 
 }
