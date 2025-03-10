@@ -23,14 +23,14 @@ export class CodeService {
   uploadCode(fileName: string, code: string, type: string): Observable<any> {
     const payload = { file_name: fileName, code: code, type: type };
     return this.http.post(`${this.API_URL}/upload/`, payload, {
-      headers: { 'Content-Type': 'application/json' }, 
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
   executeCode(fileName: string): Observable<any> {
     return this.http.get(`${this.API_URL}/execution/execute/${fileName}`);
   }
-  
+
   connectToWebSocket(sessionId: string): WebSocketSubject<any> {
     this.wsSubject = webSocket(`${this.API_URL.replace('http', 'ws')}/execution/ws/${sessionId}`);
     return this.wsSubject;
@@ -47,7 +47,7 @@ export class CodeService {
       .subscribe({
         next: (response) => {
           console.log('Sesión eliminada con éxito:', response);
-          this.closeConnection(); 
+          this.closeConnection();
         },
         error: (error) => console.error('Error al matar la sesión:', error)
       });
@@ -64,7 +64,7 @@ export class CodeService {
       .subscribe({
         next: (response) => {
           console.log(`Archivo ${fileName} eliminado con éxito:`, response);
-          this.closeConnection(); 
+          this.closeConnection();
         },
         error: (error) => console.error(`Error al eliminar ${fileName}:`, error)
       });
@@ -81,7 +81,7 @@ export class CodeService {
   setNoBlocks(flag: boolean) {
     this.noBlocksSubject.next(flag);
   }
-  
+
   exportProject(): void {
     this.http.get(`${this.API_URL}/export-project/`, { responseType: 'blob' }).subscribe(response => {
       const blob = new Blob([response], { type: 'application/gzip' });
@@ -93,17 +93,25 @@ export class CodeService {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
     }, error => {
       console.error('Error al exportar el proyecto:', error);
     });
   }
-  
+
   checkSrvFiles(): Observable<{ exists: boolean, files: string[] }> {
     return this.http.get<{ exists: boolean, files: string[] }>(`${this.API_URL}/srvfiles`)
       .pipe(
         tap(response => console.log('checkSrvFiles returns:', response))
       );
   }
-  
+
+  // Función genérica para eliminar un nodo (cliente, servidor, publicador, etc.)
+  deleteNode(nodeName: string): Observable<any> {
+    return this.http.delete(`${this.API_URL}/node/${nodeName}`, { responseType: 'json' })
+      .pipe(
+        tap(response => console.log('deleteNode returns:', response))
+      );
+  }
+
 }

@@ -250,6 +250,9 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       //TODO: Cuando se conecta un bloque a otro        
     });
 
+
+  //---------------------------------------------------ELIMINAR BLOQUES------------------------------------------------------
+
     //ELIMINAR SUSCRIPTOR y PUBLICADOR
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE) {
@@ -276,6 +279,69 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       //realizamos un conteo de bloques en el workspace
       this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
     });
+
+    //ELIMINAR CLIENTE
+    this.workspaces[tabId].addChangeListener(async (event) => {
+      if (event.type === Blockly.Events.BLOCK_DELETE) {
+        //Verificar si es instancia de BlockDelete
+        if (event instanceof Blockly.Events.BlockDelete) {
+          console.log('XML antiguo:', event.oldXml);
+          //Convertir el XML a cadena 
+          if (event.oldXml) {
+            let xmlString = Blockly.Xml.domToText(event.oldXml);
+            //Verificar el type
+            if (xmlString.includes('ros_create_client')) {
+              console.log('Bloque de cliente eliminado');
+              //Hacer solicitud de eliminacion del nodo cliente en el setup.py
+              /*this.codeService.deleteNode(this.tabs.find(tab => tab.id === tabId)?.name || '').subscribe({
+                next: (response) => {
+                  console.log('Respuesta del backend:', response);
+                },
+                error: (error) => console.error('Error al eliminar el nodo cliente:', error)
+              });*/
+              //TODO: Tal vez poner una alerta o un mensaje en consola 
+            }
+          }
+        }
+      }
+      //realizamos un conteo de bloques en el workspace
+      this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
+    });
+
+    //ELIMINAR SERVIDOR
+this.workspaces[tabId].addChangeListener(async (event) => {
+  if (event.type === Blockly.Events.BLOCK_DELETE) {
+    // Verificar que el evento es de tipo BlockDelete
+    if (event instanceof Blockly.Events.BlockDelete) {
+      console.log('XML antiguo:', event.oldXml);
+      if (event.oldXml) {
+        // Convertir el XML a cadena
+        let xmlString = Blockly.Xml.domToText(event.oldXml);
+        // Detectar eliminación de un bloque de servidor
+        if (xmlString.includes('ros_create_server')) {
+          console.log('Bloque de servidor eliminado');
+          // Asumimos que event.blockId es el ID del bloque de servidor eliminado
+          const deletedServerId = event.blockId;
+          // TAL VEZ Solicitar al backend eliminar el nodo servidor en setup.py
+          
+       
+          
+          // Aquí puedes agregar la lógica para terminar la sesión si es necesario
+          const resultado = await this.alertService.showAlert('Se eliminó un bloque de servidor y sus clientes asociados, por ende la sesión terminará');
+          console.log('El usuario presionó OK:', resultado);
+          this.stopTab(tabId);
+          this.consoles_sessions.delete(tabId.toString());
+          const tabName = this.tabs.find(tab => tab.id === tabId)?.name || '';
+          this.consoles_services.get(tabId.toString())?.deleteFile(tabName);
+        }
+      }
+    }
+  }
+  // Actualizamos el conteo de bloques en el workspace
+  this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
+});
+
+    
 
     // Listener para verificar la creación de bloques de tipo "ros_create_server"
     this.workspaces[tabId].addChangeListener(async (event) => {

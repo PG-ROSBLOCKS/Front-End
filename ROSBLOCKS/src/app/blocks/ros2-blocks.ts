@@ -333,6 +333,7 @@ export function definirBloquesROS2() {
     }
   };
 
+  //Bloque para crear un cliente 
   Blockly.Blocks["ros_create_client"] = {
     init: function () {
       this.appendDummyInput()
@@ -352,24 +353,27 @@ export function definirBloquesROS2() {
           // Y notificamos a hijos (si existieran)
           this.updateChildren_();
           return newValue; // Ensure the validator returns a value
-        }), "CLIENT_TYPE");
-
+        }), "CLIENT_TYPE")
+        .appendField("Servicio")
+        .appendField(new Blockly.FieldTextInput("add_two_ints"), "SERVICE_NAME");
+  
       this.appendStatementInput("CALLBACK")
         .setCheck(null)
         .appendField("Callback");
-
+  
       // Añadimos un hueco “MAIN” para conectar un bloque “hijo”
       this.appendStatementInput("MAIN")
         .setCheck(null)
         .appendField("En main:");
-
+  
       this.setColour(230);
       this.setTooltip("Bloque para crear un cliente asíncrono en ROS2");
       this.setHelpUrl("");
-
-      // Internamente guardamos el serviceType:
+  
+      // Internamente guardamos el serviceType y el serviceName
       this.clientType = "";
-
+      this.serviceName = this.getFieldValue("SERVICE_NAME");
+  
       this.setOnChange((event: { type: EventType; recordUndo: any; }) => {
         // Revisa si el evento es de tipo CREATE, CHANGE, MOVE, etc.
         // y si el usuario no está en medio de un “undo/redo” (event.recordUndo).
@@ -383,17 +387,21 @@ export function definirBloquesROS2() {
         }
       });
     },
-
+  
     // Guardamos la info en la mutación
     mutationToDom: function () {
       const container = document.createElement('mutation');
       container.setAttribute('clientType', this.clientType || "");
+      container.setAttribute('serviceName', this.getFieldValue("SERVICE_NAME") || "");
       return container;
     },
+  
     domToMutation: function (xmlElement: { getAttribute: (arg0: string) => string; }) {
       this.clientType = xmlElement.getAttribute('clientType') || "";
+      const serviceName = xmlElement.getAttribute('serviceName') || "";
+      this.setFieldValue(serviceName, "SERVICE_NAME");
     },
-
+  
     // Notifica a bloques hijos que el clientType cambió
     updateChildren_: function () {
       const mainInput = this.getInput("MAIN");
@@ -406,6 +414,7 @@ export function definirBloquesROS2() {
       }
     }
   };
+  
 
 
   Blockly.Blocks['ros2_service_available'] = {
@@ -794,51 +803,51 @@ export function definirGeneradoresROS2() {
   pythonGenerator.forBlock['ros_create_client'] = function (block) {
     const clientName = block.getFieldValue('CLIENT_NAME');
     let clientType = block.getFieldValue('CLIENT_TYPE');
-
-    // 1) Buscar en srvList el objeto SrvInfo correspondiente
-    //    y extraer los campos del request
+    const serviceName = block.getFieldValue('SERVICE_NAME');  // Campo nuevo para el nombre del servicio
+  
+    // 1) Buscar en srvList el objeto SrvInfo correspondiente y extraer los campos del request
     const srvInfo = srvList.find(srv => srv.name === clientType);
     const requestFields = srvInfo?.variables.request || [];
     console.log(requestFields);
-
+  
     // 2) Generar el callback (por ejemplo, un while not …)
     let callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK') || "";
     callbackCode = removeCommonIndentation(callbackCode);
     callbackCode = pythonGenerator.prefixLines(callbackCode, `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}`);
-
+  
     clientType = clientType.replace('.srv', '');
     // 3) Generar la clase y el constructor
     let code = `client|${clientType}\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.cli = self.create_client(${clientType}, '${clientName}')\n\n`;
-
+    code += `${TAB_SPACE}${TAB_SPACE}self.cli = self.create_client(${clientType}, '${serviceName}')\n\n`;
+  
     code += `${TAB_SPACE}${TAB_SPACE}try:\n`;
     if (!callbackCode.trim()) {
       code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}pass\n`;
     } else {
       code += callbackCode;
-      // Como ejemplo, después de la lógica del callback, creamos la request
+      // Después de la lógica del callback, se crea la request
       code += `\n${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.req = ${clientType}.Request()\n`;
     }
     code += `${TAB_SPACE}${TAB_SPACE}except Exception as e:\n`;
     code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error en el callback: {}".format(e))\n\n`;
-
-    // 4) Generar el método "send_request" con los campos
-    //    Se construye la lista de parámetros según requestFields
+  
+    // 4) Generar el método "send_request" con los campos del request
     const paramList = requestFields.map(field => field.name).join(', ');
     code += `${TAB_SPACE}def send_request(self, ${paramList}):\n`;
-
-    // 5) Asignamos cada campo en self.req.<campo> = <campo>
+  
+    // 5) Asignar cada campo en self.req.<campo> = <campo>
     requestFields.forEach(field => {
       code += `${TAB_SPACE}${TAB_SPACE}self.req.${field.name} = ${field.name}\n`;
     });
-    // 6) Retornamos la llamada asíncrona
+    // 6) Retornar la llamada asíncrona
     code += `${TAB_SPACE}${TAB_SPACE}return self.cli.call_async(self.req)\n`;
-
+  
     let main_code = pythonGenerator.statementToCode(block, 'MAIN');
     main_code = removeCommonIndentation(main_code);
     code += main_code;
     return code;
   };
+  
 
   pythonGenerator.forBlock['ros2_service_available'] = function (block) {
     const timeout = block.getFieldValue('TIMEOUT') || 1.0;
