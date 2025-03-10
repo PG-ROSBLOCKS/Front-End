@@ -801,7 +801,6 @@ export function definirGeneradoresROS2() {
   };
 
   pythonGenerator.forBlock['ros_create_client'] = function (block) {
-    const clientName = block.getFieldValue('CLIENT_NAME');
     let clientType = block.getFieldValue('CLIENT_TYPE');
     const serviceName = block.getFieldValue('SERVICE_NAME');  // Campo nuevo para el nombre del servicio
   
