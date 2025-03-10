@@ -17,11 +17,11 @@ const common_msgs: [string, string][] = [
   ['Pose (turtlesim)', 'turtlesim.msg.Pose']
 ];
 const common_msgs_for_custom: [string, string][] = [
-  ['String (std_msgs)', 'std_msgs/String'],
-  ['Bool (std_msgs)', 'std_msgs/Bool'],
-  ['Int64 (std_msgs)', 'std_msgs/Int64'],
-  ['Char (std_msgs)', 'std_msgs/Char'],
-  ['Float32 (std_msgs)', 'std_msgs/Float32'],
+  ['String (std_msgs)', 'string'],
+  ['Bool (std_msgs)', 'bool'],
+  ['Int64 (std_msgs)', 'int64'],
+  ['Char (std_msgs)', 'char'],
+  ['Float32 (std_msgs)', 'float32'], //TODO: Revisar que los tipos estén bien declarados para los .srv, ya que cambian cuando es un tipo de dato no primitivo
   ['Twist (geometry_msgs)', 'geometry_msgs/Twist'],
   ['Odometry (nav_msgs)', 'nav_msgs/Odometry'],
   ['Pose (turtlesim)', 'turtlesim/Pose']
@@ -500,15 +500,15 @@ export function definirBloquesROS2() {
         // Recuperamos el valor previo (si existe) o ponemos alguno por defecto
         const storedValue = this.fieldValues[field.name] || "";
 
-        if (field.type === "std_msgs/Int64") {
+        if (field.type === "int64") {
           // Aquí podemos parsear storedValue a número, por si el usuario lo dejó en string
           const numValue = parseFloat(storedValue) || 0;
           dummy.appendField(new Blockly.FieldNumber(numValue), field.name);
         }
-        else if (field.type === "std_msgs/String") {
+        else if (field.type === "string") {
           dummy.appendField(new Blockly.FieldTextInput(storedValue), field.name);
         }
-        else if (field.type === "std_msgs/Bool") {
+        else if (field.type === "bool") {
           // Si no hay nada guardado, asumimos "True"
           // 1) Crear instancia del FieldDropdown
           const boolField = new Blockly.FieldDropdown(
