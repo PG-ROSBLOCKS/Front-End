@@ -418,12 +418,12 @@ export function definirBloquesROS2() {
   
       this.appendStatementInput("CALLBACK")
         .setCheck(null)
-        .appendField("Callback");
+        .appendField("Init:");
   
       // Añadimos un hueco “MAIN” para conectar un bloque “hijo”
       this.appendStatementInput("MAIN")
         .setCheck(null)
-        .appendField("En main:");
+        .appendField("Procesar petición:");
   
       this.setColour(230);
       this.setTooltip("Bloque para crear un cliente asíncrono en ROS2");
