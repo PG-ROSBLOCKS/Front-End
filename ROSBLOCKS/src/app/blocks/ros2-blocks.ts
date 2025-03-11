@@ -14,7 +14,23 @@ const common_msgs: [string, string][] = [
   ['Float32 (std_msgs)', 'std_msgs.msg.Float32'],
   ['Twist (geometry_msgs)', 'geometry_msgs.msg.Twist'],
   ['Odometry (nav_msgs)', 'nav_msgs.msg.Odometry'],
-  ['Pose (turtlesim)', 'turtlesim.msg.Pose']
+  ['Pose (turtlesim)', 'turtlesim.msg.Pose'],
+
+  ['Int16 (std_msgs)', 'std_msgs.msg.Int16'],
+  ['Empty (std_msgs)', 'std_msgs.msg.Empty'],
+  ['Float64 (std_msgs)', 'std_msgs.msg.Float64'],
+  ['ColorRGBA (std_msgs)', 'std_msgs.msg.ColorRGBA'],
+  ['Header (std_msgs)', 'std_msgs.msg.Header'],
+  ['Byte (std_msgs)', 'std_msgs.msg.Byte'],
+
+  //Geometry
+  ['Pose (geometry_msgs)', 'geometry_msgs.msg.Pose'],
+  ['Vector3 (geometry_msgs)', 'geometry_msgs.msg.Vector3'],
+  ['Point (geometry_msgs)', 'geometry_msgs.msg.Point'],
+  ['Quaternion (geometry_msgs)', 'geometry_msgs.msg.Quaternion'],
+  ['Transform (geometry_msgs)', 'geometry_msgs.msg.Transform'],
+  ['Pose2D (geometry_msgs)', 'geometry_msgs.msg.Pose2D'],
+  ['Wrench (geometry_msgs)', 'geometry_msgs.msg.Wrench']
 ];
 const common_msgs_for_custom: [string, string][] = [
   ['String (std_msgs)', 'string'],

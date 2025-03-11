@@ -101,6 +101,7 @@
   ::-webkit-scrollbar-thumb {
     background: #00fbff;
     border: 53px none #00ffd5;;
+    margin: 2px;
     border-radius: 50px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -110,15 +111,15 @@
     background: #00e7eb;
   }
   ::-webkit-scrollbar-track {
-    background: #9c9c9c;
+    background: #ddf3f2;
     border: 0px none #941e1e;
     border-radius: 0px;
   }
   ::-webkit-scrollbar-track:hover {
-    background: #8f8f8f;
+    background: #cadbda;
   }
   ::-webkit-scrollbar-track:active {
-    background: #828282;
+    background: #ddf3f2;
   }
   ::-webkit-scrollbar-corner {
     background: transparent;
