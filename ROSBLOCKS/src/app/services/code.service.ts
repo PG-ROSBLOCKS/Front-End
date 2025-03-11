@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { WebSocketSubject, webSocket } from 'rxjs/webSocket';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -23,14 +23,14 @@ export class CodeService {
   uploadCode(fileName: string, code: string, type: string): Observable<any> {
     const payload = { file_name: fileName, code: code, type: type };
     return this.http.post(`${this.API_URL}/upload/`, payload, {
-      headers: { 'Content-Type': 'application/json' }, 
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
   executeCode(fileName: string): Observable<any> {
     return this.http.get(`${this.API_URL}/execution/execute/${fileName}`);
   }
-  
+
   connectToWebSocket(sessionId: string): WebSocketSubject<any> {
     this.wsSubject = webSocket(`${this.API_URL.replace('http', 'ws')}/execution/ws/${sessionId}`);
     return this.wsSubject;
@@ -47,7 +47,7 @@ export class CodeService {
       .subscribe({
         next: (response) => {
           console.log('Sesión eliminada con éxito:', response);
-          this.closeConnection(); 
+          this.closeConnection();
         },
         error: (error) => console.error('Error al matar la sesión:', error)
       });
@@ -64,7 +64,7 @@ export class CodeService {
       .subscribe({
         next: (response) => {
           console.log(`Archivo ${fileName} eliminado con éxito:`, response);
-          this.closeConnection(); 
+          this.closeConnection();
         },
         error: (error) => console.error(`Error al eliminar ${fileName}:`, error)
       });
@@ -81,7 +81,7 @@ export class CodeService {
   setNoBlocks(flag: boolean) {
     this.noBlocksSubject.next(flag);
   }
-  
+
   exportProject(): void {
     this.http.get(`${this.API_URL}/export-project/`, { responseType: 'blob' }).subscribe(response => {
       const blob = new Blob([response], { type: 'application/gzip' });
@@ -93,9 +93,23 @@ export class CodeService {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
     }, error => {
       console.error('Error al exportar el proyecto:', error);
     });
   }
+
+  checkSrvFiles(): Observable<{ exists: boolean, files: string[] }> {
+    return this.http.get<{ exists: boolean, files: string[] }>(`${this.API_URL}/srvfiles`)
+      .pipe(
+        tap(response => console.log('checkSrvFiles returns:', response))
+      );
+  }
+
+    //Función para eliminar un .srv o un .msg del proyecto 
+    deleteInterfaceFile(fileType: 'srv' | 'msg', fileName: string): Observable<any> {
+      console.log('El endpoint es:', `${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);
+      return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
+    }
+
 }
