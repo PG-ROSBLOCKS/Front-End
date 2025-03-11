@@ -10,9 +10,7 @@ import { switchMap } from 'rxjs/operators';
 import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-
-
+import { SafeResourceUrl } from '@angular/platform-browser';
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
@@ -37,6 +35,7 @@ export class WorkspaceComponent implements OnDestroy {
   autoScrollEnabled: boolean = true;
   tabs: { name: string; id: number; isPlaying: boolean }[] = [];
   selectedTabId: number | null = null;
+  sanitizedVncUrl!: SafeResourceUrl;
 
   toolbox = {
     kind: 'categoryToolbox',
@@ -173,15 +172,10 @@ export class WorkspaceComponent implements OnDestroy {
     ],
   };
 
-  /* TODO */
-  vncBaseUrl: string = 'http://localhost:8080/vnc_auto.html';
-  sanitizedVncUrl!: SafeResourceUrl;
-
   constructor(
     private http: HttpClient,
     private codeService: CodeService,
     private alertService: AlertService,
-    private sanitizer: DomSanitizer
   ) { }
 
   ngOnDestroy(): void {
@@ -190,17 +184,10 @@ export class WorkspaceComponent implements OnDestroy {
     }
   }
 
-  reloadVncIframe(): void {
-    const timestamp = new Date().getTime();
-    const newUrl = `${this.vncBaseUrl}?t=${timestamp}`;
-    this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(newUrl);
-  }
-
   resetTurtleContainer(): void {
     this.http.post('http://localhost:8000/reset/', {}).subscribe({
       next: (response) => {
         console.log("Turltesim restarted:", response);
-
       },
       error: (error) => {
         console.error("Error restarting Turtlesim:", error);
@@ -396,7 +383,7 @@ export class WorkspaceComponent implements OnDestroy {
       this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
     });
 
-    // DELETE MENSAJE
+    // DELETE MESSAGE
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
         if (event.oldXml) {

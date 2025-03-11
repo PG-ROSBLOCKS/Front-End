@@ -86,14 +86,13 @@
   font-style: normal;
 }
 
-
 * {
   font-family: 'Kanit', sans-serif;
 }
 /* Scroll bar */
 ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 8px;;
+    height: 8px;
   }
   ::-webkit-scrollbar-button {
     width: 0px;
@@ -101,7 +100,7 @@
   }
   ::-webkit-scrollbar-thumb {
     background: #00fbff;
-    border: 53px none #00ffd5;
+    border: 53px none #00ffd5;;
     border-radius: 50px;
   }
   ::-webkit-scrollbar-thumb:hover {

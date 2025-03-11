@@ -47,7 +47,8 @@
                 </div>
             </div>
         </div>
-        <div #resizer class="resizer" appResizer [leftContainer]="leftSection" [rightContainer]="rightSection"></div>
+        <div #resizer class="resizer" appResizer [leftContainer]="leftSection" [rightContainer]="rightSection">
+        </div>
         <div #rightSection class="right-section">
             <div class="maps">
                 <button class="sample-map">
@@ -84,7 +85,6 @@
             </div>
             <div class="resetTurtleDiv">
                 <button (click)="resetTurtleContainer()">Reiniciar</button>
-                <button (click)="reloadVncIframe()">Recargar</button>
             </div>
             <textarea [(ngModel)]="testingCodeBackend" placeholder="Escribe tu código aquí"></textarea>
                 <button (click)="executeCode(testingCodeBackend)">Ejecutar</button>

@@ -47,7 +47,7 @@ export class HeaderComponent {
 
   async export() {
     if (this.noTabs == true || this.noBlocks == true) {
-      const resultado = await this.alertService.showAlert("El proyecto está vacío. Agrega nodos y/o bloques antes de exportar")
+      const result = await this.alertService.showAlert("El proyecto está vacío. Agrega nodos y/o bloques antes de exportar")
     }
     else {
       if (this.workspaceChanged == false) {

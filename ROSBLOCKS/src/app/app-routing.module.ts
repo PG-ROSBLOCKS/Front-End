@@ -9,7 +9,6 @@ const routes: Routes = [
   {path: 'a', component: ErrorComponent},
   {path: 'help', component: RosblocksHelpComponent},
   {path: '**', component: WorkspaceComponent}
-   //Inicio
 ];
 
 @NgModule({

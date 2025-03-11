@@ -27,8 +27,6 @@ const common_msgs_for_custom: [string, string][] = [
   ['Pose (turtlesim)', 'turtlesim/Pose']
 ];
 
-
-
 export function definirBloquesROS2() {
   Blockly.Blocks['ros2_create_publisher'] = {
     init: function () {
@@ -64,7 +62,6 @@ export function definirBloquesROS2() {
     }
   };
 
-
   // Block to create a subscriber
   Blockly.Blocks['ros2_create_subscriber'] = {
     init: function () {
@@ -72,12 +69,10 @@ export function definirBloquesROS2() {
         .appendField("Crear suscriptor")
         .appendField(new Blockly.FieldTextInput("/mi_topico"), "TOPIC_NAME")
         .appendField(new Blockly.FieldDropdown(common_msgs), "MSG_TYPE");
-
       // C-shaped input
       this.appendStatementInput("CALLBACK")
         .setCheck(null)
         .appendField("Callback");
-
       // The previous connection is removed so that it cannot be joined by a higher block
       // this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
@@ -86,7 +81,6 @@ export function definirBloquesROS2() {
       this.setHelpUrl("");
     }
   };
-
 
   Blockly.Blocks['ros2_subscriber_msg_data'] = {
     init: function () {
@@ -160,11 +154,9 @@ export function definirBloquesROS2() {
           ["ERROR", "self.get_logger().error"],
           ["FATAL", "self.get_logger().fatal"]
         ]), "LOG_LEVEL");
-
       this.appendValueInput("MESSAGE")
         .setCheck("String")
         .appendField("Mensaje");
-
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(230);
@@ -200,7 +192,6 @@ export function definirBloquesROS2() {
         .appendField(new Blockly.FieldDropdown(common_msgs_for_custom), "MESSAGE_TYPE")
         .appendField("Nombre")
         .appendField(new Blockly.FieldTextInput("parametro"), "MESSAGE_NAME");
-
       this.setPreviousStatement(true, "ros2_named_message");
       this.setNextStatement(true, "ros2_named_message");
       this.setColour(160);
@@ -214,18 +205,14 @@ export function definirBloquesROS2() {
       this.appendDummyInput()
         .appendField("Servicio")
         .appendField(new Blockly.FieldTextInput("MiServicio"), "SERVICE_NAME");
-
       this.appendStatementInput("REQUEST_MESSAGES") // Just accepts message blocks
         .setCheck("ros2_named_message")
         .appendField("Solicitud");
-
       this.appendDummyInput()
         .appendField("---") // Separates between Request y Response en .srv
-
       this.appendStatementInput("RESPONSE_MESSAGES") // Just accepts message blocks
         .setCheck("ros2_named_message")
         .appendField("Respuesta");
-
       this.setColour(230);
       this.setTooltip("Define un servicio personalizado en ROS con parámetros.");
       this.setHelpUrl("");
@@ -236,11 +223,9 @@ export function definirBloquesROS2() {
       this.appendDummyInput()
         .appendField("Definir Mensaje")
         .appendField(new Blockly.FieldTextInput("MiMensaje"), "MESSAGE_NAME");
-
       this.appendStatementInput("MESSAGE_FIELDS")
         .setCheck("ros2_named_message")
         .appendField("Campos del mensaje");
-
       this.setColour(230);
       this.setTooltip("Define un mensaje personalizado para ROS 2.");
       this.setHelpUrl("");
@@ -267,7 +252,6 @@ export function definirBloquesROS2() {
             return [["Sin servicios", ""]];
           }
         }), "SERVER_TYPE");
-
       this.appendStatementInput("CALLBACK")
         .setCheck("Callback")
         .appendField("Respuesta");
@@ -276,7 +260,6 @@ export function definirBloquesROS2() {
       this.setHelpUrl("");
     }
   };
-
 
   Blockly.Blocks['srv_variable'] = {
     init: function () {
@@ -320,9 +303,7 @@ export function definirBloquesROS2() {
       // Second input for the expression to be assigned
       this.appendValueInput("VALUE")
         .setCheck(null);
-
       this.setInputsInline(true);
-
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(230);
@@ -334,7 +315,6 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_publish_twist'] = {
     init: function() {
       this.setInputsInline(true);
-      
       this.appendDummyInput()
           .appendField("Publicar Twist");
       this.appendValueInput("LINEAR")
@@ -392,7 +372,6 @@ export function definirBloquesROS2() {
   //Block to create a client
   Blockly.Blocks["ros_create_client"] = {
     init: function () {
-      
       this.appendDummyInput()
         .appendField("Crear Cliente")
         .appendField(new Blockly.FieldTextInput("minimal_client_async"), "CLIENT_NAME")
@@ -424,15 +403,12 @@ export function definirBloquesROS2() {
       this.appendStatementInput("MAIN")
         .setCheck(null)
         .appendField("Procesar petición:");
-  
       this.setColour(230);
       this.setTooltip("Bloque para crear un cliente asíncrono en ROS2");
       this.setHelpUrl("");
-  
       // Internally we save the serviceType and the serviceName
       this.clientType = "";
       this.serviceName = this.getFieldValue("SERVICE_NAME");
-  
       this.setOnChange((event: { type: EventType; recordUndo: any; }) => {
         // Check if the event is of type CREATE, CHANGE, MOVE, etc.
         // and if the user is not in the middle of an “undo/redo” (event.recordUndo).
@@ -446,7 +422,6 @@ export function definirBloquesROS2() {
         }
       });
     },
-  
     // We save the info in the mutation
     mutationToDom: function () {
       const container = document.createElement('mutation');
@@ -454,13 +429,11 @@ export function definirBloquesROS2() {
       container.setAttribute('serviceName', this.getFieldValue("SERVICE_NAME") || "");
       return container;
     },
-  
     domToMutation: function (xmlElement: { getAttribute: (arg0: string) => string; }) {
       this.clientType = xmlElement.getAttribute('clientType') || "";
       const serviceName = xmlElement.getAttribute('serviceName') || "";
       this.setFieldValue(serviceName, "SERVICE_NAME");
     },
-  
     // Notify child blocks that the clientType has changed
     updateChildren_: function () {
       const mainInput = this.getInput("MAIN");
@@ -473,8 +446,6 @@ export function definirBloquesROS2() {
       }
     }
   };
-  
-
 
   Blockly.Blocks['ros2_service_available'] = {
     init: function () {
@@ -491,7 +462,6 @@ export function definirBloquesROS2() {
 
   Blockly.Blocks["ros_send_request"] = {
     init: function () {
-
       this.appendDummyInput("TITLE")
         .appendField("Enviar petición al servicio");
       // Block type “statement” or “void”
@@ -500,19 +470,16 @@ export function definirBloquesROS2() {
       this.setColour(230);
       this.setTooltip("Envía la petición y espera la respuesta.");
       this.setHelpUrl("");
-
       // Internal variables:
       this.clientType = "";       // Will be updated with “updateFromParent”
       this.requestFields = [];    // List of request fields
       this.fieldValues = {};      // *** Object to store the entered values
     },
-
     // Mutation
     mutationToDom: function () {
       const container = document.createElement('mutation');
       container.setAttribute('clientType', this.clientType);
       container.setAttribute('requestFields', JSON.stringify(this.requestFields));
-
       // *** Also save the values ​​in the mutation
       container.setAttribute('fieldValues', JSON.stringify(this.fieldValues));
       return container;
@@ -532,7 +499,6 @@ export function definirBloquesROS2() {
       } catch (e) {
         this.fieldValues = {};
       }
-
       this.updateShape_();
     },
 
@@ -550,7 +516,6 @@ export function definirBloquesROS2() {
     updateShape_: function () {
       // 1) We save the current values ​​of the fields before redoing the shape
       this.saveFieldValues();
-
       // 2) We remove all inputs except “TITLE”
       const oldInputs = [...this.inputList];
       for (const inp of oldInputs) {
@@ -558,16 +523,13 @@ export function definirBloquesROS2() {
           this.removeInput(inp.name);
         }
       }
-
       // 3) For each request field, we create a new DummyInput and assign the value that is saved
       for (const field of this.requestFields) {
         const inputName = "FIELD_" + field.name;
         const dummy = this.appendDummyInput(inputName);
         dummy.appendField(field.name + ": ");
-
         // Recuperamos el valor previo (si existe) o ponemos alguno por defecto
         const storedValue = this.fieldValues[field.name] || "";
-
         if (field.type === "int64") {
           // We recover the previous value (if it exists) or we put a default one
           const numValue = parseFloat(storedValue) || 0;
@@ -585,16 +547,13 @@ export function definirBloquesROS2() {
               ["False", "False"]
             ]
           );
-          
           // This value determines which initial option will be displayed
           boolField.setValue(storedValue === "False" ? "False" : "True");
-          
           dummy.appendField(boolField, field.name);
         }
       }
     },
-
-    /**
+/**
 * Read the current values ​​of the fields in the block and save them
 * in this.fieldValues, to use them later and not lose the information.
 */
@@ -740,10 +699,8 @@ export function definirGeneradoresROS2() {
     code += `${TAB_SPACE}${TAB_SPACE}self.publisher_.publish(msg)\n`;
     code += `${TAB_SPACE}${TAB_SPACE}self.get_logger().info('Publishing: "%s"' % msg.data)\n`;
     code += `${TAB_SPACE}${TAB_SPACE}self.i += 1\n`;
-
     return code;
   };
-
 
   // Code generator for the "Create subscriber" block
   pythonGenerator.forBlock['ros2_create_subscriber'] = function (block) {
@@ -932,13 +889,11 @@ export function definirGeneradoresROS2() {
     return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
   };
 
-
-
   pythonGenerator.forBlock['srv_variable'] = function (block) {
-    // Lee el campo VAR_SECTION (ya definido en el bloque al crearse desde el toolbox)
+    // reads VAR_SECTION (already defined in the block when toolbox is created)
     const section = block.getFieldValue('VAR_SECTION');
     const varName = block.getFieldValue('VAR_NAME');
-    // Se devuelve, por ejemplo, "request.a" o "response.sum"
+    // Goes back, for example, "request.a" o "response.sum"
     return [`${section}.${varName}`, Order.ATOMIC];
   };
 
@@ -946,46 +901,46 @@ export function definirGeneradoresROS2() {
     const fieldCode = pythonGenerator.valueToCode(block, 'RESPONSE_FIELD', Order.NONE) || "response.campo";
     const valueCode = pythonGenerator.valueToCode(block, 'VALUE', Order.NONE) || "0";
 
-    // Genera algo como:  response.sum = request.a + request.b
+    // Generates something like:  response.sum = request.a + request.b
     const code = `${fieldCode} = ${valueCode}\n`;
     return code;
   };
 
   pythonGenerator.forBlock['ros_create_client'] = function (block) {
     let clientType = block.getFieldValue('CLIENT_TYPE');
-    const serviceName = block.getFieldValue('SERVICE_NAME');  // Campo nuevo para el nombre del servicio
+    const serviceName = block.getFieldValue('SERVICE_NAME');  // New field for service name
     const timer = block.getFieldValue('TIMER');
     const messageBase = block.getFieldValue('MESSAGE_BASE');
-    // 1) Buscar en srvList el objeto SrvInfo correspondiente y extraer los campos del request
+    // 1) Search on srvList the object SrvInfo needed and extract the fields of request
     const srvInfo = srvList.find(srv => srv.name === clientType);
     const requestFields = srvInfo?.variables.request || [];
     console.log(requestFields);
-   
+
     clientType = clientType.replace('.srv', '');
-    // 3) Generar la clase y el constructor
-  // Comenzar a construir el código generado; la primera línea es para identificar el tipo de bloque
+    // 3) Generates class and construction
+  // Start building the generated code; the first line is to identify the block type
   let code = `client|${clientType}\n`;
   
-  // La siguiente línea se escribe dentro del constructor (1 nivel de indentación)
+  // The next line is written inside the constructor (1 level of indentation)
   code += `${TAB_SPACE}${TAB_SPACE}self.cli = self.create_client(${clientType}, '${serviceName}')\n`;
   
-  // Se genera el while para esperar el servicio; la línea del while está al mismo nivel que la anterior
+  // The while is generated to wait for the service; the while line is at the same level as the previous one
   code += `${TAB_SPACE}${TAB_SPACE}while not self.cli.wait_for_service(timeout_sec=${timer}):\n`;
-  // Dentro del while, se añade una indentación adicional
+  // Inside the while, an additional indentation is added
   code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().info('${messageBase}')\n`;
   
-  // Después del while, se crea la request, al mismo nivel que el while
+  // After the while, the request is created, at the same level as the while
   code += `${TAB_SPACE}${TAB_SPACE}self.req = ${clientType}.Request()\n\n`;
   
-    // 4) Generar el método "send_request" con los campos del request
+    // 4) Generate the "send_request" method with the request fields
     const paramList = requestFields.map(field => field.name).join(', ');
     code += `${TAB_SPACE}def send_request(self, ${paramList}):\n`;
   
-    // 5) Asignar cada campo en self.req.<campo> = <campo>
+    // 5) Assign each field in self.req.<field> = <field>
     requestFields.forEach(field => {
       code += `${TAB_SPACE}${TAB_SPACE}self.req.${field.name} = ${field.name}\n`;
     });
-    // 6) Retornar la llamada asíncrona
+    // 6) Return asynchronous call
     code += `${TAB_SPACE}${TAB_SPACE}return self.cli.call_async(self.req)\n`;
   
     let main_code = pythonGenerator.statementToCode(block, 'MAIN');
@@ -994,13 +949,12 @@ export function definirGeneradoresROS2() {
     return code;
   };
   
-
   pythonGenerator.forBlock['ros2_service_available'] = function (block) {
     const timeout = block.getFieldValue('TIMEOUT') || 1.0;
     // Generate the code that returns True/False according to wait_for_service
     const code = `self.cli.wait_for_service(timeout_sec=${timeout})`;
     // The second element of the array is the order of precedence;
-// use pythonGenerator.ORDER_LOGICAL_NOT if you're combining it with a 'not'
+    // use pythonGenerator.ORDER_LOGICAL_NOT if you're combining it with a 'not'
     return [code, Order.NONE];
   };
 
@@ -1031,7 +985,6 @@ export function definirGeneradoresROS2() {
     code += `node.get_logger().info("Respuesta: {}".format(response))\n`;
     return code;
   };
-
 }
 
 /**
@@ -1049,7 +1002,7 @@ function removeCommonIndentation(code: string) {
     lines.pop();
   }
 
-  // Calcula la indentación mínima
+  // Calculates minimum indentation
   let minIndent = Infinity;
   for (const line of lines) {
     if (!line.trim()) continue; // Ignore empty lines
@@ -1063,8 +1016,7 @@ function removeCommonIndentation(code: string) {
     return code; // If there are no lines with content
   }
 
-  // Quita minIndent de cada línea
+  // Deletes minIndent on every line
   lines = lines.map(line => line.slice(minIndent));
   return lines.join('\n');
 }
-

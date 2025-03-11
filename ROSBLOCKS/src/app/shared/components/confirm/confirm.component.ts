@@ -8,7 +8,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 export class ConfirmComponent {
   @Input() message: string = '¿Estás seguro?';
   
-  // Emite true si se confirma, false si se cancela
+  // Emits true if confirmed, false if canceled
   @Output() confirm = new EventEmitter<boolean>();
 
   confirmar(): void {

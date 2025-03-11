@@ -47,6 +47,11 @@ app-header {
   background-color: #253942;
   overflow-x: scroll;
   min-width: 100px;
+  z-index: 10;
+}
+
+.resizer {
+  z-index: 10;
 }
 
 .top-left {

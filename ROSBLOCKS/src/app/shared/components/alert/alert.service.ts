@@ -15,23 +15,23 @@ export class AlertService {
 
   showAlert(message: string): Promise<boolean> {
     return new Promise((resolve) => {
-      // Crear la fábrica del componente AlertComponent
+      // Creates fabric del componente AlertComponent
       const componentFactory = this.componentFactoryResolver.resolveComponentFactory(AlertComponent);
-      // Crear el componente
+      // Creates component
       this.alertComponentRef = componentFactory.create(this.injector);
-      // Asignar el mensaje
+      // Asigns message
       this.alertComponentRef.instance.message = message;
-      // Suscribirse al output para resolver la promesa
+      // Suscribe to output to resolve the promise
       this.alertComponentRef.instance.ok.subscribe((result: boolean) => {
         this.removeAlert();
         resolve(result);
       });
 
-      // Agregar el componente al árbol de vistas
+      // Add the component to the view tree
       this.appRef.attachView(this.alertComponentRef.hostView);
-      // Obtener el elemento DOM del componente
+      // Get the DOM element of the component
       const domElem = (this.alertComponentRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
-      // Insertarlo en el body o en otro contenedor definido
+      // Insert it into the body or another defined container
       document.body.appendChild(domElem);
     });
   }

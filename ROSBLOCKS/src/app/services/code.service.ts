@@ -111,4 +111,8 @@ export class CodeService {
     console.log('El endpoint es:', `${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);
     return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
   }
+
+  vncTurtlesim() {
+    return `${this.API_URL}/vnc_auto.html`;
+  }
 }
