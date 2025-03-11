@@ -604,6 +604,20 @@ export function definirBloquesROS2() {
       this.setHelpUrl("");
     }
   };
+
+  Blockly.Blocks['ros2_sleep'] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField("Esperar")
+        .appendField(new Blockly.FieldNumber(1, 0.1, 60, 0.1), "SECONDS")
+        .appendField("segundos");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(120);
+      this.setTooltip("Pausa la ejecución por un número determinado de segundos.");
+      this.setHelpUrl("");
+    }
+  };
 }
 
 type ImportsDictionary = {
@@ -638,6 +652,10 @@ function addImport(msgType: string): string {
     }
     return srvName;
   }
+  else if (msgType === 'time') {
+    importsDictMsgs['time'] = new Set(['time']);
+    return msgType;
+  }
 
   return msgType;
 }
@@ -646,9 +664,13 @@ function getImports(): string {
   let importCode = `import rclpy\nfrom rclpy.node import Node\n`;
 
   for (const [pkg, msgs] of Object.entries(importsDictMsgs)) {
-      if (msgs.size > 0) {
-          importCode += `from ${pkg}.msg import ${Array.from(msgs).join(', ')}\n`;
+    if (msgs.size > 0) {
+      if (pkg === 'time') {
+        importCode += `import time\n`;
+      } else {
+        importCode += `from ${pkg}.msg import ${Array.from(msgs).join(', ')}\n`;
       }
+    }
   }
 
   for (const [pkg, srvs] of Object.entries(importsDictSrvs)) {
@@ -983,6 +1005,13 @@ export function definirGeneradoresROS2() {
     code += `rclpy.spin_until_future_complete(node, future)\n`;
     code += `response = future.result()\n`;
     code += `node.get_logger().info("Respuesta: {}".format(response))\n`;
+    return code;
+  };
+
+  pythonGenerator.forBlock['ros2_sleep'] = function (block) {
+    const seconds = block.getFieldValue('SECONDS');
+    addImport('time');
+    const code = `time.sleep(${seconds})\n`;
     return code;
   };
 }

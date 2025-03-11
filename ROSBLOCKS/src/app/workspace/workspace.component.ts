@@ -167,6 +167,7 @@ export class WorkspaceComponent implements OnDestroy {
           { kind: "block", type: "ros2_publish_twist" },
           { kind: "block", type: "ros2_rotate_turtle" },
           { kind: "block", type: "ros2_turtle_set_pose" },
+          { kind: "block", type: "ros2_sleep" },
         ]
       }
     ],
