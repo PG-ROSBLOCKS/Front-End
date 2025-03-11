@@ -395,6 +395,7 @@ export function definirBloquesROS2() {
   //Bloque para crear un cliente 
   Blockly.Blocks["ros_create_client"] = {
     init: function () {
+      
       this.appendDummyInput()
         .appendField("Crear Cliente")
         .appendField(new Blockly.FieldTextInput("minimal_client_async"), "CLIENT_NAME")
@@ -415,10 +416,12 @@ export function definirBloquesROS2() {
         }), "CLIENT_TYPE")
         .appendField("Servicio")
         .appendField(new Blockly.FieldTextInput("add_two_ints"), "SERVICE_NAME");
-  
-      this.appendStatementInput("CALLBACK")
-        .setCheck(null)
-        .appendField("Init:");
+              this.appendDummyInput()
+        .appendField("Timeout (segundos)")
+        .appendField(new Blockly.FieldNumber(0.5, 0.1, 60, 0.1), "TIMER");
+        this.appendDummyInput()
+        .appendField("Mensaje base")
+        .appendField(new Blockly.FieldTextInput("service not available, waiting again..."), "MESSAGE_BASE");
   
       // Añadimos un hueco “MAIN” para conectar un bloque “hijo”
       this.appendStatementInput("MAIN")
@@ -959,32 +962,28 @@ export function definirGeneradoresROS2() {
   pythonGenerator.forBlock['ros_create_client'] = function (block) {
     let clientType = block.getFieldValue('CLIENT_TYPE');
     const serviceName = block.getFieldValue('SERVICE_NAME');  // Campo nuevo para el nombre del servicio
-  
+    const timer = block.getFieldValue('TIMER');
+    const messageBase = block.getFieldValue('MESSAGE_BASE');
     // 1) Buscar en srvList el objeto SrvInfo correspondiente y extraer los campos del request
     const srvInfo = srvList.find(srv => srv.name === clientType);
     const requestFields = srvInfo?.variables.request || [];
     console.log(requestFields);
-  
-    // 2) Generar el callback (por ejemplo, un while not …)
-    let callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK') || "";
-    callbackCode = removeCommonIndentation(callbackCode);
-    callbackCode = pythonGenerator.prefixLines(callbackCode, `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}`);
-  
+   
     clientType = clientType.replace('.srv', '');
     // 3) Generar la clase y el constructor
-    let code = `client|${clientType}\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.cli = self.create_client(${clientType}, '${serviceName}')\n\n`;
+  // Comenzar a construir el código generado; la primera línea es para identificar el tipo de bloque
+  let code = `client|${clientType}\n`;
   
-    code += `${TAB_SPACE}${TAB_SPACE}try:\n`;
-    if (!callbackCode.trim()) {
-      code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}pass\n`;
-    } else {
-      code += callbackCode;
-      // Después de la lógica del callback, se crea la request
-      code += `\n${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.req = ${clientType}.Request()\n`;
-    }
-    code += `${TAB_SPACE}${TAB_SPACE}except Exception as e:\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error en el callback: {}".format(e))\n\n`;
+  // La siguiente línea se escribe dentro del constructor (1 nivel de indentación)
+  code += `${TAB_SPACE}${TAB_SPACE}self.cli = self.create_client(${clientType}, '${serviceName}')\n`;
+  
+  // Se genera el while para esperar el servicio; la línea del while está al mismo nivel que la anterior
+  code += `${TAB_SPACE}${TAB_SPACE}while not self.cli.wait_for_service(timeout_sec=${timer}):\n`;
+  // Dentro del while, se añade una indentación adicional
+  code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().info('${messageBase}')\n`;
+  
+  // Después del while, se crea la request, al mismo nivel que el while
+  code += `${TAB_SPACE}${TAB_SPACE}self.req = ${clientType}.Request()\n\n`;
   
     // 4) Generar el método "send_request" con los campos del request
     const paramList = requestFields.map(field => field.name).join(', ');
