@@ -201,25 +201,13 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   }
 
   resetTurtleContainer(): void {
-    // Llamada al endpoint para reiniciar el contenedor
     this.http.post('http://localhost:8000/reset/', {}).subscribe({
       next: (response) => {
-        console.log("Contenedor reiniciado:", response);
-        // Espera 5 segundos y luego recarga el iframe
-        setTimeout(() => {
-          const timestamp = new Date().getTime();
-          const newUrl = `${this.vncBaseUrl}?t=${timestamp}`;
-          this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(newUrl);
-        }, 5000);
+        console.log("Turltesim reiniciado:", response);
+
       },
       error: (error) => {
-        console.error("Error al reiniciar el contenedor:", error);
-        // Incluso en caso de error, se puede intentar recargar el iframe
-        setTimeout(() => {
-          const timestamp = new Date().getTime();
-          const newUrl = `${this.vncBaseUrl}?t=${timestamp}`;
-          this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(newUrl);
-        }, 5000);
+        console.error("Error al reiniciar Turtlesim:", error);
       }
     });
   }
