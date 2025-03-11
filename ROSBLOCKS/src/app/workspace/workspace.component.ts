@@ -5,7 +5,7 @@ import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
 import { definirBloquesROS2, definirGeneradoresROS2 } from '../blocks/ros2-blocks';
 import { CodeService } from '../services/code.service';
-import { Subscription, interval, of } from 'rxjs';
+import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
@@ -18,21 +18,21 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
   templateUrl: './workspace.component.html',
   styleUrls: ['./workspace.component.css']
 })
-export class WorkspaceComponent implements OnInit, OnDestroy {
+export class WorkspaceComponent implements OnDestroy {
   @ViewChild('resizer') resizer!: ElementRef;
   @ViewChild('leftSection') leftSection!: ElementRef;
   @ViewChild('rightSection') rightSection!: ElementRef;
 
   isResizing = false;
   private previousNames = new Map<number, string>();
-  MAX_NUM_PESTANAS = 8;
-  consoles_output: Map<string, string> = new Map();
-  consoles_sessions: Map<string, string> = new Map();
-  consoles_services: Map<string, CodeService> = new Map();
+  maxTabs = 8;
+  consolesOutput: Map<string, string> = new Map();
+  consolesSessions: Map<string, string> = new Map();
+  consolesServices: Map<string, CodeService> = new Map();
   websockets: Map<string, Subscription> = new Map();
-  text_code: Map<string, string> = new Map();
-  current_displayed_console_output: string = '';
-  codigo_testeo_backend: string = '';
+  textCode: Map<string, string> = new Map();
+  currentDisplayedConsoleOutput: string = '';
+  testingCodeBackend: string = '';
   workspaces: { [key: number]: Blockly.WorkspaceSvg } = {};
   autoScrollEnabled: boolean = true;
   tabs: { name: string; id: number; isPlaying: boolean }[] = [];
@@ -173,9 +173,9 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     ],
   };
 
+  /* TODO */
   vncBaseUrl: string = 'http://localhost:8080/vnc_auto.html';
   sanitizedVncUrl!: SafeResourceUrl;
-  private vncRefreshSubscription!: Subscription;
 
   constructor(
     private http: HttpClient,
@@ -183,10 +183,6 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     private alertService: AlertService,
     private sanitizer: DomSanitizer
   ) { }
-
-  // TEST 
-  ngOnInit(): void {
-  }
 
   ngOnDestroy(): void {
     for (const ws in this.websockets) {
@@ -203,16 +199,14 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   resetTurtleContainer(): void {
     this.http.post('http://localhost:8000/reset/', {}).subscribe({
       next: (response) => {
-        console.log("Turltesim reiniciado:", response);
+        console.log("Turltesim restarted:", response);
 
       },
       error: (error) => {
-        console.error("Error al reiniciar Turtlesim:", error);
+        console.error("Error restarting Turtlesim:", error);
       }
     });
   }
-
-
 
   // END TEST AREA
   /**
@@ -326,21 +320,21 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       theme: customTheme
     });
 
-    // Listener para eventos generales (cambios, creación y eliminación de bloques)
+    // Listener for general events (changes, creation & deleting blocks)
     this.workspaces[tabId].addChangeListener((event) => {
       if (event.type === Blockly.Events.BLOCK_CHANGE) {
         this.codeService.setWorkspaceChanged(true);
-        console.log('Evento detectado: BLOCK_CHANGE. Flag actualizado.');
+        console.log('Event detected: BLOCK_CHANGE. Flag updated.');
       } else if (event.type === Blockly.Events.BLOCK_CREATE) {
         this.codeService.setWorkspaceChanged(true);
-        console.log('Evento detectado: BLOCK_CREATE. Flag actualizado.');
+        console.log('Event detected: BLOCK_CREATE. Flag updated.');
       } else if (event.type === Blockly.Events.BLOCK_DELETE) {
         this.codeService.setWorkspaceChanged(true);
-        console.log('Evento detectado: BLOCK_DELETE. Flag actualizado.');
+        console.log('Event detected: BLOCK_DELETE. Flag updated.');
       }
     });
 
-    // ELIMINAR SUSCRIPTOR y PUBLICADOR
+    // DELETE SUSCPRITOR & PUBLISHER
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
         if (event.oldXml) {
@@ -350,77 +344,77 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
             xmlString.includes('ros2_create_publisher') ||
             xmlString.includes('ros2_subscriber_msg_data') ||
             xmlString.includes('ros2_publish_message')) {
-            console.log('Bloque de publicador o suscriptor eliminado');
-            const resultado = await this.alertService.showAlert('Acabas de eliminar un bloque de publicador o suscriptor, por ende la sesión terminará');
-            console.log('El usuario presionó OK:', resultado);
+            console.log('Publisher or subscriber block removed');
+            const result = await this.alertService.showAlert('Acabas de eliminar un bloque de publicador o suscriptor, por ende la sesión terminará');
+            console.log('User pressed OK:', result);
             this.stopTab(tabId);
-            this.consoles_sessions.delete(tabId.toString());
-            this.consoles_services.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || '');
+            this.consolesSessions.delete(tabId.toString());
+            this.consolesServices.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || '');
           }
         }
       }
       this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
     });
 
-    // ELIMINAR CLIENTE
+    // DELETE CLIENTE
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
         if (event.oldXml) {
           const xmlString = Blockly.Xml.domToText(event.oldXml);
           if (xmlString.includes('ros_create_client')) {
-            console.log('Bloque de cliente eliminado');
-            console.log('Bloque de publicador o suscriptor eliminado');
-            //Alert para avisar que se eliminará la sesión
-            const resultado = await this.alertService.showAlert('Acabas de eliminar un bloque de cliente, por ende la sesión terminará');
-            console.log('El usuario presionó OK:', resultado);
+            console.log('Client block deleted');
+            console.log('Publisher or subscriber block removed');
+            //Alert to advice session will be deleted
+            const result = await this.alertService.showAlert('Acabas de eliminar un bloque de cliente, por ende la sesión terminará');
+            console.log('User pressed OK:', result);
             this.stopTab(tabId);
-            this.consoles_sessions.delete(tabId.toString());
-            this.consoles_services.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || '');
+            this.consolesSessions.delete(tabId.toString());
+            this.consolesServices.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || '');
           }
         }
       }
       this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
     });
 
-    // ELIMINAR SERVIDOR
+    // DELETE SERVER
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
         if (event.oldXml) {
           const xmlString = Blockly.Xml.domToText(event.oldXml);
           if (xmlString.includes('ros_create_server')) {
-            console.log('Bloque de servidor eliminado');
-            const resultado = await this.alertService.showAlert('Acabas de eliminar un bloque de servidor, por ende la sesión terminará');
-            console.log('El usuario presionó OK:', resultado);
+            console.log('Server block removed');
+            const result = await this.alertService.showAlert('Acabas de eliminar un bloque de servidor, por ende la sesión terminará');
+            console.log('User pressed OK:', result);
             this.stopTab(tabId);
-            this.consoles_sessions.delete(tabId.toString());
-            // Se asume que para el servidor el nombre del nodo se guarda en la pestaña
+            this.consolesSessions.delete(tabId.toString());
+            // It is assumed that for the server the node name is saved in the tab
             const tabName = this.tabs.find(tab => tab.id === tabId)?.name || '';
-            this.consoles_services.get(tabId.toString())?.deleteFile(tabName);
+            this.consolesServices.get(tabId.toString())?.deleteFile(tabName);
           }
         }
       }
       this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
     });
 
-    // ELIMINAR MENSAJE
+    // DELETE MENSAJE
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
         if (event.oldXml) {
           const xmlString = Blockly.Xml.domToText(event.oldXml);
           if (xmlString.includes('ros2_message_block')) {
-            console.log('Bloque de mensaje eliminado');
-            const resultado = await this.alertService.showAlert('Acabas de eliminar un bloque de mensaje, este se eliminará definitivamente');
-            console.log('El usuario presionó OK:', resultado);
+            console.log('Message block removed');
+            const result = await this.alertService.showAlert('Acabas de eliminar un bloque de mensaje, este se eliminará definitivamente');
+            console.log('User pressed OK:', result);
             this.stopTab(tabId);
-            // Extraer el nombre del mensaje desde el XML; se asume que el campo se llama "MESSAGE_NAME"
+            // Extract the message name from the XML; the field is assumed to be called "MESSAGE_NAME"
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlString, "text/xml");
             const messageName = xmlDoc.querySelector('field[name="MESSAGE_NAME"]')?.textContent || '';
-            console.log('Nombre del mensaje extraído:', messageName);
+            console.log('Message name extracted:', messageName);
             this.codeService.deleteInterfaceFile('msg', messageName)
               .subscribe({
-                next: (response) => console.log("Eliminado con éxito (mensaje):", response),
-                error: (error) => console.error("Error al eliminar la interfaz (mensaje):", error)
+                next: (response) => console.log("Successfully deleted (message):", response),
+                error: (error) => console.error("Error at deleting the interface (message):", error)
               });
           }
         }
@@ -428,25 +422,25 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
     });
 
-    // ELIMINAR SERVICIO
+    // DELETE SERVICIO
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
         if (event.oldXml) {
           const xmlString = Blockly.Xml.domToText(event.oldXml);
           if (xmlString.includes('ros2_service_block')) {
-            console.log('Bloque de servicio eliminado', xmlString);
-            const resultado = await this.alertService.showAlert('Acabas de eliminar un bloque de servicio, este se eliminará definitivamente');
-            console.log('El usuario presionó OK:', resultado);
+            console.log('Service block removed', xmlString);
+            const result = await this.alertService.showAlert('Acabas de eliminar un bloque de servicio, este se eliminará definitivamente');
+            console.log('User pressed OK:', result);
             this.stopTab(tabId);
-            // Extraer el nombre del servicio desde el XML; se asume que el campo se llama "SERVICE_NAME"
+            // Extract the service name from the XML; the field is assumed to be called "SERVICE_NAME"
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlString, "text/xml");
             const serviceName = xmlDoc.querySelector('field[name="SERVICE_NAME"]')?.textContent || '';
-            console.log('Nombre del servicio extraído:', serviceName);
+            console.log('Message name extracted:', serviceName);
             this.codeService.deleteInterfaceFile('srv', serviceName)
               .subscribe({
-                next: (response) => console.log("Eliminado con éxito (servicio):", response),
-                error: (error) => console.error("Error al eliminar la interfaz (servicio):", error)
+                next: (response) => console.log("Successfully deleted (service):", response),
+                error: (error) => console.error("Error at deleting the interface (service):", error)
               });
           }
         }
@@ -454,25 +448,21 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
     });
 
-
-
-    // Registrar el listener de eliminación de SERVIDOR para esta workspace
+    // Register the SERVER delete listener for this workspace
     //this.registerServerDeleteListenerForWorkspace(tabId);
-
-    // Crear consola de salida y código para la pestaña
-    this.consoles_output.set(tabId.toString(), '');
-    this.text_code.set(tabId.toString(), '');
+    this.consolesOutput.set(tabId.toString(), '');
+    this.textCode.set(tabId.toString(), '');
   }
 
   async addTab() {
-    if (this.tabs.length >= this.MAX_NUM_PESTANAS) {
-      const resultado = await this.alertService.showAlert('No se pueden agregar más de ' + this.MAX_NUM_PESTANAS + ' pestañas.');
+    if (this.tabs.length >= this.maxTabs) {
+      const result = await this.alertService.showAlert('No se pueden agregar más de ' + this.maxTabs + ' pestañas.');
       return;
     }
     this.updateSrvList();
     const newTabId = Date.now();
     this.tabs.push({ name: this.getUniqueTabName(), id: newTabId, isPlaying: false });
-    this.consoles_services.set(newTabId.toString(), new CodeService(this.http));
+    this.consolesServices.set(newTabId.toString(), new CodeService(this.http));
     setTimeout(() => {
       this.selectTab(newTabId);
     }, 0);
@@ -495,8 +485,8 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.initializeBlockly(tabId);
     }, 0);
-    this.codigo_testeo_backend = this.text_code.get(tabId.toString()) || '';
-    this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) || '';
+    this.testingCodeBackend = this.textCode.get(tabId.toString()) || '';
+    this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) || '';
   }
 
   storePreviousName(tab: any) {
@@ -509,12 +499,12 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     const previousName = this.previousNames.get(tabId) || tab.name;
     let sanitizedNewName = sanitizePythonFilename(newName).replace(/\.py$/, "");
     if (!sanitizedNewName) {
-      const resultado = await this.alertService.showAlert('El nombre de la pestaña no puede estar vacío.');
+      const result = await this.alertService.showAlert('El nombre de la pestaña no puede estar vacío.');
       tab.name = previousName;
       return;
     }
     if (this.tabs.some(t => t.name === sanitizedNewName && t.id !== tabId)) {
-      const resultado = await this.alertService.showAlert('Ya existe una pestaña con ese nombre.');
+      const result = await this.alertService.showAlert('Ya existe una pestaña con ese nombre.');
       tab.name = previousName;
       return;
     }
@@ -525,12 +515,12 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (!tab) return;
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
-      this.text_code.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
+      this.textCode.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
     }
     this.updateSrvList();
     tab.isPlaying = playAllTabs ? true : !tab.isPlaying;
     tab.isPlaying
-      ? (this.executeCode(this.text_code.get(tabId.toString()) || '', tabId),
+      ? (this.executeCode(this.textCode.get(tabId.toString()) || '', tabId),
         this.codeService.setWorkspaceChanged(false))
       : this.stopTab(tabId);
   }
@@ -539,12 +529,12 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (tab) {
       tab.isPlaying = false;
-      const session_id = this.consoles_sessions.get(tabId.toString());
+      const session_id = this.consolesSessions.get(tabId.toString());
       console.log('Session ID stop:', session_id);
       if (session_id) {
-        this.consoles_services.get(tabId.toString())?.killExecution(session_id);
+        this.consolesServices.get(tabId.toString())?.killExecution(session_id);
       }
-      this.consoles_services.get(tabId.toString())?.closeConnection();
+      this.consolesServices.get(tabId.toString())?.closeConnection();
       this.websockets.get(tabId.toString())?.unsubscribe();
     }
   }
@@ -554,12 +544,12 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     if (this.workspaces[tabId]) {
       this.workspaces[tabId].dispose();
       delete this.workspaces[tabId];
-      this.consoles_output.delete(tabId.toString());
-      this.consoles_sessions.delete(tabId.toString());
-      this.consoles_services.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || '');
-      this.consoles_services.delete(tabId.toString());
+      this.consolesOutput.delete(tabId.toString());
+      this.consolesSessions.delete(tabId.toString());
+      this.consolesServices.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || '');
+      this.consolesServices.delete(tabId.toString());
       this.websockets.delete(tabId.toString());
-      this.text_code.delete(tabId.toString());
+      this.textCode.delete(tabId.toString());
     }
     this.tabs = this.tabs.filter(tab => tab.id !== tabId);
     if (this.selectedTabId === tabId) {
@@ -615,17 +605,17 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   }
 
   cleanConsole() {
-    if (this.current_displayed_console_output !== '' && this.selectedTabId) {
-      this.consoles_output.set(this.selectedTabId.toString(), '');
-      this.current_displayed_console_output = 'Consola limpia';
+    if (this.currentDisplayedConsoleOutput !== '' && this.selectedTabId) {
+      this.consolesOutput.set(this.selectedTabId.toString(), '');
+      this.currentDisplayedConsoleOutput = 'Consola limpia';
     }
   }
 
   enviarCodigo(code_to_send: string, tabId: number) {
-    console.log('Enviando código...');
+    console.log('Sending code...');
     const workspace = this.workspaces[tabId];
     if (!workspace) {
-      console.error('No existe la workspace para el tab', tabId);
+      console.error('Theres no workspace for the tab', tabId);
       return;
     }
     let code = '';
@@ -645,7 +635,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Nodo');
       code = create_publisher(code, fileName);
     } else if (type === "server") {
-      console.log('Creando servidor...');
+      console.log('Creating server...');
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Servidor');
       code = create_server(code, fileName, serverType);
     } else if (type === "srv") {
@@ -655,13 +645,13 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       fileName = sanitizeMsgFilename(extractMessageFilename(code) || 'FailedMsg.msg');
       code = replaceMessageFilename(code, fileName);
     } else if (type === "client") {
-      console.log('Creando cliente...');
+      console.log('Creanting client...');
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Cliente');
       code = create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType);
     }
-    const codeService = this.consoles_services.get(tabId.toString());
+    const codeService = this.consolesServices.get(tabId.toString());
     if (codeService === undefined) {
-      console.error('No se encontró el servicio para la pestaña', tabId);
+      console.error('Service not found for the tab', tabId);
       return;
     } else {
       if (this.websockets.get(tabId.toString())) {
@@ -671,24 +661,24 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
         .pipe(
           switchMap(() => {
             if (type === "srv") {
-              console.log("El archivo es un servicio (.srv), deteniendo ejecución después de uploadCode.");
+              console.log("The file is a service (.srv), stopping execution after uploadCode.");
               const confirmationMessage = `Servicio ${fileName} creado correctamente.`;
-              this.consoles_output.set(tabId.toString(),
-                (this.consoles_output.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
+              this.consolesOutput.set(tabId.toString(),
+                (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
               if (this.selectedTabId === tabId) {
-                this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
+                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
               }
               if (this.autoScrollEnabled) {
                 setTimeout(() => this.scrollToBottom(), 100);
               }
               return of(null);
             } else if (type === "msg") {
-              console.log("El archivo es un mensaje (.msg), deteniendo ejecución después de uploadCode.");
+              console.log("The file is a menssage (.msg), stopping execution after uploadCode.");
               const confirmationMessage = `Mensaje ${fileName} creado correctamente.`;
-              this.consoles_output.set(tabId.toString(),
-                (this.consoles_output.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
+              this.consolesOutput.set(tabId.toString(),
+                (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
               if (this.selectedTabId === tabId) {
-                this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
+                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
               }
               if (this.autoScrollEnabled) {
                 setTimeout(() => this.scrollToBottom(), 100);
@@ -699,9 +689,9 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
           }),
           switchMap((response) => {
             if (!response) return of(null);
-            console.log('Respuesta del backend:', response);
+            console.log('Backend response:', response);
             const sessionId = response.session_id;
-            this.consoles_sessions.set(tabId.toString(), sessionId);
+            this.consolesSessions.set(tabId.toString(), sessionId);
             console.log('Session ID:', sessionId);
             return codeService.connectToWebSocket(sessionId);
           })
@@ -709,11 +699,11 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (response) => {
             if (!response) return;
-            console.log('Mensaje WebSocket:', response.output);
-            if (response.output !== this.consoles_output.get(tabId.toString())) {
-              this.consoles_output.set(tabId.toString(), (this.consoles_output.get(tabId.toString()) ?? '') + response.output + '\n');
+            console.log('Websocket message:', response.output);
+            if (response.output !== this.consolesOutput.get(tabId.toString())) {
+              this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output + '\n');
               if (this.selectedTabId === tabId) {
-                this.current_displayed_console_output = this.consoles_output.get(tabId.toString()) ?? '';
+                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
               }
               if (this.autoScrollEnabled) {
                 setTimeout(() => this.scrollToBottom(), 100);
@@ -721,7 +711,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
             }
           },
           error: (error) => console.error('Error:', error),
-          complete: () => console.log('Proceso completado')
+          complete: () => console.log('Completed process')
         }));
     }
   }
@@ -767,8 +757,8 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   }
 
   getConsoleLines(): string[] {
-    return this.current_displayed_console_output
-      ? this.current_displayed_console_output.trimEnd().split('\n')
+    return this.currentDisplayedConsoleOutput
+      ? this.currentDisplayedConsoleOutput.trimEnd().split('\n')
       : [];
   }
 
@@ -849,10 +839,10 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       } else {
         srvList.length = 0;
       }
-      console.log("srvList actualizada:", srvList);
+      console.log("srvList updated:", srvList);
       this.updateSrvVariablesCategory();
     }, error => {
-      console.error("Error al obtener la lista de archivos srv:", error);
+      console.error("Error getting list of srv files:", error);
       srvList.length = 0;
     });
   }

@@ -46,10 +46,10 @@ export class CodeService {
     this.http.get(`${this.API_URL}/execution/kill/${session_id}`, { responseType: 'json' })
       .subscribe({
         next: (response) => {
-          console.log('Sesión eliminada con éxito:', response);
+          console.log('Sesión successfully deleted:', response);
           this.closeConnection();
         },
-        error: (error) => console.error('Error al matar la sesión:', error)
+        error: (error) => console.error('Error killing the session:', error)
       });
   }
   closeConnection(): void {
@@ -63,10 +63,10 @@ export class CodeService {
     this.http.delete(`${this.API_URL}/execution/cleanup/${fileName}`, { responseType: 'json' })
       .subscribe({
         next: (response) => {
-          console.log(`Archivo ${fileName} eliminado con éxito:`, response);
+          console.log(`Archivo ${fileName} successfully deleted:`, response);
           this.closeConnection();
         },
-        error: (error) => console.error(`Error al eliminar ${fileName}:`, error)
+        error: (error) => console.error(`Error deleting ${fileName}:`, error)
       });
   }
 
@@ -86,30 +86,29 @@ export class CodeService {
     this.http.get(`${this.API_URL}/export-project/`, { responseType: 'blob' }).subscribe(response => {
       const blob = new Blob([response], { type: 'application/gzip' });
 
-      // Crear enlace de descarga con nombre por defecto
+      // Crear download link with default name
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
-      link.download = 'ros2_ws.tar.gz'; // Nombre predeterminado
+      link.download = 'ros2_ws.tar.gz'; // default name
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
     }, error => {
-      console.error('Error al exportar el proyecto:', error);
+      console.error('Error deleting proyect:', error);
     });
   }
 
   checkSrvFiles(): Observable<{ exists: boolean, files: string[] }> {
     return this.http.get<{ exists: boolean, files: string[] }>(`${this.API_URL}/srvfiles`)
       .pipe(
-        tap(response => console.log('checkSrvFiles returns:', response))
-      );
+      tap(response => console.log('checkSrvFiles returns:', response))
+    );
   }
 
-    //Función para eliminar un .srv o un .msg del proyecto 
-    deleteInterfaceFile(fileType: 'srv' | 'msg', fileName: string): Observable<any> {
-      console.log('El endpoint es:', `${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);
-      return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
-    }
-
+  //Funtion to delete a .srv or a .msg of the proyect
+  deleteInterfaceFile(fileType: 'srv' | 'msg', fileName: string): Observable<any> {
+    console.log('El endpoint es:', `${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);
+    return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
+  }
 }

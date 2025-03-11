@@ -361,7 +361,7 @@ input::selection {
 }
 
 .ai {
-  margin-left: auto; /* Empuja los botones a la derecha */
+  margin-left: auto;
   display: flex;
   gap: 10px;
   padding-right: 10px;
@@ -499,7 +499,7 @@ iframe {
   margin: 0 auto;
 }
 
-/* Para cubrir la barra de noVNC */
+/* Covers top bar of noVNC */
 .barTurtle {
   background: #253942;
   width: 100%;

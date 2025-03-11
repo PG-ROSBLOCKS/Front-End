@@ -20,7 +20,7 @@
   align-items: flex-start;
 }
 
-/* Estilo para el cursor parpadeante */
+/* Style for the flashing cursor*/
 #cursor {
   font-weight: bold;
   animation: blink 1s step-end infinite;

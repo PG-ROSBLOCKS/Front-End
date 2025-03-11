@@ -6,9 +6,9 @@ import { Component, Input, AfterViewChecked, ElementRef, ViewChild } from '@angu
   styleUrls: ['./console-output.component.css']
 })
 export class ConsoleOutputComponent implements AfterViewChecked {
-  // Recibe el arreglo de líneas de salida desde el padre
+  // Receive the output array of lines from the parent
   @Input() output: string[] = [];
-  // Controla si el auto-scroll está activado
+  // Controls if auto-scroll is enables
   @Input() autoScrollEnabled: boolean = true;
   @ViewChild('consoleContainer') consoleContainer!: ElementRef<HTMLDivElement>;
 

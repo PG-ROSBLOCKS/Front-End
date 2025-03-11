@@ -2,9 +2,9 @@
   <pre class="console_lines_pre" *ngFor="let line of output">
     <span class="console_lines" [ngStyle]="{
       'color': line.startsWith('[INFO]') ? 'blue' : 
-               line.startsWith('[ERROR]') ? 'red' : 
-               line.startsWith('[WARNING]') ? 'orange' : 
-               line.startsWith('[DEBUG]') ? 'gray' : 'white'
+        line.startsWith('[ERROR]') ? 'red' : 
+        line.startsWith('[WARNING]') ? 'orange' : 
+        line.startsWith('[DEBUG]') ? 'gray' : 'white'
     }">{{ line.trim() }}</span>
   </pre>
   <p></p>

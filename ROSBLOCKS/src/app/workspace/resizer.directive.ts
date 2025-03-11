@@ -1,5 +1,4 @@
 import { Directive, ElementRef, Input, Renderer2, OnInit, OnDestroy } from '@angular/core';
-import { workspaceComments } from 'blockly/core/serialization';
 import { WorkspaceComponent } from './workspace.component';
 
 @Directive({
@@ -19,7 +18,7 @@ export class ResizerDirective implements OnInit, OnDestroy {
     private workspace: WorkspaceComponent) {}
 
   ngOnInit(): void {
-    // Escuchamos el mousedown en el elemento al que se aplica la directiva
+    // Listens the mousedown on the element
     this.unlistenMouseDown = this.renderer.listen(this.el.nativeElement, 'mousedown', this.onMouseDown.bind(this));
   }
 
@@ -28,6 +27,8 @@ export class ResizerDirective implements OnInit, OnDestroy {
     this.mouseUpHandler = this.onMouseUp.bind(this);
     document.addEventListener('mousemove', this.mouseMoveHandler);
     document.addEventListener('mouseup', this.mouseUpHandler);
+    console.log(event);
+    
   }
 
   onMouseMove(event: MouseEvent): void {
