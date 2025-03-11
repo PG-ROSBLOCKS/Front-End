@@ -1,4 +1,6 @@
 import { Directive, ElementRef, Input, Renderer2, OnInit, OnDestroy } from '@angular/core';
+import { workspaceComments } from 'blockly/core/serialization';
+import { WorkspaceComponent } from './workspace.component';
 
 @Directive({
   selector: '[appResizer]'
@@ -12,7 +14,9 @@ export class ResizerDirective implements OnInit, OnDestroy {
   private mouseUpHandler!: (event: MouseEvent) => void;
   private unlistenMouseDown: (() => void) | null = null;
 
-  constructor(private el: ElementRef, private renderer: Renderer2) {}
+  constructor(private el: ElementRef, 
+    private renderer: Renderer2,
+    private workspace: WorkspaceComponent) {}
 
   ngOnInit(): void {
     // Escuchamos el mousedown en el elemento al que se aplica la directiva
@@ -34,6 +38,9 @@ export class ResizerDirective implements OnInit, OnDestroy {
       if (newWidth > 100 && newWidth < containerWidth * 0.8) {
         this.leftContainer.style.width = `${newWidth}px`;
         this.rightContainer.style.flex = '1';
+        if (this.workspace.selectedTabId) {
+          this.workspace.selectTab(this.workspace.selectedTabId);
+        }
       }
     }
   }
