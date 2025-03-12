@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CodeService } from 'src/app/services/code.service';
 import { AlertService } from '../alert/alert.service';
+import { workspaceComments } from 'blockly/core/serialization';
+import { WorkspaceComponent } from 'src/app/workspace/workspace.component';
 
 @Component({
   selector: 'app-header',
@@ -18,7 +20,11 @@ export class HeaderComponent {
 
   showExport: boolean = true;
 
-  constructor(private router: Router, private service: CodeService, private alertService: AlertService) { }
+  constructor(private router: Router, 
+    private service: CodeService, 
+    private alertService: AlertService,
+    private workspace: WorkspaceComponent
+  ) { }
 
   ngOnInit() {
     this.router.events.subscribe(() => {
@@ -43,6 +49,14 @@ export class HeaderComponent {
 
   reloadPage() {
     window.location.reload();
+  }
+
+  safe() {
+    this.workspace.saveToLocalStorage();
+  }
+
+  load() {
+    this.workspace.loadFromLocalStorage();
   }
 
   async export() {

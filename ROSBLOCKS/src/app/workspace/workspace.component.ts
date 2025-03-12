@@ -56,6 +56,10 @@ export class WorkspaceComponent implements OnDestroy {
     this.successService.showSuccess(message);
   }
 
+  showAlert(message: string, type: 'success' | 'error') {
+    this.alertService.showAlert(message);
+  }
+
   saveToLocalStorage() {
     try {
       const tabsData = this.tabs.map(tab => {
@@ -63,11 +67,18 @@ export class WorkspaceComponent implements OnDestroy {
           ? Blockly.Xml.workspaceToDom(this.workspaces[tab.id]).outerHTML
           : '';
         localStorage.setItem(`workspace_${tab.id}`, workspaceXml);
-        localStorage.setItem(`consoleService_${tab.id}`, "true"); // Guardamos solo la existencia
+        localStorage.setItem(`consoleService_${tab.id}`, "true");
         return { id: tab.id, name: tab.name };
       });
       localStorage.setItem('workspace_tabs', JSON.stringify(tabsData));
-      this.showMessage('Datos guardados exitosamente.', 'success');
+      const tabsDataSaved = JSON.parse(localStorage.getItem('workspace_tabs') || '[]');
+      if (tabsDataSaved.length === 0) {
+        this.showAlert('No se ha guardado ningun proyecto.', 'error');
+        return;
+      }
+      else {
+        this.showMessage('Datos guardados exitosamente.', 'success');
+      }
     } catch (error) {
       this.showMessage('Error al guardar los datos.', 'error');
     }
@@ -76,15 +87,19 @@ export class WorkspaceComponent implements OnDestroy {
   loadFromLocalStorage() {
     try {
       const tabsData = JSON.parse(localStorage.getItem('workspace_tabs') || '[]');
-      if (tabsData.length === 0) return;
-
+      if (tabsData.length === 0) {
+        this.showAlert('No se ha guardado ningun proyecto.', 'error');
+        return;
+      }
+      this.setToZero();
+  
       this.tabs = tabsData;
       setTimeout(() => {
         tabsData.forEach((tab: any) => {
           this.selectTab(tab.id);
         });
       }, 100);
-
+  
       tabsData.forEach((tab: any) => {
         if (localStorage.getItem(`consoleService_${tab.id}`)) {
           this.consolesServices.set(tab.id.toString(), new CodeService(this.http));
@@ -92,8 +107,23 @@ export class WorkspaceComponent implements OnDestroy {
       });
       this.showMessage('Datos cargados exitosamente.', 'success');
     } catch (error) {
-      this.showMessage('Error al cargar los datos.', 'error');
+      this.showAlert('Error al cargar los datos.', 'error');
     }
+  }
+  
+
+  setToZero(): void {
+    this.consolesOutput = new Map();
+    this.consolesSessions = new Map();
+    this.consolesServices = new Map();
+    this.websockets = new Map();
+    this.textCode = new Map();
+    this.currentDisplayedConsoleOutput = '';
+    this.testingCodeBackend = '';
+    this.workspaces = {};
+    this.autoScrollEnabled = true;
+    this.tabs = [];
+    this.selectedTabId = null;
   }
 
   resetTurtleContainer(): void {
