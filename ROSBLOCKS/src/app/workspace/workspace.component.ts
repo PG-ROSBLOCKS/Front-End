@@ -12,6 +12,7 @@ import { create_client, create_publisher, create_server } from '../blocks/code-g
 import { srvList, SrvInfo } from '../shared/srv-list';
 import { SafeResourceUrl } from '@angular/platform-browser';
 import { toolbox } from "./blockly";
+import { SuccessService } from '../shared/components/success/success.service';
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
@@ -42,6 +43,7 @@ export class WorkspaceComponent implements OnDestroy {
     private http: HttpClient,
     private codeService: CodeService,
     private alertService: AlertService,
+    private successService: SuccessService,
   ) { }
 
   ngOnDestroy(): void {
@@ -51,7 +53,7 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   showMessage(message: string, type: 'success' | 'error') {
-    this.alertService.showAlert(message);
+    this.successService.showSuccess(message);
   }
 
   saveToLocalStorage() {
