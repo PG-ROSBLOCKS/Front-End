@@ -86,14 +86,13 @@
   font-style: normal;
 }
 
-
 * {
   font-family: 'Kanit', sans-serif;
 }
 /* Scroll bar */
 ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 8px;;
+    height: 8px;
   }
   ::-webkit-scrollbar-button {
     width: 0px;
@@ -101,7 +100,8 @@
   }
   ::-webkit-scrollbar-thumb {
     background: #00fbff;
-    border: 53px none #00ffd5;
+    border: 53px none #00ffd5;;
+    margin: 2px;
     border-radius: 50px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -111,15 +111,15 @@
     background: #00e7eb;
   }
   ::-webkit-scrollbar-track {
-    background: #9c9c9c;
+    background: #ddf3f2;
     border: 0px none #941e1e;
     border-radius: 0px;
   }
   ::-webkit-scrollbar-track:hover {
-    background: #8f8f8f;
+    background: #cadbda;
   }
   ::-webkit-scrollbar-track:active {
-    background: #828282;
+    background: #ddf3f2;
   }
   ::-webkit-scrollbar-corner {
     background: transparent;
@@ -213,4 +213,12 @@
   background-size: 20px 20px;
   background-color: #012840;
   background-image: linear-gradient(to right, rgba(128, 128, 128, 0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(128, 128, 128, 0.2) 1px, transparent 1px);
+}
+
+/* Evita la selección de la imagen en la mayoría de los navegadores */
+.no-select {
+  -webkit-user-select: none; /* Chrome, Safari, Opera */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* Internet Explorer/Edge */
+  user-select: none;         /* Propiedad estándar */
 }

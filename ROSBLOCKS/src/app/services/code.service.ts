@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { WebSocketSubject, webSocket } from 'rxjs/webSocket';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -20,19 +20,19 @@ export class CodeService {
     this.wsSubject = undefined;
   }
 
-  uploadCode(fileName: string, code: string): Observable<any> {
-    const payload = { file_name: fileName, code: code };
+  uploadCode(fileName: string, code: string, type: string): Observable<any> {
+    const payload = { file_name: fileName, code: code, type: type };
     return this.http.post(`${this.API_URL}/upload/`, payload, {
-      headers: { 'Content-Type': 'application/json' }, 
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
   executeCode(fileName: string): Observable<any> {
-    return this.http.get(`${this.API_URL}/execute/${fileName}`);
+    return this.http.get(`${this.API_URL}/execution/execute/${fileName}`);
   }
-  
+
   connectToWebSocket(sessionId: string): WebSocketSubject<any> {
-    this.wsSubject = webSocket(`${this.API_URL.replace('http', 'ws')}/ws/${sessionId}`);
+    this.wsSubject = webSocket(`${this.API_URL.replace('http', 'ws')}/execution/ws/${sessionId}`);
     return this.wsSubject;
   }
 
@@ -43,13 +43,13 @@ export class CodeService {
   }
 
   killExecution(session_id: string): void {
-    this.http.get(`${this.API_URL}/kill/${session_id}`, { responseType: 'json' })
+    this.http.get(`${this.API_URL}/execution/kill/${session_id}`, { responseType: 'json' })
       .subscribe({
         next: (response) => {
-          console.log('Sesión eliminada con éxito:', response);
-          this.closeConnection(); 
+          console.log('Sesión successfully deleted:', response);
+          this.closeConnection();
         },
-        error: (error) => console.error('Error al matar la sesión:', error)
+        error: (error) => console.error('Error killing the session:', error)
       });
   }
   closeConnection(): void {
@@ -60,13 +60,13 @@ export class CodeService {
   }
 
   deleteFile(fileName: string): void {
-    this.http.delete(`${this.API_URL}/cleanup/${fileName}`, { responseType: 'json' })
+    this.http.delete(`${this.API_URL}/execution/cleanup/${fileName}`, { responseType: 'json' })
       .subscribe({
         next: (response) => {
-          console.log(`Archivo ${fileName} eliminado con éxito:`, response);
-          this.closeConnection(); 
+          console.log(`Archivo ${fileName} successfully deleted:`, response);
+          this.closeConnection();
         },
-        error: (error) => console.error(`Error al eliminar ${fileName}:`, error)
+        error: (error) => console.error(`Error deleting ${fileName}:`, error)
       });
   }
 
@@ -81,21 +81,38 @@ export class CodeService {
   setNoBlocks(flag: boolean) {
     this.noBlocksSubject.next(flag);
   }
-  
+
   exportProject(): void {
     this.http.get(`${this.API_URL}/export-project/`, { responseType: 'blob' }).subscribe(response => {
       const blob = new Blob([response], { type: 'application/gzip' });
 
-      // Crear enlace de descarga con nombre por defecto
+      // Crear download link with default name
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
-      link.download = 'ros2_ws.tar.gz'; // Nombre predeterminado
+      link.download = 'ros2_ws.tar.gz'; // default name
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
     }, error => {
-      console.error('Error al exportar el proyecto:', error);
+      console.error('Error deleting proyect:', error);
     });
+  }
+
+  checkSrvFiles(): Observable<{ exists: boolean, files: string[] }> {
+    return this.http.get<{ exists: boolean, files: string[] }>(`${this.API_URL}/srvfiles`)
+      .pipe(
+      tap(response => console.log('checkSrvFiles returns:', response))
+    );
+  }
+
+  //Funtion to delete a .srv or a .msg of the proyect
+  deleteInterfaceFile(fileType: 'srv' | 'msg', fileName: string): Observable<any> {
+    console.log('El endpoint es:', `${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);
+    return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
+  }
+
+  vncTurtlesim() {
+    return `${this.API_URL}/vnc_auto.html`;
   }
 }

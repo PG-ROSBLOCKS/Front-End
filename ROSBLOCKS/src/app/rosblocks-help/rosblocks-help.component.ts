@@ -10,7 +10,7 @@ export class RosblocksHelpComponent {
   selectedVideo: string | null = null;
 
   onSearch(event: any): void {
-    console.log('Buscando:', event.target.value);
+    console.log('searching:', event.target.value);
   }
 
   toggleDropdown(id: number): void {

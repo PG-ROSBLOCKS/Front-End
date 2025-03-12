@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { CodeService } from 'src/app/services/codeService';
+import { CodeService } from 'src/app/services/code.service';
 import { AlertService } from '../alert/alert.service';
 
 @Component({
@@ -47,7 +47,7 @@ export class HeaderComponent {
 
   async export() {
     if (this.noTabs == true || this.noBlocks == true) {
-      const resultado = await this.alertService.showAlert("El proyecto está vacío. Agrega nodos y/o bloques antes de exportar")
+      const result = await this.alertService.showAlert("El proyecto está vacío. Agrega nodos y/o bloques antes de exportar")
     }
     else {
       if (this.workspaceChanged == false) {

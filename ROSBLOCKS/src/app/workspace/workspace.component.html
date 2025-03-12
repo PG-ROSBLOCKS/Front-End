@@ -1,55 +1,56 @@
 <div class="container">   
-  <app-header></app-header> 
-  <div id="workspace-container">
-      <div #leftSection class="left-section">
-          <div class="top-left">
-              <div class="nodebar">
-                  <div class="tabs-bar" #tabsBar>
-                      <ul class="tab-list">
-                          <li *ngFor="let tab of tabs; let i = index" class="node-tab"
-                          [class.selected]="tab.id === selectedTabId"
-                          [ngStyle]="{
-                          'z-index': tab.id === selectedTabId ? 999 : i + 1
-                          }"
-                          (click)="selectTab(tab.id)">
-                              <input type="text" [(ngModel)]="tab.name" (focus)="storePreviousName(tab)" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
-                              <button class="delete-button" (click)="confirmDeleteTab(tab.id)">✖</button>
-                              <button class="play-button" (click)="playTab(tab.id, false)">
-                                      {{ tab.isPlaying ? '◼' : '▶' }}
-                              </button>
-                          </li>
-                          <li class="add-tab-button" (click)="addTab()">
-                          <span>+</span>
-                          </li>
-                      </ul>
-                      <div class="ai">
-                          <button class="play-all" (click)="playAllTabs()">▶</button>
-                          <button class="stop-all" (click)="stopAllTabs()">◼</button>
-                      </div>
-                  </div>
-              </div>
-          </div>
-          <div class="bottom-left">
-              <div class="gray-back"></div>
-              <div class="blockly-container">
-                  <input
-                      id="searchBox"
-                      type="text"
-                      placeholder="Búsqueda"
-                      (input)="onSearch($event)"
-                  />
-                  <img id="createImg" src="../../assets/CreaNuevoNodo.png">
-                  <div *ngFor="let tab of tabs" 
-                      [hidden]="tab.id !== selectedTabId" 
-                      [attr.id]="'blocklyDiv-' + tab.id" 
-                      style="height: calc(100vh - 95px); width: 100%;">
-                  </div>
-              </div>
-          </div>
-      </div>
-      <div #resizer class="resizer"></div> <!-- Barra de arrastre -->
-      <div #rightSection class="right-section">
-          <div class="maps">
+    <app-header></app-header> 
+    <div id="workspace-container">
+        <div #leftSection class="left-section">
+            <div class="top-left">
+                <div class="nodebar">
+                    <div class="tabs-bar" #tabsBar>
+                        <ul class="tab-list">
+                            <li *ngFor="let tab of tabs; let i = index" class="node-tab"
+                                [class.selected]="tab.id === selectedTabId"
+                                [ngStyle]="{
+                                'z-index': tab.id === selectedTabId ? 999 : i + 1
+                                }"
+                                (click)="selectTab(tab.id)">
+                                <input type="text" [(ngModel)]="tab.name" (focus)="storePreviousName(tab)" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
+                                    <button class="delete-button" (click)="confirmDeleteTab(tab.id)">✖</button>
+                                    <button class="play-button" (click)="playTab(tab.id, false)">
+                                        {{ tab.isPlaying ? '◼' : '▶' }}
+                                    </button>
+                            </li>
+                            <li class="add-tab-button" (click)="addTab()">
+                                <span>+</span>
+                            </li>
+                        </ul>
+                        <div class="ai">
+                            <button class="play-all" (click)="playAllTabs()">▶</button>
+                            <button class="stop-all" (click)="stopAllTabs()">◼</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-left">
+                <div class="gray-back"></div>
+                <div class="blockly-container">
+                    <input
+                        id="searchBox"
+                        type="text"
+                        placeholder="Búsqueda"
+                        (input)="onSearch($event)"
+                    />
+                    <img id="createImg" class="no-select" src="../../assets/CreaNuevoNodo.png">
+                    <div *ngFor="let tab of tabs" 
+                        [hidden]="tab.id !== selectedTabId" 
+                        [attr.id]="'blocklyDiv-' + tab.id" 
+                        style="height: calc(100vh - 95px); width: 100%;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div #resizer class="resizer" appResizer [leftContainer]="leftSection" [rightContainer]="rightSection">
+        </div>
+        <div #rightSection class="right-section">
+            <div class="maps">
                 <button class="sample-map">
                     <p>1</p>
                     <div class="map-insight">
@@ -76,27 +77,30 @@
                     </div>
                 </button>
                 <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none;">
-          </div>
-          <div class="turtlesim">
-              <p style="color: aliceblue;">Turtlesim</p>
-          </div>
-          <textarea [(ngModel)]="codigo_testeo_backend" placeholder="Escribe tu código aquí"></textarea>
-              <button (click)="executeCode(codigo_testeo_backend)">Ejecutar</button>
-          <div class="console">
-              <p id=console_title>Console</p>
-              <br>
-              <div class="console-output-container">
-                  <pre>{{ current_displayed_console_output }}</pre>
-                  <span id="cursor">|</span>
-              </div>              
-          </div>
-          <button (click)="cleanConsole()" class="btn-clean">Limpiar consola</button>
-      </div>
-  </div>
+            </div>
+            <div class="barTurtle">
+            </div>
+            <div class="turtlesim">
+                <iframe [src]="sanitizedVncUrl" _ngcontent-ng-c809167999="" src="http://localhost:8080/vnc_auto.html" title="VNC"></iframe>
+            </div>
+            <div class="resetTurtleDiv">
+                <button (click)="resetTurtleContainer()">Reiniciar</button>
+                <button (click)="saveToLocalStorage()">Guardar</button>
+                <button (click)="loadFromLocalStorage()">Cargar</button>
+            </div>
+            <textarea [(ngModel)]="testingCodeBackend" placeholder="Escribe tu código aquí"></textarea>
+                <button (click)="executeCode(testingCodeBackend)">Ejecutar</button>
+            <div class="console">
+                <p id=console_title>Console</p>
+                <br>
+                <app-console-output [output]="getConsoleLines()" [autoScrollEnabled]="autoScrollEnabled"></app-console-output>           
+            </div>
+            <button (click)="cleanConsole()" class="btn-clean">Limpiar consola</button>
+        </div>
+    </div>
 </div>
 <app-confirm
-  *ngIf="candidateTabToDelete !== null"
-  [message]="'¿Eliminar el nodo \'' + candidateTabName + '\'? Esta acción no se puede deshacer'"
-  (confirm)="handleDeleteConfirmation($event)">
+    *ngIf="candidateTabToDelete !== null"
+    [message]="'¿Eliminar el nodo \'' + candidateTabName + '\'? Esta acción no se puede deshacer'"
+    (confirm)="handleDeleteConfirmation($event)">
 </app-confirm>
-

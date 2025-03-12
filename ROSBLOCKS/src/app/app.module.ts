@@ -12,6 +12,9 @@ import { SafePipe } from './safe.pipe';
 import { HttpClientModule } from '@angular/common/http';
 import { ConfirmComponent } from './shared/components/confirm/confirm.component';
 import { AlertComponent } from './shared/components/alert/alert.component';
+import { ResizerDirective } from './workspace/resizer.directive';
+import { ConsoleOutputComponent } from './console-output/console-output.component';
+import { SuccessComponent } from './shared/components/success/success.component';
 
 @NgModule({
   declarations: [
@@ -23,6 +26,9 @@ import { AlertComponent } from './shared/components/alert/alert.component';
     SafePipe,
     ConfirmComponent,
     AlertComponent,
+    ResizerDirective,
+    ConsoleOutputComponent,
+    SuccessComponent,
   ],
   imports: [
     BrowserModule,
