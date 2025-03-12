@@ -65,3 +65,30 @@
     border: 1px solid #303a3f;/*TODO */
     background-color: #303a3f;/*TODO */
   }
+
+  .separator {
+    border: none;
+    width: 2px;
+    background-color: #303a3f;
+  }
+
+
+  .load, .safe {
+    box-shadow: 0px 2px 5px 0px #014249 inset;
+    font-family: 'Poppins', sans-serif;
+    border: 1px solid #015C66;
+    background-color: #015C66;
+    color: white;
+  }
+
+  .load:hover, .safe:hover {
+    border: 1px solid #017380;
+    background-color: #027581;
+  }
+
+  .load:active, .safe:active {
+    border: 1px solid #014d55;
+    background-color: #014249;
+  }
+
+
