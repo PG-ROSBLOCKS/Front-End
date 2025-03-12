@@ -129,6 +129,11 @@ export let toolbox = {
           { kind: "block", type: "ros2_rotate_turtle" },
           { kind: "block", type: "ros2_turtle_set_pose" },
           { kind: "block", type: "ros2_sleep" },
+          { kind: "block", type: "ros2_kill_turtle" },
+          { kind: "block", type: "ros2_spawn_turtle" },
+          { kind: "block", type: "ros2_turtle_pen_up" },
+          { kind: "block", type: "ros2_turtle_pen_down" },
+          { kind: "block", type: "ros2_turtle_set_pen" },
         ]
       }
     ],

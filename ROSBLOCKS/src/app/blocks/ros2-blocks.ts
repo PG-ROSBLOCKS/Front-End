@@ -37,7 +37,7 @@ const common_msgs_for_custom: [string, string][] = [
   ['Bool (std_msgs)', 'bool'],
   ['Int64 (std_msgs)', 'int64'],
   ['Char (std_msgs)', 'char'],
-  ['Float32 (std_msgs)', 'float32'], //TODO: Revisar que los tipos estén bien declarados para los .srv, ya que cambian cuando es un tipo de dato no primitivo
+  ['Float32 (std_msgs)', 'float32'],
   ['Twist (geometry_msgs)', 'geometry_msgs/Twist'],
   ['Odometry (nav_msgs)', 'nav_msgs/Odometry'],
   ['Pose (turtlesim)', 'turtlesim/Pose']
@@ -634,6 +634,110 @@ export function definirBloquesROS2() {
       this.setHelpUrl("");
     }
   };
+
+  Blockly.Blocks['ros2_kill_turtle'] = {
+    init: function () {
+      this.appendDummyInput()
+          .appendField("Matar tortuga:")
+          .appendField(new Blockly.FieldTextInput("/turtle1"), "TURTLE_NAME");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(0);
+      this.setTooltip("Envía solicitud para matar una tortuga especificada.");
+      this.setHelpUrl("");
+    }
+  };
+  
+  Blockly.Blocks['ros2_spawn_turtle'] = {
+    init: function () {
+      this.appendDummyInput()
+          .appendField("Spawnear tortuga")
+          .appendField("Nombre:")
+          .appendField(new Blockly.FieldTextInput("turtle1"), "NAME");
+  
+      this.appendValueInput("X")
+          .setCheck("Number")
+          .appendField("X:");
+      this.appendValueInput("Y")
+          .setCheck("Number")
+          .appendField("Y:");
+      this.appendValueInput("THETA")
+          .setCheck("Number")
+          .appendField("Theta:");
+  
+      this.setInputsInline(true);
+  
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(160);
+      this.setTooltip("Crea una nueva tortuga en turtlesim con nombre, posición y orientación.");
+      this.setHelpUrl("");
+    }
+  };
+  
+  Blockly.Blocks['ros2_turtle_pen_down'] = {
+    init: function () {
+      this.appendDummyInput()
+          .appendField("Bajar lápiz de")
+          .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME"); // ✅ Campo de texto para nombre
+  
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(160);
+      this.setTooltip("Baja el lápiz de la tortuga para que dibuje en turtlesim.");
+      this.setHelpUrl("");
+    }
+  };
+  
+  Blockly.Blocks['ros2_turtle_pen_up'] = {
+    init: function () {
+      this.appendDummyInput()
+          .appendField("Levantar lápiz de")
+          .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME"); // ✅ Campo de texto para nombre
+  
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(160);
+      this.setTooltip("Levanta el lápiz de la tortuga para que deje de dibujar en turtlesim.");
+      this.setHelpUrl("");
+    }
+  };
+  
+  Blockly.Blocks['ros2_turtle_set_pen'] = {
+    init: function () {
+      this.appendDummyInput()
+          .appendField("Cambiar lápiz de")
+          .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
+  
+      this.appendValueInput("R")
+          .setCheck("Number")
+          .appendField("Rojo:");
+      this.appendValueInput("G")
+          .setCheck("Number")
+          .appendField("Verde:");
+      this.appendValueInput("B")
+          .setCheck("Number")
+          .appendField("Azul:");
+      this.appendValueInput("WIDTH")
+          .setCheck("Number")
+          .appendField("Grosor:");
+      
+      this.appendDummyInput()
+          .appendField("Lápiz:")
+          .appendField(new Blockly.FieldDropdown([
+              ["Abajo", "0"],
+              ["Arriba", "1"]
+          ]), "PEN_STATE");
+  
+      this.setInputsInline(true);
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(160);
+      this.setTooltip("Cambia el color, grosor y estado del lápiz de la tortuga en turtlesim.");
+      this.setHelpUrl("");
+    }
+  };
+  
 }
 
 type ImportsDictionary = {
@@ -1029,6 +1133,91 @@ export function definirGeneradoresROS2() {
     addImport('time');
     const code = `time.sleep(${seconds})\n`;
     return code;
+  };
+
+  pythonGenerator.forBlock['ros2_kill_turtle'] = function(block) {
+    const turtleName = block.getFieldValue('TURTLE_NAME').replace('/', '');
+    const srvClass = addImport('turtlesim.srv.Kill');
+    let code = `
+  self.kill_client = self.create_client(${srvClass}, 'kill')
+  kill_request = ${srvClass}.Request()
+  kill_request.name = '${turtleName}'
+  self.kill_client.call_async(kill_request)
+  self.get_logger().info('Solicitud para matar a ${turtleName} enviada.')
+  `;
+    return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
+  };
+  
+  pythonGenerator.forBlock['ros2_spawn_turtle'] = function(block) {
+    const name = pythonGenerator.valueToCode(block, 'NAME', Order.ATOMIC) || '"turtle1"';
+    const x = pythonGenerator.valueToCode(block, 'X', Order.ATOMIC) || '5.0';
+    const y = pythonGenerator.valueToCode(block, 'Y', Order.ATOMIC) || '5.0';
+    const theta = pythonGenerator.valueToCode(block, 'THETA', Order.ATOMIC) || '0.0';
+
+    const srvClass = addImport('turtlesim.srv.Spawn');
+
+    let code = `self.spawn_client = self.create_client(${srvClass}, 'spawn')\n`;
+    code += `req = ${srvClass}.Request()\n`;
+    code += `req.x = float(${x})\n`;
+    code += `req.y = float(${y})\n`;
+    code += `req.theta = float(${theta})\n`;
+    code += `req.name = ${name}\n`;
+    code += `self.spawn_client.call_async(req)\n`;
+    code += `self.get_logger().info('Spawneando tortuga '+ ${name} +' en (${x}, ${y}) con orientación ${theta}.')\n`;
+
+    return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
+  };
+
+  pythonGenerator.forBlock['ros2_turtle_pen_down'] = function(block) {
+    const turtleName = block.getFieldValue('TURTLE_NAME');
+    const srvClass = addImport('turtlesim.srv.SetPen');
+
+    let code = `
+  self.pen_client = self.create_client(${srvClass}, '${turtleName}/set_pen')
+  pen_request = ${srvClass}.Request()
+  pen_request.off = 0  # 0 = lápiz abajo, 1 = lápiz arriba
+  self.pen_client.call_async(pen_request)
+  self.get_logger().info('Lápiz bajado para ${turtleName}.')
+  `;
+      return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
+  };
+
+  pythonGenerator.forBlock['ros2_turtle_pen_up'] = function(block) {
+      const turtleName = block.getFieldValue('TURTLE_NAME');
+      const srvClass = addImport('turtlesim.srv.SetPen');
+
+      let code = `
+  self.pen_client = self.create_client(${srvClass}, '${turtleName}/set_pen')
+  pen_request = ${srvClass}.Request()
+  pen_request.off = 1  # 0 = lápiz abajo, 1 = lápiz arriba
+  self.pen_client.call_async(pen_request)
+  self.get_logger().info('Lápiz levantado para ${turtleName}.')
+  `;
+      return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
+  };
+
+  pythonGenerator.forBlock['ros2_turtle_set_pen'] = function(block) {
+    const turtleName = block.getFieldValue('TURTLE_NAME');
+    const r = pythonGenerator.valueToCode(block, 'R', Order.ATOMIC) || '0';
+    const g = pythonGenerator.valueToCode(block, 'G', Order.ATOMIC) || '0';
+    const b = pythonGenerator.valueToCode(block, 'B', Order.ATOMIC) || '0';
+    const width = pythonGenerator.valueToCode(block, 'WIDTH', Order.ATOMIC) || '1';
+    const penState = block.getFieldValue('PEN_STATE'); // 0 = abajo, 1 = arriba
+
+    const srvClass = addImport('turtlesim.srv.SetPen');
+
+    let code = `
+  self.pen_client = self.create_client(${srvClass}, '${turtleName}/set_pen')
+  pen_request = ${srvClass}.Request()
+  pen_request.r = int(${r})
+  pen_request.g = int(${g})
+  pen_request.b = int(${b})
+  pen_request.width = int(${width})
+  pen_request.off = int(${penState})  # 0 = lápiz abajo, 1 = lápiz arriba
+  self.pen_client.call_async(pen_request)
+  self.get_logger().info('Cambiando lápiz de ${turtleName} (RGB: ${r}, ${g}, ${b}, Grosor: ${width}, Estado: ${penState}).')
+  `;
+      return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
   };
 }
 
