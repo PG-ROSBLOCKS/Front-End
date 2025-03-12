@@ -510,6 +510,8 @@ export class WorkspaceComponent implements OnDestroy {
       if (this.websockets.get(tabId.toString())) {
         this.websockets.get(tabId.toString())?.unsubscribe();
       }
+      console.log(code);
+      
       this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code, type)
         .pipe(
           switchMap(() => {

@@ -70,6 +70,7 @@ export let toolbox = {
           { kind: "block", type: "controls_whileUntil" },
           { kind: "block", type: "controls_for" },
           { kind: "block", type: "controls_forEach" },
+          { kind: "block", type: "ros2_sleep" },
         ],
       },
       {
@@ -125,15 +126,13 @@ export let toolbox = {
         kind: 'category',
         name: 'Turtlesim',
         contents: [
+          { kind: "block", type: "ros2_turtlesim_publisher" },
           { kind: "block", type: "ros2_publish_twist" },
-          { kind: "block", type: "ros2_rotate_turtle" },
           { kind: "block", type: "ros2_turtle_set_pose" },
-          { kind: "block", type: "ros2_sleep" },
           { kind: "block", type: "ros2_kill_turtle" },
           { kind: "block", type: "ros2_spawn_turtle" },
-          { kind: "block", type: "ros2_turtle_pen_up" },
-          { kind: "block", type: "ros2_turtle_pen_down" },
           { kind: "block", type: "ros2_turtle_set_pen" },
+          { kind: "block", type: "ros2_turtle_rotate" },
         ]
       }
     ],

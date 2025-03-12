@@ -332,7 +332,9 @@ export function definirBloquesROS2() {
     init: function() {
       this.setInputsInline(true);
       this.appendDummyInput()
-          .appendField("Publicar Twist");
+          .appendField("Publicar Twist de");
+      this.appendDummyInput()
+          .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
       this.appendValueInput("LINEAR")
           .setCheck("Number")
           .appendField("Velocidad Lineal:");
@@ -341,46 +343,8 @@ export function definirBloquesROS2() {
           .appendField("Velocidad Angular:");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(230);
+      this.setColour(300);
       this.setTooltip("Publica un mensaje Twist con velocidades lineal y angular definidas por el usuario y registra el mensaje en el log");
-      this.setHelpUrl("");
-    }
-  };
-
-  Blockly.Blocks['ros2_rotate_turtle'] = {
-    init: function() {
-      this.setInputsInline(true);
-      this.appendDummyInput()
-          .appendField("Rotar tortuga");
-      this.appendValueInput("GRADOS")
-          .setCheck("Number")
-          .appendField("Grados:");
-      this.setPreviousStatement(true, null);
-      this.setNextStatement(true, null);
-      this.setColour(160);
-      this.setTooltip("Rota la tortuga un número de grados especificado.");
-      this.setHelpUrl("");
-    }
-  };
-  
-  Blockly.Blocks['ros2_turtle_set_pose'] = {
-    init: function() {
-      this.setInputsInline(true);
-      this.appendDummyInput()
-          .appendField("Posicionar tortuga");
-      this.appendValueInput("X")
-          .setCheck("Number")
-          .appendField("X:");
-      this.appendValueInput("Y")
-          .setCheck("Number")
-          .appendField("Y:");
-      this.appendValueInput("THETA")
-          .setCheck("Number")
-          .appendField("Theta:");
-      this.setPreviousStatement(true, null);
-      this.setNextStatement(true, null);
-      this.setColour(160);
-      this.setTooltip("Posiciona la tortuga en una posición y orientación específicas.");
       this.setHelpUrl("");
     }
   };
@@ -583,27 +547,15 @@ export function definirBloquesROS2() {
       }
     }
   };
-  Blockly.Blocks['ros2_rotate_turtle'] = {
-    init: function() {
-      this.setInputsInline(true);
-      this.appendDummyInput()
-          .appendField("Rotar tortuga");
-      this.appendValueInput("GRADOS")
-          .setCheck("Number")
-          .appendField("Grados:");
-      this.setPreviousStatement(true, null);
-      this.setNextStatement(true, null);
-      this.setColour(160);
-      this.setTooltip("Rota la tortuga un número de grados especificado.");
-      this.setHelpUrl("");
-    }
-  };
   
   Blockly.Blocks['ros2_turtle_set_pose'] = {
     init: function() {
       this.setInputsInline(true);
       this.appendDummyInput()
           .appendField("Posicionar tortuga");
+      this.appendDummyInput()
+          .appendField("Nombre:")
+          .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
       this.appendValueInput("X")
           .setCheck("Number")
           .appendField("X:");
@@ -615,7 +567,7 @@ export function definirBloquesROS2() {
           .appendField("Theta:");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(160);
+      this.setColour(300);
       this.setTooltip("Posiciona la tortuga en una posición y orientación específicas.");
       this.setHelpUrl("");
     }
@@ -629,7 +581,7 @@ export function definirBloquesROS2() {
         .appendField("segundos");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(120);
+      this.setColour(160);
       this.setTooltip("Pausa la ejecución por un número determinado de segundos.");
       this.setHelpUrl("");
     }
@@ -639,10 +591,10 @@ export function definirBloquesROS2() {
     init: function () {
       this.appendDummyInput()
           .appendField("Matar tortuga:")
-          .appendField(new Blockly.FieldTextInput("/turtle1"), "TURTLE_NAME");
+          .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(0);
+      this.setColour(300);
       this.setTooltip("Envía solicitud para matar una tortuga especificada.");
       this.setHelpUrl("");
     }
@@ -653,7 +605,7 @@ export function definirBloquesROS2() {
       this.appendDummyInput()
           .appendField("Spawnear tortuga")
           .appendField("Nombre:")
-          .appendField(new Blockly.FieldTextInput("turtle1"), "NAME");
+          .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
   
       this.appendValueInput("X")
           .setCheck("Number")
@@ -669,39 +621,12 @@ export function definirBloquesROS2() {
   
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(160);
+      this.setColour(300);
       this.setTooltip("Crea una nueva tortuga en turtlesim con nombre, posición y orientación.");
       this.setHelpUrl("");
     }
   };
-  
-  Blockly.Blocks['ros2_turtle_pen_down'] = {
-    init: function () {
-      this.appendDummyInput()
-          .appendField("Bajar lápiz de")
-          .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME"); // ✅ Campo de texto para nombre
-  
-      this.setPreviousStatement(true, null);
-      this.setNextStatement(true, null);
-      this.setColour(160);
-      this.setTooltip("Baja el lápiz de la tortuga para que dibuje en turtlesim.");
-      this.setHelpUrl("");
-    }
-  };
-  
-  Blockly.Blocks['ros2_turtle_pen_up'] = {
-    init: function () {
-      this.appendDummyInput()
-          .appendField("Levantar lápiz de")
-          .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME"); // ✅ Campo de texto para nombre
-  
-      this.setPreviousStatement(true, null);
-      this.setNextStatement(true, null);
-      this.setColour(160);
-      this.setTooltip("Levanta el lápiz de la tortuga para que deje de dibujar en turtlesim.");
-      this.setHelpUrl("");
-    }
-  };
+
   
   Blockly.Blocks['ros2_turtle_set_pen'] = {
     init: function () {
@@ -732,12 +657,43 @@ export function definirBloquesROS2() {
       this.setInputsInline(true);
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(160);
+      this.setColour(300);
       this.setTooltip("Cambia el color, grosor y estado del lápiz de la tortuga en turtlesim.");
       this.setHelpUrl("");
     }
   };
   
+  Blockly.Blocks['ros2_turtlesim_publisher'] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField('__init__')
+      this.appendStatementInput('CALLBACK')
+        .appendField('Ejecutar');
+      this.setPreviousStatement(false, null);
+      this.setNextStatement(false, null);
+      this.setColour(300);
+      this.setTooltip('Crea un timer que ejecuta un callback periódicamente.');
+      this.setHelpUrl('');
+    }
+  };
+
+  Blockly.Blocks['ros2_turtle_rotate'] = {
+    init: function() {
+      this.setInputsInline(true);
+      this.appendDummyInput()
+          .appendField("Rotar tortuga");
+      this.appendDummyInput()
+          .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
+      this.appendValueInput("GRADOS")
+          .setCheck("Number")
+          .appendField("Grados:");
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(300);
+      this.setTooltip("Rota la tortuga un número de grados especificado.");
+      this.setHelpUrl("");
+    }
+  };
 }
 
 type ImportsDictionary = {
@@ -990,46 +946,40 @@ export function definirGeneradoresROS2() {
 
   pythonGenerator.forBlock['ros2_publish_twist'] = function(block) {
     const msgClass = addImport('geometry_msgs.msg.Twist');
+    const turtleName = block.getFieldValue('TURTLE_NAME');
     let linear = pythonGenerator.valueToCode(block, 'LINEAR', Order.ATOMIC) || '0.0';
     let angular = pythonGenerator.valueToCode(block, 'ANGULAR', Order.ATOMIC) || '0.0';
-    let code = `${TAB_SPACE}${TAB_SPACE}msg = ${msgClass}()\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}msg.linear.x = float(${linear})\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}msg.angular.z = float(${angular})\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.publisher_.publish(msg)\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.get_logger().info("Mensaje Twist publicado")\n`;
-    return code;
-  };
-
-  pythonGenerator.forBlock['ros2_rotate_turtle'] = function(block) {
-    const degrees = pythonGenerator.valueToCode(block, 'GRADOS', Order.ATOMIC) || '0';
-    
-    const msgClass = addImport('geometry_msgs.msg.Twist');
-  
-    let code = `msg = ${msgClass}()\n`;
-    code += `msg.angular.z = float(${degrees})\n`;
+    let code = `self.publisher_ = self.create_publisher(Twist, '/${turtleName}/cmd_vel', 10)\n`;
+    code += `msg = Twist()\n`;
+    code += `msg.linear.x = float(${linear})\n`;
+    code += `msg.angular.z = float(${angular})\n`;
     code += `self.publisher_.publish(msg)\n`;
-    code += `self.get_logger().info('Rotando tortuga ${degrees} grados.')\n`;
-  
+    code += `self.get_logger().info("Mensaje Twist publicado")\n`;
+
     return code;
-  };
+};
 
   pythonGenerator.forBlock['ros2_turtle_set_pose'] = function(block) {
+    const turtleName = block.getFieldValue('TURTLE_NAME');
     const x = pythonGenerator.valueToCode(block, 'X', Order.ATOMIC) || '0';
     const y = pythonGenerator.valueToCode(block, 'Y', Order.ATOMIC) || '0';
     const theta = pythonGenerator.valueToCode(block, 'THETA', Order.ATOMIC) || '0';
-  
+
     const srvClass = addImport('turtlesim.srv.TeleportAbsolute');
-  
-    let code = `self.teleport_client = self.create_client(${srvClass}, 'turtle1/teleport_absolute')\n`;
+
+    let code = `self.teleport_client = self.create_client(${srvClass}, '${turtleName}/teleport_absolute')\n`;
+    code += `while not self.teleport_client.wait_for_service(timeout_sec=1.0): self.get_logger().info('Esperando servicio ${turtleName}/teleport_absolute...')\n`;
     code += `req = ${srvClass}.Request()\n`;
     code += `req.x = float(${x})\n`;
     code += `req.y = float(${y})\n`;
     code += `req.theta = float(${theta})\n`;
-    code += `self.teleport_client.call_async(req)\n`;
+    code += `future = self.teleport_client.call_async(req)\n`;
+    code += `future.add_done_callback(lambda future: self.get_logger().info('Teletransporte completado.'))\n`;
     code += `self.get_logger().info('Posicionando tortuga en (${x}, ${y}) con orientación ${theta}.')\n`;
-  
+
     return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
-  };
+};
+
 
   pythonGenerator.forBlock['srv_variable'] = function (block) {
     // reads VAR_SECTION (already defined in the block when toolbox is created)
@@ -1149,7 +1099,7 @@ export function definirGeneradoresROS2() {
   };
   
   pythonGenerator.forBlock['ros2_spawn_turtle'] = function(block) {
-    const name = pythonGenerator.valueToCode(block, 'NAME', Order.ATOMIC) || '"turtle1"';
+    const name = block.getFieldValue('TURTLE_NAME') || '"turtle1"';
     const x = pythonGenerator.valueToCode(block, 'X', Order.ATOMIC) || '5.0';
     const y = pythonGenerator.valueToCode(block, 'Y', Order.ATOMIC) || '5.0';
     const theta = pythonGenerator.valueToCode(block, 'THETA', Order.ATOMIC) || '0.0';
@@ -1157,44 +1107,17 @@ export function definirGeneradoresROS2() {
     const srvClass = addImport('turtlesim.srv.Spawn');
 
     let code = `self.spawn_client = self.create_client(${srvClass}, 'spawn')\n`;
+    code += `while not self.spawn_client.wait_for_service(timeout_sec=1.0): self.get_logger().info('Esperando servicio spawn...')\n`;
     code += `req = ${srvClass}.Request()\n`;
     code += `req.x = float(${x})\n`;
     code += `req.y = float(${y})\n`;
     code += `req.theta = float(${theta})\n`;
-    code += `req.name = ${name}\n`;
-    code += `self.spawn_client.call_async(req)\n`;
-    code += `self.get_logger().info('Spawneando tortuga '+ ${name} +' en (${x}, ${y}) con orientación ${theta}.')\n`;
+    code += `req.name = '${name}'\n`;
+    code += `future = self.spawn_client.call_async(req)\n`;
+    code += `future.add_done_callback(lambda future: self.get_logger().info('Tortuga ' + '${name}' + ' creada en (${x}, ${y}) con orientación ${theta}.'))\n`;
 
     return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
-  };
-
-  pythonGenerator.forBlock['ros2_turtle_pen_down'] = function(block) {
-    const turtleName = block.getFieldValue('TURTLE_NAME');
-    const srvClass = addImport('turtlesim.srv.SetPen');
-
-    let code = `
-  self.pen_client = self.create_client(${srvClass}, '${turtleName}/set_pen')
-  pen_request = ${srvClass}.Request()
-  pen_request.off = 0  # 0 = lápiz abajo, 1 = lápiz arriba
-  self.pen_client.call_async(pen_request)
-  self.get_logger().info('Lápiz bajado para ${turtleName}.')
-  `;
-      return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
-  };
-
-  pythonGenerator.forBlock['ros2_turtle_pen_up'] = function(block) {
-      const turtleName = block.getFieldValue('TURTLE_NAME');
-      const srvClass = addImport('turtlesim.srv.SetPen');
-
-      let code = `
-  self.pen_client = self.create_client(${srvClass}, '${turtleName}/set_pen')
-  pen_request = ${srvClass}.Request()
-  pen_request.off = 1  # 0 = lápiz abajo, 1 = lápiz arriba
-  self.pen_client.call_async(pen_request)
-  self.get_logger().info('Lápiz levantado para ${turtleName}.')
-  `;
-      return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
-  };
+};
 
   pythonGenerator.forBlock['ros2_turtle_set_pen'] = function(block) {
     const turtleName = block.getFieldValue('TURTLE_NAME');
@@ -1218,6 +1141,29 @@ export function definirGeneradoresROS2() {
   self.get_logger().info('Cambiando lápiz de ${turtleName} (RGB: ${r}, ${g}, ${b}, Grosor: ${width}, Estado: ${penState}).')
   `;
       return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
+  };
+
+  pythonGenerator.forBlock['ros2_turtlesim_publisher'] = function (block) {
+    const callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK');
+    addImport('time');
+    let code = `pub_sub\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}time.sleep(1)  # Espera a que cargue el nodo\n`
+    code += pythonGenerator.prefixLines(removeIndentation(callbackCode), `${TAB_SPACE}${TAB_SPACE}`);
+    return code;
+  };
+
+  pythonGenerator.forBlock['ros2_turtle_rotate'] = function(block) {
+    const degrees = pythonGenerator.valueToCode(block, 'GRADOS', Order.ATOMIC) || '0';
+    const turtleName = block.getFieldValue('TURTLE_NAME');
+    const msgClass = addImport('geometry_msgs.msg.Twist');
+  
+    let code = `self.publisher_ = self.create_publisher(Twist, '/${turtleName}/cmd_vel', 10)\n`;
+    code += `msg = Twist()\n`;
+    code += `msg.angular.z = float(${degrees})\n`;
+    code += `self.publisher_.publish(msg)\n`;
+    code += `self.get_logger().info("Mensaje Twist publicado")\n`;
+  
+    return code;
   };
 }
 
