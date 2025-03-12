@@ -50,6 +50,50 @@ export class WorkspaceComponent implements OnDestroy {
     }
   }
 
+  showMessage(message: string, type: 'success' | 'error') {
+    this.alertService.showAlert(message);
+  }
+
+  saveToLocalStorage() {
+    try {
+      const tabsData = this.tabs.map(tab => {
+        const workspaceXml = this.workspaces[tab.id] 
+          ? Blockly.Xml.workspaceToDom(this.workspaces[tab.id]).outerHTML
+          : '';
+        localStorage.setItem(`workspace_${tab.id}`, workspaceXml);
+        localStorage.setItem(`consoleService_${tab.id}`, "true"); // Guardamos solo la existencia
+        return { id: tab.id, name: tab.name };
+      });
+      localStorage.setItem('workspace_tabs', JSON.stringify(tabsData));
+      this.showMessage('Datos guardados exitosamente.', 'success');
+    } catch (error) {
+      this.showMessage('Error al guardar los datos.', 'error');
+    }
+  }
+
+  loadFromLocalStorage() {
+    try {
+      const tabsData = JSON.parse(localStorage.getItem('workspace_tabs') || '[]');
+      if (tabsData.length === 0) return;
+
+      this.tabs = tabsData;
+      setTimeout(() => {
+        tabsData.forEach((tab: any) => {
+          this.selectTab(tab.id);
+        });
+      }, 100);
+
+      tabsData.forEach((tab: any) => {
+        if (localStorage.getItem(`consoleService_${tab.id}`)) {
+          this.consolesServices.set(tab.id.toString(), new CodeService(this.http));
+        }
+      });
+      this.showMessage('Datos cargados exitosamente.', 'success');
+    } catch (error) {
+      this.showMessage('Error al cargar los datos.', 'error');
+    }
+  }
+
   resetTurtleContainer(): void {
     this.http.post('http://localhost:8000/reset/', {}).subscribe({
       next: (response) => {
@@ -305,6 +349,17 @@ export class WorkspaceComponent implements OnDestroy {
     //this.registerServerDeleteListenerForWorkspace(tabId);
     this.consolesOutput.set(tabId.toString(), '');
     this.textCode.set(tabId.toString(), '');
+
+    const savedWorkspaceXml = localStorage.getItem(`workspace_${tabId}`);
+    if (savedWorkspaceXml) {
+      const xmlDom = Blockly.utils.xml.textToDom(savedWorkspaceXml);
+      Blockly.Xml.domToWorkspace(xmlDom, this.workspaces[tabId]);
+    }
+
+    const savedService = localStorage.getItem(`consoleService_${tabId}`);
+    if (savedService) {
+      this.consolesServices.set(tabId.toString(), new CodeService(this.http));
+    }
   }
 
   async addTab() {
@@ -340,6 +395,8 @@ export class WorkspaceComponent implements OnDestroy {
     }, 0);
     this.testingCodeBackend = this.textCode.get(tabId.toString()) || '';
     this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) || '';
+    console.log(22);
+    
   }
 
   storePreviousName(tab: any) {
@@ -503,6 +560,10 @@ export class WorkspaceComponent implements OnDestroy {
       code = create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType);
     }
     const codeService = this.consolesServices.get(tabId.toString());
+    console.log('\x1b[42m\x1b[31m%s\x1b[0m', this.consolesServices);
+    console.log(this.consolesServices);
+    
+    
     if (codeService === undefined) {
       console.error('Service not found for the tab', tabId);
       return;
