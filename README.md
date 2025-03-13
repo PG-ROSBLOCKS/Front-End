@@ -1,4 +1,4 @@
-# Nombre del Proyecto Angular
+# ROSBlocks Frontend
 
 Este proyecto es una aplicación web moderna desarrollada con Angular que integra la biblioteca Blockly para ofrecer una experiencia de programación visual. La combinación de Angular para el manejo de la interfaz y la lógica de negocio, con Blockly para la creación y manipulación de bloques de programación estructurada como de ROS2, permite crear aplicaciones interactivas, didácticas y altamente escalables.
 
