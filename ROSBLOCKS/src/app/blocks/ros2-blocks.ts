@@ -315,7 +315,7 @@ export function definirBloquesROS2() {
         .appendField("Asignar");
       // Small tag for "a"
       this.appendDummyInput()
-        .appendField("a");
+        .appendField("=");
       // Second input for the expression to be assigned
       this.appendValueInput("VALUE")
         .setCheck(null);
@@ -370,19 +370,20 @@ export function definirBloquesROS2() {
           this.updateChildren_();
           return newValue; // Ensure the validator returns a value
         }), "CLIENT_TYPE")
-        .appendField("Servicio")
+        .appendField("Servidor")
         .appendField(new Blockly.FieldTextInput("add_two_ints"), "SERVICE_NAME");
               this.appendDummyInput()
-        .appendField("Timeout (segundos)")
-        .appendField(new Blockly.FieldNumber(0.5, 0.1, 60, 0.1), "TIMER");
+        .appendField("Tiempo de espera del servidor ")
+        .appendField(new Blockly.FieldNumber(0.5, 0.1, 60, 0.1), "TIMER")
+        .appendField("(segundos)");
         this.appendDummyInput()
-        .appendField("Mensaje base")
+        .appendField("Mensaje de espera del servidor")
         .appendField(new Blockly.FieldTextInput("service not available, waiting again..."), "MESSAGE_BASE");
 
       // We add a “MAIN” space to connect a “child” block
       this.appendStatementInput("MAIN")
         .setCheck(null)
-        .appendField("Procesar petición:");
+        .appendField("Procesar petición");
       this.setColour(230);
       this.setTooltip("Bloque para crear un cliente asíncrono en ROS2");
       this.setHelpUrl("");

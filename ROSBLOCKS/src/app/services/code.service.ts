@@ -83,7 +83,7 @@ export class CodeService {
   }
 
   exportProject(): void {
-    this.http.get(`${this.API_URL}/export-project/`, { responseType: 'blob' }).subscribe(response => {
+    this.http.get(`${this.API_URL}/export/`, { responseType: 'blob' }).subscribe(response => {
       const blob = new Blob([response], { type: 'application/gzip' });
 
       // Crear download link with default name
