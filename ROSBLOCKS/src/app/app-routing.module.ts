@@ -6,7 +6,6 @@ import { RosblocksHelpComponent } from './rosblocks-help/rosblocks-help.componen
 import { AlertComponent } from './shared/components/alert/alert.component';
 
 const routes: Routes = [
-  {path: 'a', component: ErrorComponent},
   {path: 'help', component: RosblocksHelpComponent},
   {path: '**', component: WorkspaceComponent}
 ];

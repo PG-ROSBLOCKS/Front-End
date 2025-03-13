@@ -54,7 +54,7 @@
     color: #f2f2f2;
   }
   
-  .confirm-dialog {
+  .confirmDialog {
     background-color: #04C4D9;
     border: 4px solid #04F2F2;
     color: white;
@@ -68,7 +68,7 @@
     animation: fadeIn 0.3s forwards;
   }
   
-  .confirm-dialog.fade-out {
+  .confirmDialog.fade-out {
     animation: fadeOut 0.2s forwards;
   }
   
@@ -86,12 +86,12 @@
     transition: background-color 0.3s ease, transform 0.3s ease;
   }
   
-  .btn-confirm, .btn-cancel {
+  .btnConfirm, .btnCancel {
     background-color: #00abbe;
     color: white;
   }
   
-  .btn-confirm:hover, .btn-cancel:hover {
+  .btnConfirm:hover, .btnCancel:hover {
     background-color: #00d8f0;
     transform: scale(1.05);
   }

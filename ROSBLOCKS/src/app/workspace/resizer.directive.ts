@@ -7,7 +7,7 @@ import { WorkspaceComponent } from './workspace.component';
 export class ResizerDirective implements OnInit, OnDestroy {
   @Input() leftContainer!: HTMLElement;
   @Input() rightContainer!: HTMLElement;
-  @Input() containerSelector: string = '#workspace-container';
+  @Input() containerSelector: string = '#workspaceContainer';
 
   private mouseMoveHandler!: (event: MouseEvent) => void;
   private mouseUpHandler!: (event: MouseEvent) => void;

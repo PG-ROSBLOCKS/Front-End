@@ -20,14 +20,14 @@ app-header {
   background-color: darkgray;
 }
 
-#workspace-container {
+#workspaceContainer {
   display: flex;
   flex: 1;
   width: 100%;
   overflow: hidden;
 }
 
-.left-section {
+.leftSection {
   display: flex;
   flex-direction: column;
   background-color: lightblue;
@@ -42,7 +42,7 @@ app-header {
   background-color: gray;
 }
 
-.right-section {
+.rightSection {
   flex: 1;
   background-color: #253942;
   overflow-x: scroll;
@@ -54,17 +54,17 @@ app-header {
   z-index: 10;
 }
 
-.top-left {
+.topLeft {
   background-color: #253942;
 }
 
-.bottom-left {
+.bottomLeft {
   flex: 1;
   background-color: #012840;
 }
 
 
-.gray-back {
+.grayBack {
   width: 250px;
   height: calc(100% - 60px);
   background-color: #253942;
@@ -100,7 +100,7 @@ app-header {
   color: aliceblue;
 }
 
-.add-map, .sample-map {
+.addMap, .sampleMap {
   border: none;
   height: 100%;
   aspect-ratio: 1 / 1;
@@ -108,18 +108,7 @@ app-header {
   font-family: 'Poppins', sans-serif;
 }
 
-.tab-content {
-  border-top: 2px solid rgba(128, 128, 128, 0.3);
-  height: calc(100% - 40px);
-  overflow: auto;
-  background-size: 20px 20px;
-  background-image:
-  linear-gradient(to right, rgba(128, 128, 128, 0.2) 1px, transparent 1px),
-  linear-gradient(to bottom, rgba(128, 128, 128, 0.2) 1px, transparent 1px);
-  background-attachment: scroll;
-}
-
-.tabs-bar {
+.tabsBar {
   display: flex;
   padding: 0px;
   overflow-x: auto;
@@ -131,7 +120,7 @@ app-header {
   background-color: #012840;
 }
 
-.tab-list {
+.tabList {
   list-style-type: none;
   padding: 0;
   margin: 0;
@@ -141,11 +130,11 @@ app-header {
 }
 
 
-.tab-list li {
+.tabList li {
   border-radius: 0 15px 0 0;
 }
 
-.tab-list input {
+.tabList input {
   border: none;
   background: transparent;
   color: #3bdbdb;/*!*/
@@ -162,7 +151,7 @@ input::selection {
   background-color: transparent;
 }
 
-.node-tab {
+.nodeTab {
   display: inline-block;
   padding: 10px;
   padding-right: 15px;
@@ -177,33 +166,33 @@ input::selection {
   position: relative;
 }
 
-.node-tab:hover {
+.nodeTab:hover {
   background-color: #002f50;/*!*/
 }
 
-.node-tab input {
+.nodeTab input {
   outline: none;
 }
 
-.node-tab input:hover {
+.nodeTab input:hover {
   text-shadow: 0px 0px 3px #20fcfcc7;
 }
 
-.node-tab.selected {
+.nodeTab.selected {
   background-color: #015C66;/*!*/
   color: white;/*!*/
   border-color: #015C66;/*!*/
   box-shadow: 3px 0px 2px #0115248c;
 }
 
-.node-tab button {
+.nodeTab button {
   padding: 0;
   border: none;
   background: none;
   color: #3bdbdb;/*!*/
 }
 
-.add-tab-button {
+.addTabButton {
   display: inline-block;
   padding: 10px 20px;
   padding-left: 30px;
@@ -219,16 +208,16 @@ input::selection {
   z-index: 1;
 }
 
-.delete-button {
+.deleteButton {
   margin-right: 5px;
 }
 
-.delete-button:hover, .play-button:hover {
+.deleteButton:hover, .playButton:hover {
   text-shadow: 0px 0px 5px #3bdbdb;
   cursor: pointer;
 }
 
-.add-tab-button:hover {
+.addTabButton:hover {
   background: #016e7a;/*!*/
   color: #20fcfc;/*!*/
   text-shadow: 0px 0px 10px #20fcfc;
@@ -278,85 +267,22 @@ input::selection {
   outline: none;
 }
 
-.search-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 20px;
-  margin: 10px;
-}
-
-.search-button {
-  background: none;
-  border: none;
-  padding: 10px;
-  cursor: pointer;
-  border-radius: 25px 0 0 25px;/*!*/
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.search-button:hover {
-  background-color: #2d3e46;/*!*/
-}
-
-.search-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  position: relative;
-  filter: invert(41%) sepia(79%) saturate(7484%) hue-rotate(154deg);/*!*/
-}
-
-.search-icon::before {
-  content: '';
-  position: absolute;
-  width: 8px;
-  height: 2px;
-  background-color: #3bdbdb43;/*!*/
-  top: 7px;
-  left: 6px;
-  transform: rotate(45deg);
-}
-
-.search-input {
-  padding: 10px 0;
-  padding-left: 50px;
-  margin-left: -40px;
-  font-size: 16px;
-  width: 175px;
-  border: 2px solid #3bdbdb43;/*!*/
-  background-color: #3bdbdb43;/*!*/
-  color: white;/*!*/
-  border-radius: 25px;
-  outline: none;
-}
-
-.search-input::placeholder {
-  color: #bbbbbb;/*!*/
-}
-
-.search-input:focus {
-  border-color: #2d3e46;/*!*/
-}
-
-.add-map {
+.addMap {
   border-radius: 100% !important;
 }
 
-.sample-map, .add-map{
+.sampleMap, .addMap{
   border-radius: 10px;
   color: #FFF;
   box-shadow: 0px 5px 5px 0px #00000047 inset;
   background-color: #015C66;
 }
 
-.sample-map:hover, .add-map:hover{
+.sampleMap:hover, .addMap:hover{
   background-color: #016874;
 }
 
-.sample-map:active, .add-map:active{
+.sampleMap:active, .addMap:active{
   border-radius: 10px;
   color: #FFF;
   box-shadow: 0px 5px 5px 0px #00000047 inset;
@@ -370,7 +296,7 @@ input::selection {
   padding-right: 10px;
 }
 
-.play-all, .stop-all {
+.playAll, .stopAll {
   border: none;
   background: none;
   padding: 5px 5px;
@@ -382,25 +308,25 @@ input::selection {
 }
 
 
-.play-all {
+.playAll {
   color: #3bdbdb;
 }
 
-.play-all:hover {
+.playAll:hover {
   text-shadow: 0px 0px 5px #3bdbdb;
   background: none !important;
 }
 
-.stop-all:hover {
+.stopAll:hover {
   text-shadow: 0px 0px 5px #F15FF2;
   background: none !important;
 }
 
-.stop-all {
+.stopAll {
   color: #F15FF2;
 }
 
-.play-all:hover, .stop-all:hover {
+.playAll:hover, .stopAll:hover {
   background: #016e7a;
 }
 
@@ -428,7 +354,7 @@ input::selection {
   }
 }
 
-.btn-clean {
+.btnClean {
   position: relative;
   top: -32px;
   left: 5px;
@@ -442,12 +368,12 @@ input::selection {
   transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
-.btn-clean:hover {
+.btnClean:hover {
   background-color: #006b77;
   transform: scale(1.02);
 }
 
-.map-insight {
+.mapInsight {
   position: absolute;
   margin: 0px -75px !important;
   width: 200px;
@@ -463,13 +389,13 @@ input::selection {
   transition: opacity 0.1s ease-in-out, visibility 0.08s;
 }
 
-.sample-map:hover .map-insight {
+.sampleMap:hover .mapInsight {
   opacity: 1;
   visibility: visible;
 }
 
 
-.map-insight img {
+.mapInsight img {
   width: 100%;
   height: 100%;
   position: relative;
@@ -477,21 +403,11 @@ input::selection {
   padding: 2px;
 }
 
-.delete-custom-map {
-  width: 15px;
-  height: 15px;
-  position: fixed;
-  background-color: brown;
-  margin: -35px 35px !important;
-  border-radius: 100%;
-  font-size: 11px;
-}
-
-.added-map {
+.addedMap {
   background-color: #058057 !important;
 }
 
-.added-map:hover {
+.addedMap:hover {
   background-color: #07a166 !important;
 }
 
