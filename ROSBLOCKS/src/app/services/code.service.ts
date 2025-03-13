@@ -15,6 +15,7 @@ export class CodeService {
   noTabs$ = this.noTabsSubject.asObservable();
   noBlocks$ = this.noBlocksSubject.asObservable();
   private API_URL = 'http://localhost:8000';
+  private API_URL_NO_PORT = 'http://localhost:';
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
@@ -112,7 +113,11 @@ export class CodeService {
     return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
   }
 
-  vncTurtlesim() {
-    return `${this.API_URL}/vnc_auto.html`;
+  vncTurtlesim(): string {
+    return `${this.API_URL_NO_PORT}8080/vnc_auto.html`;
+  }
+
+  vncTurtlesimReset(): string {
+    return `${this.API_URL}/reset/`;
   }
 }

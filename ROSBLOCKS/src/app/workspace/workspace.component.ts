@@ -10,7 +10,7 @@ import { switchMap } from 'rxjs/operators';
 import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
-import { SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { toolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
 @Component({
@@ -44,7 +44,24 @@ export class WorkspaceComponent implements OnDestroy {
     private codeService: CodeService,
     private alertService: AlertService,
     private successService: SuccessService,
-  ) { }
+    private sanitizer: DomSanitizer
+    
+  ) {}
+
+  ngOnInit(): void {
+    this.reloadTurtlesim();
+  }
+
+  reloadTurtlesim(): void {
+    const url = this.codeService.vncTurtlesim();
+    console.log(url);
+    
+    if (url) {
+      this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    } else {
+      this.alertService.showAlert('No se pudo obtener la URL');
+    }
+  }
 
   ngOnDestroy(): void {
     for (const ws in this.websockets) {
@@ -127,7 +144,7 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   resetTurtleContainer(): void {
-    this.http.post('http://localhost:8000/reset/', {}).subscribe({
+    this.http.post(this.codeService.vncTurtlesimReset(), {}).subscribe({
       next: (response) => {
         console.log("Turltesim restarted:", response);
       },

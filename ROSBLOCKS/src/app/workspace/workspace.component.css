@@ -78,7 +78,7 @@ app-header {
   height: 50px;
   width: 100%;
   margin-top: 5px;
-  margin-bottom: -10px;
+  margin-bottom: 20px;
 }
 
 .maps * {
@@ -87,17 +87,15 @@ app-header {
 
 .turtlesim {
   width: 100%;
-  height: 20pc;
-  height: 300px;
+  height: 250px;
   display: flex; 
-  justify-content: baseline; 
+  justify-content: center; 
   align-items: center; 
-  padding: 0 20px;
 }
 
 .console {
   width: 100%;
-  height: 45vh;
+  height: calc(45vh - 20px);
   background-color: #001117;
   color: aliceblue;
 }
@@ -498,24 +496,36 @@ input::selection {
 }
 
 iframe {
-  width: 315px; 
-  height: 100%; 
+  width: 500px; 
+  height: 523px; 
   border: none;
   margin: 0 auto;
+  zoom: 60%;
 }
 
 /* Covers top bar of noVNC */
 .barTurtle {
   background: #253942;
   width: 100%;
-  height: 28px;
+  height: 14px;
   position: relative;
-  top: 28px;
+  top: -19px;
+  z-index: 10;
+}
+
+.bottomBarTurtle {
+  background: #253942;
+  width: 100%;
+  height: 14px;
+  position: relative;
+  top: 20px;
+  z-index: 10;
 }
 
 .resetTurtleDiv {
   width: 100%;
   text-align: center;
+  margin-top: 10px;
 }
 
 .resetTurtleDiv * {
@@ -528,4 +538,22 @@ iframe {
   font-size: 16px;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.centerReload {
+  position: absolute;
+  left: calc(50% + 125px);
+}
+.reloadTurtle {
+  border-radius: 100%;
+  position: relative;
+  top: 20px;
+  border: none;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.reloadTurtle:hover {
+  box-shadow: 0 0 5px #ffffff;
 }

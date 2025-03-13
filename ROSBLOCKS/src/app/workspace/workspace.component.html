@@ -79,10 +79,14 @@
                 <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none;">
             </div>
             <div class="barTurtle">
+                <div class="centerReload">
+                    <button class="reloadTurtle" (click)="reloadTurtlesim()">&#x21bb;</button>
+                </div>
             </div>
             <div class="turtlesim">
-                <iframe [src]="sanitizedVncUrl" _ngcontent-ng-c809167999="" src="http://localhost:8080/vnc_auto.html" title="VNC"></iframe>
+                <iframe #iframeElement [src]="sanitizedVncUrl" _ngcontent-ng-c809167999="" src="sanitizedVncUrl" title="VNC"></iframe>
             </div>
+            <div class="bottomBarTurtle"></div>
             <div class="resetTurtleDiv">
                 <button (click)="resetTurtleContainer()">Reiniciar</button>
             </div>
