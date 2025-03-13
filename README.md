@@ -23,7 +23,7 @@ Este proyecto es una aplicación web moderna desarrollada con Angular que integr
 
 ## Tecnologías
 
-- **Angular 14** (o la versión actual que estés utilizando)
+- **Angular**
 - **TypeScript**
 - **HTML5 & CSS3**
 - **Angular CLI**
