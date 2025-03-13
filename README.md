@@ -1,22 +1,3 @@
-# ROSBlocks Frontend
-
-Este proyecto es una aplicación web moderna desarrollada con Angular que integra la biblioteca Blockly para ofrecer una experiencia de programación visual. La combinación de Angular para el manejo de la interfaz y la lógica de negocio, con Blockly para la creación y manipulación de bloques de programación estructurada como de ROS2, permite crear aplicaciones interactivas, didácticas y altamente escalables.
-
-## Tecnologías
-
-- **Angular**
-- **TypeScript**
-- **HTML5 & CSS3**
-- **Angular CLI**
-- **Blockly**: Biblioteca para la programación visual con bloques
-
-## Requisitos
-
-- [Node.js](https://nodejs.org/) (versión LTS recomendada)
-- npm (incluido con Node.js).
-- Angular CLI (instalar globalmente: `npm install -g @angular/cli`)
-- El backend debe estar corriendo previamente para que se le puedan enviar las peticiones y las procese.
-
 # Angular Blockly App
 
 Este proyecto es una aplicación web moderna desarrollada con Angular que integra la biblioteca Blockly para ofrecer una experiencia de programación visual. La combinación de Angular para el manejo de la interfaz y la lógica de negocio, con Blockly para la creación y manipulación de bloques, permite crear aplicaciones interactivas, didácticas y altamente escalables.
@@ -29,6 +10,13 @@ Este proyecto es una aplicación web moderna desarrollada con Angular que integr
 - **Angular CLI**
 - **RxJS**
 - **Blockly:** Biblioteca para la programación visual con bloques
+
+## Requisitos
+
+- [Node.js](https://nodejs.org/) (versión LTS recomendada)
+- npm (incluido con Node.js).
+- Angular CLI (instalar globalmente: `npm install -g @angular/cli`)
+- El backend debe estar corriendo previamente para que se le puedan enviar las peticiones y las procese.
 
 ## Requisitos e Instalación en Windows/Ubuntu
 ### Windows
