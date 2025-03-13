@@ -3,7 +3,8 @@ import { Component, AfterViewInit, OnInit, OnDestroy, ElementRef, ViewChild } fr
 import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
-import { definirBloquesROS2, definirGeneradoresROS2 } from '../blocks/ros2-blocks';
+import { definirBloquesROS2 } from '../blocks/ros2-blocks';
+import { definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
 import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';

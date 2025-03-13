@@ -1,5 +1,5 @@
 import { pythonGenerator } from 'blockly/python';
-import { getImports } from './ros2-blocks';
+import { getImports } from './ros2-blocks-code';
 export function create_publisher(code: string, name: string): string {
     const nameWithoutExtension = name.replace(/\.py$/, '');
     return `# Archivo ${nameWithoutExtension}.py generado por ROSBlocks
