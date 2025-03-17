@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { WebSocketSubject, webSocket } from 'rxjs/webSocket';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -14,11 +15,14 @@ export class CodeService {
   workspaceChanged$ = this.workspaceChangedSubject.asObservable();
   noTabs$ = this.noTabsSubject.asObservable();
   noBlocks$ = this.noBlocksSubject.asObservable();
-  private API_URL = process.env['API_URL'] || 'https://tu-fastapi-aws.com';
-  private API_URL_NO_PORT = this.API_URL.replace(/:\d+$/, '');
+  private API_URL = environment.API_URL;
+  private podUrl: string | null = null;
+  private sessionId: string;
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
+    this.sessionId = this.generateSessionId();
+    this.fetchPodUrl();
   }
 
   private generateSessionId(): string {
@@ -28,6 +32,16 @@ export class CodeService {
       localStorage.setItem('session_id', sessionId);
     }
     return sessionId;
+  }
+
+  private fetchPodUrl(): void {
+    this.http.get<{ pod_url: string }>(`${this.API_URL}/get-user-pod/${this.sessionId}`)
+      .subscribe(response => {
+        this.podUrl = response.pod_url;
+        this.API_URL = this.podUrl; // Asignar podUrl a API_URL para que todas las peticiones vayan al pod
+      }, error => {
+        console.error('Error obteniendo el pod:', error);
+      });
   }
 
   uploadCode(fileName: string, code: string, type: string): Observable<any> {
@@ -42,8 +56,7 @@ export class CodeService {
   }
 
   connectToWebSocket(): WebSocketSubject<any> {
-    const sessionId = this.generateSessionId();
-    this.wsSubject = webSocket(`${this.API_URL.replace('http', 'ws')}/execution/ws/${sessionId}`);
+    this.wsSubject = webSocket(`${this.API_URL.replace('http', 'ws')}/execution/ws/${this.sessionId}`);
     return this.wsSubject;
   }
 
@@ -54,9 +67,7 @@ export class CodeService {
   }
 
   killExecution(): void {
-    const sessionId = localStorage.getItem('session_id');
-    if (!sessionId) return;
-    this.http.get(`${this.API_URL}/execution/kill/${sessionId}`, { responseType: 'json' })
+    this.http.get(`${this.API_URL}/execution/kill/${this.sessionId}`, { responseType: 'json' })
       .subscribe({
         next: (response) => {
           console.log('Sesión eliminada:', response);
@@ -84,6 +95,14 @@ export class CodeService {
       });
   }
 
+  vncTurtlesim(): string {
+    return `${this.API_URL}/vnc_auto.html`;
+  }
+
+  vncTurtlesimReset(): string {
+    return `${this.API_URL}/reset/`;
+  }
+
   setWorkspaceChanged(flag: boolean) {
     this.workspaceChangedSubject.next(flag);
   }
@@ -99,15 +118,12 @@ export class CodeService {
   exportProject(): void {
     this.http.get(`${this.API_URL}/export/`, { responseType: 'blob' }).subscribe(response => {
       const blob = new Blob([response], { type: 'application/gzip' });
-
-      // Crear enlace de descarga
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
       link.download = 'ros2_ws.tar.gz';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
     }, error => {
       console.error('Error exportando proyecto:', error);
     });
@@ -121,15 +137,6 @@ export class CodeService {
   }
 
   deleteInterfaceFile(fileType: 'srv' | 'msg', fileName: string): Observable<any> {
-    console.log('El endpoint es:', `${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);
     return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
-  }
-
-  vncTurtlesim(): string {
-    return `${this.API_URL_NO_PORT}8080/vnc_auto.html`;
-  }
-
-  vncTurtlesimReset(): string {
-    return `${this.API_URL}/reset/`;
   }
 }
