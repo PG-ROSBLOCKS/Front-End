@@ -45,8 +45,8 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_create_publisher'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField('Crear publicador')
-        .appendField(new Blockly.FieldTextInput('/mi_topico'), 'TOPIC_NAME')
+        .appendField('Create Subscriber')
+        .appendField(new Blockly.FieldTextInput('/my_topic'), 'TOPIC_NAME')
         .appendField(new Blockly.FieldDropdown(common_msgs), 'MSG_TYPE');
       this.setNextStatement(true, null);
       this.setColour(160);
@@ -58,20 +58,20 @@ export function definirBloquesROS2() {
     init: function () {
       this.appendDummyInput()
         .appendField("Minimal Publisher")
-        .appendField("Tópico")
-        .appendField(new Blockly.FieldTextInput("/mi_topico"), "TOPIC_NAME")
-        .appendField("Tipo")
+        .appendField("Topic")
+        .appendField(new Blockly.FieldTextInput("/my_topic"), "TOPIC_NAME")
+        .appendField("Type")
         .appendField(new Blockly.FieldDropdown(common_msgs), "MSG_TYPE");
       this.appendDummyInput()
-        .appendField("Timer (segundos)")
+        .appendField("Timer (seconds)")
         .appendField(new Blockly.FieldNumber(0.5, 0.1, 60, 0.1), "TIMER");
       this.appendDummyInput()
-        .appendField("Mensaje base")
+        .appendField("Base Message")
         .appendField(new Blockly.FieldTextInput("Hello, ROS2!"), "MESSAGE_BASE");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(160);
-      this.setTooltip("Crea un nodo minimal publisher de ROS2");
+      this.setTooltip("Creates a minimal ROS2 publisher node");
       this.setHelpUrl("");
     }
   };
@@ -80,7 +80,7 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_create_subscriber'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("Crear suscriptor")
+        .appendField("Create Subscriber")
         .appendField(new Blockly.FieldTextInput("/mi_topico"), "TOPIC_NAME")
         .appendField(new Blockly.FieldDropdown(common_msgs), "MSG_TYPE");
       // C-shaped input
@@ -91,7 +91,7 @@ export function definirBloquesROS2() {
       // this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(160);
-      this.setTooltip("Crea un nodo suscriptor de ROS2 con un callback para procesar mensajes entrantes.");
+      this.setTooltip("Creates a ROS2 subscriber node with a callback to process incoming messages.");
       this.setHelpUrl("");
     }
   };
@@ -99,11 +99,11 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_subscriber_msg_data'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("respuesta al suscriptor");
+        .appendField("Subscriber Response");
       // This block returns a value (output), so we use setOutput(true)
       this.setOutput(true, "String");
       this.setColour(230);
-      this.setTooltip("Devuelve el contenido de msg.data (solo válido dentro de listener_callback).");
+      this.setTooltip("Returns the content of msg.data (only valid inside listener_callback).");
       this.setHelpUrl("");
     }
   };
@@ -111,11 +111,11 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_print_msg_type'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("Imprimir tipo de dato recibido");
+        .appendField("Print Received Data Type");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(230);
-      this.setTooltip("Imprime en la consola el tipo de dato del mensaje recibido.");
+      this.setTooltip("Prints the received message data type in the console.");
       this.setHelpUrl("");
     }
   };
@@ -124,17 +124,17 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_publish_message'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField('Publicar en')
-        .appendField(new Blockly.FieldTextInput('/mi_topico'), 'TOPIC_NAME')
+        .appendField('Publish to')
+        .appendField(new Blockly.FieldTextInput('/my_topic'), 'TOPIC_NAME')
         .appendField('tipo')
         .appendField(new Blockly.FieldDropdown(common_msgs), 'MSG_TYPE');
       this.appendDummyInput()
         .appendField('Mensaje')
-        .appendField(new Blockly.FieldTextInput('Hola, ROS 2!'), 'MESSAGE_CONTENT');
+        .appendField(new Blockly.FieldTextInput('Hello, ROS 2!'), 'MESSAGE_CONTENT');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(160);
-      this.setTooltip('Publica un mensaje en un tópico de ROS 2.');
+      this.setTooltip('Publishes a message to a ROS 2 topic.');
       this.setHelpUrl('');
     }
   };
@@ -143,15 +143,15 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_timer'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField('Timer cada')
+        .appendField('Timer each')
         .appendField(new Blockly.FieldNumber(1, 0.1, 60, 0.1), 'INTERVAL')
-        .appendField('segundos');
+        .appendField('seconds');
       this.appendStatementInput('CALLBACK')
         .appendField('Ejecutar');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(120);
-      this.setTooltip('Crea un timer que ejecuta un callback periódicamente.');
+      this.setTooltip('Creates a timer that executes periodically a callback.');
       this.setHelpUrl('');
     }
   };
@@ -160,7 +160,7 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_log'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("ROS2 Log nivel")
+        .appendField("ROS2 Log level")
         .appendField(new Blockly.FieldDropdown([
           ["INFO", "self.get_logger().info"],
           ["DEBUG", "self.get_logger().debug"],
@@ -170,11 +170,11 @@ export function definirBloquesROS2() {
         ]), "LOG_LEVEL");
       this.appendValueInput("MESSAGE")
         .setCheck("String")
-        .appendField("Mensaje");
+        .appendField("Message");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(230);
-      this.setTooltip("Registra un mensaje en el log de ROS 2 con el nivel seleccionado.");
+      this.setTooltip("Registers a menssage in the ROS2 log with the selected level.");
       this.setHelpUrl("");
     }
   };
@@ -202,14 +202,14 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_named_message'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("Tipo")
+        .appendField("Type")
         .appendField(new Blockly.FieldDropdown(common_msgs_for_custom), "MESSAGE_TYPE")
-        .appendField("Nombre")
-        .appendField(new Blockly.FieldTextInput("parametro"), "MESSAGE_NAME");
+        .appendField("Name")
+        .appendField(new Blockly.FieldTextInput("parameter"), "MESSAGE_NAME");
       this.setPreviousStatement(true, "ros2_named_message");
       this.setNextStatement(true, "ros2_named_message");
       this.setColour(160);
-      this.setTooltip("Define un parámetro para el servicio .srv");
+      this.setTooltip("Defines a parameter for the .srv service");
       this.setHelpUrl("");
     }
   };
@@ -217,31 +217,31 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_service_block'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("Servicio")
+        .appendField("Service")
         .appendField(new Blockly.FieldTextInput("MiServicio"), "SERVICE_NAME");
       this.appendStatementInput("REQUEST_MESSAGES") // Just accepts message blocks
         .setCheck("ros2_named_message")
-        .appendField("Solicitud");
+        .appendField("Request");
       this.appendDummyInput()
         .appendField("---") // Separates between Request y Response en .srv
       this.appendStatementInput("RESPONSE_MESSAGES") // Just accepts message blocks
         .setCheck("ros2_named_message")
-        .appendField("Respuesta");
+        .appendField("Response");
       this.setColour(230);
-      this.setTooltip("Define un servicio personalizado en ROS con parámetros.");
+      this.setTooltip("Defines a custom service in ROS with parameters.");
       this.setHelpUrl("");
     }
   };
   Blockly.Blocks['ros2_message_block'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("Definir Mensaje")
-        .appendField(new Blockly.FieldTextInput("MiMensaje"), "MESSAGE_NAME");
+        .appendField("Defines Menssage")
+        .appendField(new Blockly.FieldTextInput("MyMensaje"), "MESSAGE_NAME");
       this.appendStatementInput("MESSAGE_FIELDS")
         .setCheck("ros2_named_message")
-        .appendField("Campos del mensaje");
+        .appendField("Message fields");
       this.setColour(230);
-      this.setTooltip("Define un mensaje personalizado para ROS 2.");
+      this.setTooltip("Defines a custom messagefor ROS2.");
       this.setHelpUrl("");
     }
   };
@@ -250,9 +250,9 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros_create_server'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("Crear Servidor")
-        .appendField(new Blockly.FieldTextInput("MiServidor"), "SERVER_NAME")
-        .appendField("Tipo")
+        .appendField("Create server")
+        .appendField(new Blockly.FieldTextInput("MyServer"), "SERVER_NAME")
+        .appendField("Type")
         // We use a function that returns the updated list with only the name (without extension)
         .appendField(new Blockly.FieldDropdown(() => {
           if (srvList.length > 0) {
@@ -268,9 +268,9 @@ export function definirBloquesROS2() {
         }), "SERVER_TYPE");
       this.appendStatementInput("CALLBACK")
         .setCheck("Callback")
-        .appendField("Respuesta");
+        .appendField("Response");
       this.setColour(230);
-      this.setTooltip("Bloque para crear un servidor en ROS2");
+      this.setTooltip("Block to create a server in ROS2");
       this.setHelpUrl("");
     }
   };
@@ -299,7 +299,7 @@ export function definirBloquesROS2() {
         ],
         "output": null,
         "colour": 230,
-        "tooltip": "Variable definida en el servicio (.srv)",
+        "tooltip": "Variable defined in the service (.srv)",
         "helpUrl": ""
       });
     }
@@ -310,7 +310,7 @@ export function definirBloquesROS2() {
       // First input for the response variable, i.e. in a block that returns "response.sum"
       this.appendValueInput("RESPONSE_FIELD")
         .setCheck(null)
-        .appendField("Asignar");
+        .appendField("Assign");
       // Small tag for "a"
       this.appendDummyInput()
         .appendField("=");
@@ -321,7 +321,7 @@ export function definirBloquesROS2() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(230);
-      this.setTooltip("Asigna un valor a un campo del objeto response en el callback.");
+      this.setTooltip("Assigns a value to a response object field in the callback.");
       this.setHelpUrl("");
     }
   };
@@ -330,19 +330,19 @@ export function definirBloquesROS2() {
     init: function() {
       this.setInputsInline(true);
       this.appendDummyInput()
-          .appendField("Publicar Twist de");
+          .appendField("Publish Twist from");
       this.appendDummyInput()
           .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
       this.appendValueInput("LINEAR")
           .setCheck("Number")
-          .appendField("Velocidad Lineal:");
+          .appendField("Linear Velocity:");
       this.appendValueInput("ANGULAR")
           .setCheck("Number")
-          .appendField("Velocidad Angular:");
+          .appendField("Angular Velocity:");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(300);
-      this.setTooltip("Publica un mensaje Twist con velocidades lineal y angular definidas por el usuario y registra el mensaje en el log");
+      this.setTooltip("Publishes a Twist message with user-defined linear and angular velocities and logs the message.");
       this.setHelpUrl("");
     }
   };
@@ -351,9 +351,9 @@ export function definirBloquesROS2() {
   Blockly.Blocks["ros_create_client"] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("Crear Cliente")
+        .appendField("Create Client")
         .appendField(new Blockly.FieldTextInput("minimal_client_async"), "CLIENT_NAME")
-        .appendField("Tipo")
+        .appendField("Type")
         .appendField(new Blockly.FieldDropdown(() => {
           // Options according to `srvList`
           if (srvList.length === 0) return [["Sin servicios", ""]];
@@ -368,22 +368,22 @@ export function definirBloquesROS2() {
           this.updateChildren_();
           return newValue; // Ensure the validator returns a value
         }), "CLIENT_TYPE")
-        .appendField("Servidor")
+        .appendField("Server")
         .appendField(new Blockly.FieldTextInput("add_two_ints"), "SERVICE_NAME");
               this.appendDummyInput()
-        .appendField("Tiempo de espera del servidor ")
+        .appendField("Server wait time ")
         .appendField(new Blockly.FieldNumber(0.5, 0.1, 60, 0.1), "TIMER")
-        .appendField("(segundos)");
+        .appendField("(seconds)");
         this.appendDummyInput()
-        .appendField("Mensaje de espera del servidor")
+        .appendField("Server waiting message")
         .appendField(new Blockly.FieldTextInput("service not available, waiting again..."), "MESSAGE_BASE");
 
       // We add a “MAIN” space to connect a “child” block
       this.appendStatementInput("MAIN")
         .setCheck(null)
-        .appendField("Procesar petición");
+        .appendField("Process request");
       this.setColour(230);
-      this.setTooltip("Bloque para crear un cliente asíncrono en ROS2");
+      this.setTooltip("Block to create an asynchronous client in ROS2");
       this.setHelpUrl("");
       // Internally we save the serviceType and the serviceName
       this.clientType = "";
@@ -429,12 +429,12 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_service_available'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("servicio disponible (timeout:")
+        .appendField("Service available (timeout:")
         .appendField(new Blockly.FieldNumber(1.0, 0.1, 60, 0.1), "TIMEOUT")
         .appendField("seg)");
       this.setOutput(true, "Boolean");
       this.setColour(210);
-      this.setTooltip("Devuelve True si el servicio está disponible antes del timeout, False si no.");
+      this.setTooltip("Returns True if the service is available before the timeout, False otherwise.");
       this.setHelpUrl("");
     }
   };
@@ -442,12 +442,12 @@ export function definirBloquesROS2() {
   Blockly.Blocks["ros_send_request"] = {
     init: function () {
       this.appendDummyInput("TITLE")
-        .appendField("Enviar petición al servicio");
+        .appendField("Send request to service");
       // Block type “statement” or “void”
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(230);
-      this.setTooltip("Envía la petición y espera la respuesta.");
+      this.setTooltip("Sends the request and waits for the response.");
       this.setHelpUrl("");
       // Internal variables:
       this.clientType = "";       // Will be updated with “updateFromParent”
@@ -551,9 +551,9 @@ export function definirBloquesROS2() {
     init: function() {
       this.setInputsInline(true);
       this.appendDummyInput()
-          .appendField("Posicionar tortuga");
+          .appendField("Set turtle position");
       this.appendDummyInput()
-          .appendField("Nombre:")
+          .appendField("Name:")
           .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
       this.appendValueInput("X")
           .setCheck("Number")
@@ -567,7 +567,7 @@ export function definirBloquesROS2() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(300);
-      this.setTooltip("Posiciona la tortuga en una posición y orientación específicas.");
+      this.setTooltip("Positions the turtle at a specific position and orientation.");
       this.setHelpUrl("");
     }
   };
@@ -575,13 +575,13 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_sleep'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("Esperar")
+        .appendField("Wait")
         .appendField(new Blockly.FieldNumber(1, 0.1, 60, 0.1), "SECONDS")
-        .appendField("segundos");
+        .appendField("seconds");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(160);
-      this.setTooltip("Pausa la ejecución por un número determinado de segundos.");
+      this.setTooltip("Pauses execution for a specified number of seconds.");
       this.setHelpUrl("");
     }
   };
@@ -589,12 +589,12 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_kill_turtle'] = {
     init: function () {
       this.appendDummyInput()
-          .appendField("Matar tortuga:")
+          .appendField("Kill turtle:")
           .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(300);
-      this.setTooltip("Envía solicitud para matar una tortuga especificada.");
+      this.setTooltip("Sends a request to kill a specified turtle.");
       this.setHelpUrl("");
     }
   };
@@ -602,8 +602,8 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_spawn_turtle'] = {
     init: function () {
       this.appendDummyInput()
-          .appendField("Generar tortuga")
-          .appendField("Nombre:")
+          .appendField("Spawn turtle")
+          .appendField("Name:")
           .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
   
       this.appendValueInput("X")
@@ -621,7 +621,7 @@ export function definirBloquesROS2() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(300);
-      this.setTooltip("Crea una nueva tortuga en turtlesim con nombre, posición y orientación.");
+      this.setTooltip("Creates a new turtle in turtlesim with name, position, and orientation.");
       this.setHelpUrl("");
     }
   };
@@ -630,7 +630,7 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_turtle_set_pen'] = {
     init: function () {
       this.appendDummyInput()
-          .appendField("Cambiar lápiz de")
+          .appendField("Change pen of")
           .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
   
       this.appendValueInput("R")
@@ -644,7 +644,7 @@ export function definirBloquesROS2() {
           .appendField("Azul:");
       this.appendValueInput("WIDTH")
           .setCheck("Number")
-          .appendField("Grosor:");
+          .appendField("Width:");
       
       this.appendDummyInput()
           .appendField("Lápiz:")
@@ -657,7 +657,7 @@ export function definirBloquesROS2() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(300);
-      this.setTooltip("Cambia el color, grosor y estado del lápiz de la tortuga en turtlesim.");
+      this.setTooltip("Changes the color, width, and state of the turtle's pen in turtlesim.");
       this.setHelpUrl("");
     }
   };
@@ -667,11 +667,11 @@ export function definirBloquesROS2() {
       this.appendDummyInput()
         .appendField('__init__')
       this.appendStatementInput('CALLBACK')
-        .appendField('Ejecutar');
+        .appendField('Execute');
       this.setPreviousStatement(false, null);
       this.setNextStatement(false, null);
       this.setColour(300);
-      this.setTooltip('Crea un timer que ejecuta un callback periódicamente.');
+      this.setTooltip('Creates a timer that periodically executes a callback.');
       this.setHelpUrl('');
     }
   };
@@ -680,7 +680,7 @@ export function definirBloquesROS2() {
     init: function() {
       this.setInputsInline(true);
       this.appendDummyInput()
-          .appendField("Rotar tortuga");
+          .appendField("Rotate turtle");
       this.appendDummyInput()
           .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
       this.appendValueInput("GRADOS")
@@ -689,7 +689,7 @@ export function definirBloquesROS2() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(300);
-      this.setTooltip("Rota la tortuga un número de grados especificado.");
+      this.setTooltip("Rotates the turtle by a specified number of degrees.");
       this.setHelpUrl("");
     }
   };

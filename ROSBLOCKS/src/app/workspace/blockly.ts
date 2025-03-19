@@ -3,7 +3,7 @@ export let toolbox = {
     contents: [
       {
         kind: 'category',
-        name: 'Nodos',
+        name: 'Nodes',
         contents: [
           { kind: 'block', type: 'ros2_timer' },
           { kind: 'block', type: 'ros2_log' },
@@ -11,7 +11,7 @@ export let toolbox = {
       },
       {
         kind: 'category',
-        name: 'Tópicos',
+        name: 'Topics',
         contents: [
           { kind: 'block', type: 'ros2_create_publisher' },
           { kind: 'block', type: 'ros2_minimal_publisher' },
@@ -24,7 +24,7 @@ export let toolbox = {
       },
       {
         kind: 'category',
-        name: 'Servicios',
+        name: 'Services',
         contents: [
           { kind: 'block', type: 'ros2_service_block' },
           { kind: 'block', type: 'ros2_named_message' },
@@ -34,7 +34,7 @@ export let toolbox = {
       },
       {
         kind: 'category',
-        name: 'Clientes',
+        name: 'Clients',
         contents: [
           { kind: 'block', type: 'ros_create_client' },
           { kind: 'block', type: 'ros_send_request' },
@@ -42,7 +42,7 @@ export let toolbox = {
       },
       {
         kind: 'category',
-        name: 'Mensajes',
+        name: 'Messages',
         contents: [
           { kind: 'block', type: 'ros2_message_block' },
           { kind: 'block', type: 'ros2_named_message' }
@@ -50,7 +50,7 @@ export let toolbox = {
       },
       {
         kind: 'category',
-        name: 'Condicionales',
+        name: 'Conditionals',
         contents: [
           { kind: 'block', type: 'controls_if' },
           { kind: 'block', type: 'controls_ifelse' },
@@ -63,7 +63,7 @@ export let toolbox = {
       },
       {
         kind: 'category',
-        name: 'Ciclos',
+        name: 'Cycles',
         contents: [
           { kind: "block", type: "controls_repeat" },
           { kind: "block", type: "controls_repeat_ext" },
@@ -75,7 +75,7 @@ export let toolbox = {
       },
       {
         kind: 'category',
-        name: 'Operaciones',
+        name: 'Operations',
         contents: [
           { kind: "block", type: "math_number" },
           { kind: "block", type: "math_arithmetic" },
@@ -96,7 +96,7 @@ export let toolbox = {
       },
       {
         kind: 'category',
-        name: 'Funciones',
+        name: 'Functions',
         contents: [
           { kind: "block", type: "procedures_defnoreturn" },
           { kind: "block", type: "procedures_defreturn" },
@@ -107,7 +107,7 @@ export let toolbox = {
       },
       {
         kind: 'category',
-        name: 'Texto',
+        name: 'Text',
         contents: [
           { kind: "block", type: "text" },
           { kind: "block", type: "text_join" },

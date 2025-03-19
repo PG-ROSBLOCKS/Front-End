@@ -1,11 +1,11 @@
 <header class="header">
     <img src="../../../../assets/isologo.svg" alt="ROSBlocks" class="logo" (click)="reloadPage()">
     <div class="buttons">
-      <button *ngIf="showExport" class="safe" (click)="safe()">Guardar proyecto</button>
-      <button *ngIf="showExport" class="load" (click)="fileInput.click()">Cargar Workspace</button>
+      <button *ngIf="showExport" class="safe" (click)="safe()">Save workspace</button>
+      <button *ngIf="showExport" class="load" (click)="fileInput.click()">Load workspace</button>
         <input type="file" #fileInput (change)="load($event)" accept=".rosblocks" style="display: none;"/>
       <div *ngIf="showExport" class="separator"></div>
-      <button *ngIf="showExport" class="export" (click)="export()">Exportar proyecto</button>
+      <button *ngIf="showExport" class="export" (click)="export()">Export proyect</button>
       <button class="help" routerLink="/help">?</button>
     </div>
 </header>

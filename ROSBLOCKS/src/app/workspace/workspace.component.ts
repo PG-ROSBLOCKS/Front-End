@@ -474,7 +474,7 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   getUniqueTabName(): string {
-    let baseName = "Nodo";
+    let baseName = "Node";
     let newTabName = "";
     let index = 1;
     do {

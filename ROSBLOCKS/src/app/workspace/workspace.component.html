@@ -35,7 +35,7 @@
                     <input
                         id="searchBox"
                         type="text"
-                        placeholder="Búsqueda"
+                        placeholder="Search"
                         (input)="onSearch($event)"
                     />
                     <img id="createImg" class="noSelect" src="../../assets/CreaNuevoNodo.png">
@@ -88,14 +88,14 @@
             </div>
             <div class="bottomBarTurtle"></div>
             <div class="resetTurtleDiv">
-                <button (click)="resetTurtleContainer()">Reiniciar</button>
+                <button (click)="resetTurtleContainer()">Restart</button>
             </div>
             <div class="console">
                 <p id=console_title>Console</p>
                 <br>
                 <app-console-output [output]="getConsoleLines()" [autoScrollEnabled]="autoScrollEnabled"></app-console-output>           
             </div>
-            <button (click)="cleanConsole()" class="btnClean">Limpiar consola</button>
+            <button (click)="cleanConsole()" class="btnClean">Clean console</button>
         </div>
     </div>
 </div>
