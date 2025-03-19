@@ -19,7 +19,7 @@
     gap: 10px;
   }
   
-  button {
+  button, input {
     padding: 10px 20px;
     font-family: 'Arial', sans-serif;
     font-size: 14px;

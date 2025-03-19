@@ -1,7 +1,7 @@
 <div #consoleContainer class="console-output-container">
   <pre class="console_lines_pre" *ngFor="let line of output">
     <span class="console_lines" [ngStyle]="{
-      'color': line.startsWith('[INFO]') ? 'blue' : 
+      'color': line.startsWith('[INFO]') ? 'cyan' : 
         line.startsWith('[ERROR]') ? 'red' : 
         line.startsWith('[WARNING]') ? 'orange' : 
         line.startsWith('[DEBUG]') ? 'gray' : 'white'

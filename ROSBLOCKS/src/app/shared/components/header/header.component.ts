@@ -52,11 +52,13 @@ export class HeaderComponent {
   }
 
   safe() {
-    this.workspace.saveToLocalStorage();
+    this.workspace.saveToFile();
   }
 
-  load() {
-    this.workspace.loadFromLocalStorage();
+  load(event: Event) {
+    console.log(2);
+    
+    this.workspace.loadFromFile(event);
   }
 
   async export() {

@@ -602,7 +602,7 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_spawn_turtle'] = {
     init: function () {
       this.appendDummyInput()
-          .appendField("Spawnear tortuga")
+          .appendField("Generar tortuga")
           .appendField("Nombre:")
           .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
   

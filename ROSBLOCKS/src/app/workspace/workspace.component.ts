@@ -1,5 +1,5 @@
 import { AlertService } from './../shared/components/alert/alert.service';
-import { Component, AfterViewInit, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, AfterViewInit, OnInit, OnDestroy, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
@@ -23,6 +23,12 @@ export class WorkspaceComponent implements OnDestroy {
   @ViewChild('resizer') resizer!: ElementRef;
   @ViewChild('leftSection') leftSection!: ElementRef;
   @ViewChild('rightSection') rightSection!: ElementRef;
+
+  @HostListener('window:beforeunload', ['$event'])
+  unloadNotification(event: BeforeUnloadEvent): void {
+    event.preventDefault();
+    event.returnValue = '¿Estás seguro de que quieres salir?';
+  }
 
   isResizing = false;
   private previousNames = new Map<number, string>();
@@ -51,6 +57,7 @@ export class WorkspaceComponent implements OnDestroy {
 
   ngOnInit(): void {
     this.reloadTurtlesim();
+    this.loadFromLocalStorage()
   }
 
   reloadTurtlesim(): void {
@@ -78,7 +85,7 @@ export class WorkspaceComponent implements OnDestroy {
     this.alertService.showAlert(message);
   }
 
-  saveToLocalStorage() {
+  saveToFile() {
     try {
       const tabsData = this.tabs.map(tab => {
         const workspaceXml = this.workspaces[tab.id] 
@@ -93,12 +100,62 @@ export class WorkspaceComponent implements OnDestroy {
       if (tabsDataSaved.length === 0) {
         this.showAlert('No se ha guardado ningun proyecto.', 'error');
         return;
-      }
-      else {
+      } else {
         this.showMessage('Datos guardados exitosamente.', 'success');
       }
+
+      const blob = new Blob([JSON.stringify(tabsData)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'proyect.rosblocks';
+      a.click();
+      URL.revokeObjectURL(a.href);
     } catch (error) {
       this.showMessage('Error al guardar los datos.', 'error');
+    }
+  }
+
+  loadFromFile(event: Event) {
+    console.log(22);
+    
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        this.setToZero();
+        const tabsData = JSON.parse(e.target?.result as string);
+        this.tabs = tabsData;
+        setTimeout(() => {
+          tabsData.forEach((tab: any) => {
+            this.selectTab(tab.id);
+          });
+        }, 100);
+      } catch (error) {
+        this.showAlert('Error al cargar los datos desde el archivo.', 'error');
+      }
+    };
+    reader.readAsText(file);
+    this.showMessage('Datos cargados exitosamente.', 'success');
+  }
+
+  saveToLocalStorage() {
+    try {
+      const tabsData = this.tabs.map(tab => {
+        const workspaceXml = this.workspaces[tab.id] 
+          ? Blockly.Xml.workspaceToDom(this.workspaces[tab.id]).outerHTML
+          : '';
+        localStorage.setItem(`workspace_${tab.id}`, workspaceXml);
+        localStorage.setItem(`consoleService_${tab.id}`, "true");
+        return { id: tab.id, name: tab.name };
+      });
+      localStorage.setItem('workspace_tabs', JSON.stringify(tabsData));
+      const tabsDataSaved = JSON.parse(localStorage.getItem('workspace_tabs') || '[]');
+      if (tabsDataSaved.length === 0) {
+        return;
+      }
+    } catch (error) {
     }
   }
 
@@ -106,7 +163,6 @@ export class WorkspaceComponent implements OnDestroy {
     try {
       const tabsData = JSON.parse(localStorage.getItem('workspace_tabs') || '[]');
       if (tabsData.length === 0) {
-        this.showAlert('No se ha guardado ningun proyecto.', 'error');
         return;
       }
       this.setToZero();
@@ -123,9 +179,8 @@ export class WorkspaceComponent implements OnDestroy {
           this.consolesServices.set(tab.id.toString(), new CodeService(this.http));
         }
       });
-      this.showMessage('Datos cargados exitosamente.', 'success');
     } catch (error) {
-      this.showAlert('Error al cargar los datos.', 'error');
+      this.showAlert('Error al cargar los datos en cache.', 'error');
     }
   }
   
@@ -267,18 +322,8 @@ export class WorkspaceComponent implements OnDestroy {
       theme: customTheme
     });
 
-    // Listener for general events (changes, creation & deleting blocks)
     this.workspaces[tabId].addChangeListener((event) => {
-      if (event.type === Blockly.Events.BLOCK_CHANGE) {
-        this.codeService.setWorkspaceChanged(true);
-        console.log('Event detected: BLOCK_CHANGE. Flag updated.');
-      } else if (event.type === Blockly.Events.BLOCK_CREATE) {
-        this.codeService.setWorkspaceChanged(true);
-        console.log('Event detected: BLOCK_CREATE. Flag updated.');
-      } else if (event.type === Blockly.Events.BLOCK_DELETE) {
-        this.codeService.setWorkspaceChanged(true);
-        console.log('Event detected: BLOCK_DELETE. Flag updated.');
-      }
+      this.saveToLocalStorage();
     });
 
     // DELETE SUSCPRITOR & PUBLISHER
@@ -425,6 +470,7 @@ export class WorkspaceComponent implements OnDestroy {
       this.selectTab(newTabId);
     }, 0);
     this.codeService.setNoTabs(false);
+    this.saveToLocalStorage();
   }
 
   getUniqueTabName(): string {
@@ -521,6 +567,7 @@ export class WorkspaceComponent implements OnDestroy {
     if (this.tabs.length === 0) {
       this.codeService.setNoTabs(true);
     }
+    this.saveToLocalStorage();
   }
 
   onSearch(event: any): void {
@@ -610,9 +657,6 @@ export class WorkspaceComponent implements OnDestroy {
       code = create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType);
     }
     const codeService = this.consolesServices.get(tabId.toString());
-    console.log('\x1b[42m\x1b[31m%s\x1b[0m', this.consolesServices);
-    console.log(this.consolesServices);
-    
     
     if (codeService === undefined) {
       console.error('Service not found for the tab', tabId);
