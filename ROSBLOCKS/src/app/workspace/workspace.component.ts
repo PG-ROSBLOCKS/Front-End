@@ -8,7 +8,7 @@ import { definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
 import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain } from '../utilities/sanitizer-tools';
+import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
 import { msgList, MsgInfo } from '../shared/msg-list';
@@ -633,7 +633,8 @@ export class WorkspaceComponent implements OnDestroy {
     let fileName = '';
     let type = '';
     let serverType = '';
-    const { firstLine, remainingText } = extractFirstLine(code_to_send);
+    const { firstLine, remainingText } = extractFirstLine(reorderCodeBelowFirstMarker(code_to_send));
+    console.log('First line:', firstLine);
     if (firstLine.indexOf('|') !== -1) {
       const parts = firstLine.split('|');
       type = parts[0];
@@ -648,7 +649,7 @@ export class WorkspaceComponent implements OnDestroy {
     } else if (type === "server") {
       console.log('Creating server...');
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Servidor');
-      code = removeSelfInMain(create_server(code, fileName, serverType));
+      code = create_server(code, fileName, serverType);
     } else if (type === "srv") {
       fileName = sanitizeSrvFilename(extractServiceFilename(code) || 'Servicio.srv');
       code = replaceServiceFilename(code, fileName);
@@ -656,9 +657,9 @@ export class WorkspaceComponent implements OnDestroy {
       fileName = sanitizeMsgFilename(extractMessageFilename(code) || 'FailedMsg.msg');
       code = replaceMessageFilename(code, fileName);
     } else if (type === "client") {
-      console.log('Creanting client...');
+      console.log('Creating client...');
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Cliente');
-      code = removeSelfInMain(create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType));
+      code = replaceSelfWithNodeInMain(create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType));
     }
     const codeService = this.consolesServices.get(tabId.toString());
     

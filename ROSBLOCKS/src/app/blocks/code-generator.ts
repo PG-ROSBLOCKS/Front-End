@@ -1,16 +1,18 @@
 import { pythonGenerator } from 'blockly/python';
 import { getImports } from './ros2-blocks-code';
+import { separateHeaderFromMarker } from '../utilities/sanitizer-tools';
 export function create_publisher(code: string, name: string): string {
     const nameWithoutExtension = name.replace(/\.py$/, '');
+    const { headerText, codeText: codeWithoutVariables } = separateHeaderFromMarker(code);
     return `# Archivo ${nameWithoutExtension}.py generado por ROSBlocks
 ${getImports()}
-
+${headerText}
 
 class ${nameWithoutExtension.toUpperCase()}(Node):
 
     def __init__(self):
         super().__init__('${nameWithoutExtension.toLowerCase()}')
-${code}
+${codeWithoutVariables}
 
 
 def main(args=None):

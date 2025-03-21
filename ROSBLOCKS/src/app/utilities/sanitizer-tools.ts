@@ -164,4 +164,112 @@ export function removeSelfInMain(code: string): string {
   return result.join('\n');
 }
 
+export function replaceSelfWithNodeInMain(code: string): string {
+  const lines = code.split('\n');
+  const result: string[] = [];
+
+  let inMain = false;
+  let mainIndent = '';
+
+  for (const line of lines) {
+    // Detecta el inicio de la función main
+    if (/^\s*def\s+main\s*\(/.test(line)) {
+      inMain = true;
+      const match = line.match(/^(\s*)def\s+main/);
+      mainIndent = match ? match[1] + TAB_SPACE : TAB_SPACE;
+      result.push(line);
+      continue;
+    }
+
+    if (inMain) {
+      const isIndented = line.startsWith(mainIndent) || line.trim() === '';
+
+      if (isIndented) {
+        if (line.trim() !== '') {
+          result.push(line.replace(/self\./g, 'node.'));
+        } else {
+          result.push(line);
+        }
+      } else {
+        // Salimos del bloque main
+        inMain = false;
+        result.push(line);
+      }
+    } else {
+      result.push(line);
+    }
+  }
+
+  return result.join('\n');
+}
+
+export function reorderCodeBelowFirstMarker(code: string): string {
+  const lines = code.split('\n');
+
+  const markerRegex = /^(pub_sub|srv|msg|server\|.+|client\|.+)$/;
+
+  const beforeMarker: string[] = [];
+  const afterMarker: string[] = [];
+  let markerLine: string | null = null;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue; // omitir líneas vacías
+
+    if (!markerLine && markerRegex.test(line)) {
+      markerLine = rawLine;
+    } else if (!markerLine) {
+      beforeMarker.push(rawLine);
+    } else {
+      afterMarker.push(rawLine);
+    }
+  }
+
+  if (!markerLine) {
+    // Si no se encuentra marcador, devolver todo sin modificar (sin líneas vacías)
+    return [...beforeMarker, ...afterMarker].join('\n');
+  }
+
+  return [
+    markerLine,
+    ...beforeMarker,
+    '# --- END OF BLOCKLY IMPORTS ---',
+    ...afterMarker
+  ].join('\n');
+}
+
+
+
+export function separateHeaderFromMarker(code: string): { headerText: string; codeText: string } {
+  const lines = code.split('\n');
+  const marker = '# --- END OF BLOCKLY IMPORTS ---';
+
+  const header: string[] = [];
+  const rest: string[] = [];
+
+  let foundMarker = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (trimmed === marker.trim()) {
+      foundMarker = true;
+      continue; // omitimos el propio marcador
+    }
+
+    if (!foundMarker) {
+      header.push(line);
+    } else {
+      rest.push(line);
+    }
+  }
+
+  return {
+    headerText: header.join('\n'),
+    codeText: rest.join('\n'),
+  };
+}
+
+
+
 
