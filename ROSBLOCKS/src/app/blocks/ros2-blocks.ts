@@ -45,7 +45,7 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_create_publisher'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField('Create Subscriber')
+        .appendField('Create Pubilisher')
         .appendField(new Blockly.FieldTextInput('/my_topic'), 'TOPIC_NAME')
         .appendField(new Blockly.FieldDropdown(common_msgs), 'MSG_TYPE');
       this.setNextStatement(true, null);
@@ -124,12 +124,10 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_publish_message'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField('Publish to')
-        .appendField(new Blockly.FieldTextInput('/my_topic'), 'TOPIC_NAME')
-        .appendField('tipo')
+        .appendField('Publish type')
         .appendField(new Blockly.FieldDropdown(common_msgs), 'MSG_TYPE');
       this.appendDummyInput()
-        .appendField('Mensaje')
+        .appendField('Msg')
         .appendField(new Blockly.FieldTextInput('Hello, ROS 2!'), 'MESSAGE_CONTENT');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
