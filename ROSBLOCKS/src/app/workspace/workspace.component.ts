@@ -8,12 +8,15 @@ import { definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
 import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename } from '../utilities/sanitizer-tools';
+import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
+import { msgList, MsgInfo } from '../shared/msg-list';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { toolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
+import { initializeCommonMsgs } from '../blocks/ros2-msgs';
+
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
@@ -57,7 +60,8 @@ export class WorkspaceComponent implements OnDestroy {
 
   ngOnInit(): void {
     this.reloadTurtlesim();
-    this.loadFromLocalStorage()
+    this.loadFromLocalStorage();
+    initializeCommonMsgs();
   }
 
   reloadTurtlesim(): void {
@@ -324,7 +328,7 @@ export class WorkspaceComponent implements OnDestroy {
       this.saveToLocalStorage();
     });
 
-    // DELETE SUSCPRITOR & PUBLISHER
+    // DELETE SUBSCRIBER & PUBLISHER
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
         if (event.oldXml) {
@@ -461,6 +465,7 @@ export class WorkspaceComponent implements OnDestroy {
       return;
     }
     this.updateSrvList();
+    this.updateMsgList();
     const newTabId = Date.now();
     this.tabs.push({ name: this.getUniqueTabName(), id: newTabId, isPlaying: false });
     this.consolesServices.set(newTabId.toString(), new CodeService(this.http));
@@ -489,8 +494,8 @@ export class WorkspaceComponent implements OnDestroy {
     }, 0);
     this.testingCodeBackend = this.textCode.get(tabId.toString()) || '';
     this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) || '';
-    console.log(22);
-    
+    this.updateMsgList();
+    this.updateSrvList();
   }
 
   storePreviousName(tab: any) {
@@ -522,6 +527,7 @@ export class WorkspaceComponent implements OnDestroy {
       this.textCode.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
     }
     this.updateSrvList();
+    this.updateMsgList();
     tab.isPlaying = playAllTabs ? true : !tab.isPlaying;
     tab.isPlaying
       ? (this.executeCode(this.textCode.get(tabId.toString()) || '', tabId),
@@ -642,7 +648,7 @@ export class WorkspaceComponent implements OnDestroy {
     } else if (type === "server") {
       console.log('Creating server...');
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Servidor');
-      code = create_server(code, fileName, serverType);
+      code = removeSelfInMain(create_server(code, fileName, serverType));
     } else if (type === "srv") {
       fileName = sanitizeSrvFilename(extractServiceFilename(code) || 'Servicio.srv');
       code = replaceServiceFilename(code, fileName);
@@ -652,7 +658,7 @@ export class WorkspaceComponent implements OnDestroy {
     } else if (type === "client") {
       console.log('Creanting client...');
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Cliente');
-      code = create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType);
+      code = removeSelfInMain(create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType));
     }
     const codeService = this.consolesServices.get(tabId.toString());
     
@@ -781,6 +787,17 @@ export class WorkspaceComponent implements OnDestroy {
       }
     };
   }
+  private createMsgVariableBlock(variable: any): any {
+    return {
+      kind: 'block',
+      type: 'msg_variable',
+      fields: {
+        VAR_NAME: variable.name,
+        VAR_TYPE: variable.type
+      }
+    };
+  }
+  
 
   updateSrvVariablesCategory(): void {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
@@ -836,6 +853,55 @@ export class WorkspaceComponent implements OnDestroy {
       });
     }
   }
+  updateMsgVariablesCategory(): void {
+    const toolboxObj = toolbox.contents && toolbox.contents.length > 0
+      ? { ...toolbox }
+      : { kind: 'categoryToolbox', contents: [] };
+  
+    const msgVariablesCategory = {
+      kind: 'category',
+      type: 'category',
+      name: 'Variables de Mensaje',
+      contents: msgList.map((message: MsgInfo) => {
+        const fieldBlocks = message.fields?.map((variable: any) =>
+          this.createMsgVariableBlock(variable)
+        ) || [];
+  
+        return {
+          kind: 'category',
+          type: 'category',
+          name: (() => {
+            const parts = message.name.split('.');
+            if (parts.length === 3 && parts[1] === 'msg') {
+              return parts[2]; // Ej: 'Twist'
+            }
+            return message.name; // Ej: 'mensaje3'
+          })(),          
+          contents: [
+            { kind: 'label', text: "Campos del mensaje:" },
+            ...fieldBlocks
+          ]
+        };
+      })
+    };
+  
+    const contents = toolboxObj.contents;
+    const existingIdx = contents.findIndex((c: any) => c.name === 'Variables de Mensaje');
+    if (existingIdx !== -1) {
+      contents[existingIdx] = msgVariablesCategory;
+    } else {
+      contents.push(msgVariablesCategory);
+    }
+  
+    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+      this.workspaces[this.selectedTabId].updateToolbox({
+        kind: 'categoryToolbox',
+        contents: contents
+      });
+    }
+  }
+  
+  
 
   updateSrvList(): void {
     this.codeService.checkSrvFiles().subscribe(response => {
@@ -854,6 +920,24 @@ export class WorkspaceComponent implements OnDestroy {
       srvList.length = 0;
     });
   }
+  updateMsgList(): void {
+    this.codeService.checkMsgFiles().subscribe(response => {
+      if (response.exists) {
+        response.files.forEach((file: any) => {
+          const alreadyExists = msgList.some(msg => msg.name === file.name);
+          if (!alreadyExists) {
+            msgList.push(file);
+          }
+        });
+      }
+      console.log("msgList updated:", msgList);
+      this.updateMsgVariablesCategory();
+    }, error => {
+      console.error("Error getting list of msg files:", error);
+    });
+  }
+  
+  
 }
 
 export function linesBeforeComment(code: string): string {

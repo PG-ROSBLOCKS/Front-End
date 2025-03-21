@@ -1,57 +1,84 @@
 import * as Blockly from 'blockly/core';
 import { srvList } from '../shared/srv-list';
+import { msgList, MsgVariable } from '../shared/msg-list';
 import { EventType } from 'blockly/core/events/type';
+import { common_msgs, common_msgs_for_custom } from './ros2-msgs';
 
 const TAB_SPACE = '    '; // Tab space
 let srv_list = [];
-const common_msgs: [string, string][] = [
-  ['String (std_msgs)', 'std_msgs.msg.String'],
-  ['Bool (std_msgs)', 'std_msgs.msg.Bool'],
-  ['Int64 (std_msgs)', 'std_msgs.msg.Int64'],
-  ['Char (std_msgs)', 'std_msgs.msg.Char'],
-  ['Float32 (std_msgs)', 'std_msgs.msg.Float32'],
-  ['Twist (geometry_msgs)', 'geometry_msgs.msg.Twist'],
-  ['Odometry (nav_msgs)', 'nav_msgs.msg.Odometry'],
-  ['Pose (turtlesim)', 'turtlesim.msg.Pose'],
-
-  ['Int16 (std_msgs)', 'std_msgs.msg.Int16'],
-  ['Empty (std_msgs)', 'std_msgs.msg.Empty'],
-  ['Float64 (std_msgs)', 'std_msgs.msg.Float64'],
-  ['ColorRGBA (std_msgs)', 'std_msgs.msg.ColorRGBA'],
-  ['Header (std_msgs)', 'std_msgs.msg.Header'],
-  ['Byte (std_msgs)', 'std_msgs.msg.Byte'],
-
-  //Geometry
-  ['Pose (geometry_msgs)', 'geometry_msgs.msg.Pose'],
-  ['Vector3 (geometry_msgs)', 'geometry_msgs.msg.Vector3'],
-  ['Point (geometry_msgs)', 'geometry_msgs.msg.Point'],
-  ['Quaternion (geometry_msgs)', 'geometry_msgs.msg.Quaternion'],
-  ['Transform (geometry_msgs)', 'geometry_msgs.msg.Transform'],
-  ['Pose2D (geometry_msgs)', 'geometry_msgs.msg.Pose2D'],
-  ['Wrench (geometry_msgs)', 'geometry_msgs.msg.Wrench']
-];
-const common_msgs_for_custom: [string, string][] = [
-  ['String (std_msgs)', 'string'],
-  ['Bool (std_msgs)', 'bool'],
-  ['Int64 (std_msgs)', 'int64'],
-  ['Char (std_msgs)', 'char'],
-  ['Float32 (std_msgs)', 'float32'],
-  ['Twist (geometry_msgs)', 'geometry_msgs/Twist'],
-  ['Odometry (nav_msgs)', 'nav_msgs/Odometry'],
-  ['Pose (turtlesim)', 'turtlesim/Pose']
-];
-
 export function definirBloquesROS2() {
   Blockly.Blocks['ros2_create_publisher'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField('Create Pubilisher')
+        .appendField('Create Publisher')
         .appendField(new Blockly.FieldTextInput('/my_topic'), 'TOPIC_NAME')
-        .appendField(new Blockly.FieldDropdown(common_msgs), 'MSG_TYPE');
-      this.setNextStatement(true, null);
+        .appendField('Type')
+        .appendField(new Blockly.FieldDropdown(() => {
+          const allOptionsMap = new Map<string, string>();
+        
+          // Agregar common_msgs (ya tienen su [label, value])
+          common_msgs.forEach(([label, value]) => {
+            allOptionsMap.set(value, label);
+          });
+        
+          // Agregar mensajes personalizados sin modificar
+          msgList.forEach((msg) => {
+            const name = msg.name;
+            // Si ya está en el mapa (por ejemplo, por common_msgs), lo ignoramos
+            if (!allOptionsMap.has(name)) {
+              allOptionsMap.set(name, name); // Mostrarlo tal cual
+            }
+          });
+        
+          const combinedOptions: [string, string][] = Array.from(allOptionsMap.entries()).map(
+            ([value, label]) => [label, value]
+          );
+        
+          return combinedOptions.length > 0 ? combinedOptions : [['Sin mensajes', '']];
+        }, (newValue) => {
+          this.messageType = newValue;
+          this.updateChildren_();
+          return newValue;
+        }), 'MSG_TYPE');
+      this.appendStatementInput('MAIN')
+        .setCheck(null)
+        .appendField('On publish');
+  
       this.setColour(160);
+      this.messageType = '';
+  
+      this.setOnChange((event: { type: EventType; recordUndo: any; }) => {
+        if (
+          (event.type === Blockly.Events.BLOCK_CREATE ||
+            event.type === Blockly.Events.BLOCK_MOVE ||
+            event.type === Blockly.Events.BLOCK_CHANGE) && event.recordUndo
+        ) {
+          this.updateChildren_();
+        }
+      });
+    },
+  
+    mutationToDom: function () {
+      const container = document.createElement('mutation');
+      container.setAttribute('messageType', this.messageType || '');
+      return container;
+    },
+  
+    domToMutation: function (xmlElement: { getAttribute: (arg0: string) => string; }) {
+      this.messageType = xmlElement.getAttribute('messageType') || '';
+    },
+  
+    updateChildren_: function () {
+      const mainInput = this.getInput('MAIN');
+      if (mainInput && mainInput.connection && mainInput.connection.targetBlock()) {
+        const childBlock = mainInput.connection.targetBlock();
+        if (childBlock && childBlock.type === 'ros2_publish_message') {
+          childBlock.updateFromParent(this.messageType);
+        }
+      }
     }
   };
+  
 
   //MinimalPublisher (Just for testing)
   Blockly.Blocks['ros2_minimal_publisher'] = {
@@ -82,19 +109,51 @@ export function definirBloquesROS2() {
       this.appendDummyInput()
         .appendField("Create Subscriber")
         .appendField(new Blockly.FieldTextInput("/mi_topico"), "TOPIC_NAME")
-        .appendField(new Blockly.FieldDropdown(common_msgs), "MSG_TYPE");
-      // C-shaped input
+        .appendField("Type")
+        .appendField(new Blockly.FieldDropdown(() => {
+          const allOptionsMap = new Map<string, string>();
+  
+          // Añadir mensajes comunes
+          common_msgs.forEach(([label, value]) => {
+            allOptionsMap.set(value, label);
+          });
+  
+          // Añadir mensajes del usuario si no están ya
+          msgList.forEach((msg) => {
+            if (!allOptionsMap.has(msg.name)) {
+              allOptionsMap.set(msg.name, msg.name); // Mostrar tal cual
+            }
+          });
+  
+          return Array.from(allOptionsMap.entries()).map(([value, label]) => [label, value]);
+        }, (newValue) => {
+          this.messageType = newValue;
+          return newValue;
+        }), "MSG_TYPE");
+  
       this.appendStatementInput("CALLBACK")
         .setCheck(null)
         .appendField("Callback");
-      // The previous connection is removed so that it cannot be joined by a higher block
-      // this.setPreviousStatement(true, null);
+  
       this.setNextStatement(true, null);
       this.setColour(160);
       this.setTooltip("Creates a ROS2 subscriber node with a callback to process incoming messages.");
       this.setHelpUrl("");
+  
+      this.messageType = '';
+    },
+  
+    mutationToDom: function () {
+      const container = document.createElement('mutation');
+      container.setAttribute('messageType', this.messageType || '');
+      return container;
+    },
+  
+    domToMutation: function (xmlElement: any) {
+      this.messageType = xmlElement.getAttribute('messageType') || '';
     }
   };
+  
 
   Blockly.Blocks['ros2_subscriber_msg_data'] = {
     init: function () {
@@ -120,22 +179,161 @@ export function definirBloquesROS2() {
     }
   };
 
+  Blockly.Blocks['msg_variable'] = {
+    init: function () {
+      this.jsonInit({
+        "type": "msg_variable",
+        "message0": "%1 (%2)", 
+        "args0": [
+          {
+            "type": "field_label_serializable",
+            "name": "VAR_NAME",
+            "text": "nombreVar"
+          },
+          {
+            "type": "field_label_serializable",
+            "name": "VAR_TYPE",
+            "text": "tipoVar"
+          }
+        ],
+        "output": null,
+        "colour": 230,
+        "tooltip": "Campo definido en el mensaje (.msg)",
+        "helpUrl": ""
+      });
+    }
+  }; 
+
   // Block to publish a message
   Blockly.Blocks['ros2_publish_message'] = {
     init: function () {
-      this.appendDummyInput()
-        .appendField('Publish type')
-        .appendField(new Blockly.FieldDropdown(common_msgs), 'MSG_TYPE');
-      this.appendDummyInput()
-        .appendField('Msg')
-        .appendField(new Blockly.FieldTextInput('Hello, ROS 2!'), 'MESSAGE_CONTENT');
+      this.appendDummyInput("TITLE")
+        .appendField('Publish type:')
+        .appendField(new Blockly.FieldLabelSerializable('Sin tipo'), 'MSG_TYPE');
+  
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(160);
       this.setTooltip('Publishes a message to a ROS 2 topic.');
       this.setHelpUrl('');
+  
+      this.messageType = '';
+      this.messageFields = [];
+      this.fieldValues = {};
+    },
+  
+    updateFromParent: function (messageType: string) {
+      this.messageType = messageType;
+      const label = this.getField('MSG_TYPE');
+      if (label) {
+        label.setValue(messageType.split('.').pop()?.replace(/\.msg$/, '') || messageType);
+      }
+  
+      const msgInfo = msgList.find(x => x.name === messageType);
+      this.messageFields = msgInfo?.fields || [];
+      this.updateShape_();
+    },
+  
+    updateShape_: function () {
+      this.saveFieldValues();
+    
+      // Eliminar todos los inputs excepto el título
+      const oldInputs = [...this.inputList];
+      for (const input of oldInputs) {
+        if (input.name !== "TITLE") {
+          this.removeInput(input.name);
+        }
+      }
+    
+      // Agregar campos a partir de los campos del mensaje
+      this.addFieldsRecursively(this.messageFields, "");
+    },
+    
+    addFieldsRecursively: function (fields: MsgVariable[], parentPath: string) {
+      for (const field of fields) {
+        const fullName = parentPath ? `${parentPath}.${field.name}` : field.name;
+        const inputName = `FIELD_${fullName}`;
+    
+        const isNested = msgList.some(msg => msg.name === field.type || msg.name === `${field.type}.msg`);
+    
+        if (isNested) {
+          const nested = msgList.find(m => m.name === field.type || m.name === `${field.type}.msg`);
+          if (nested && nested.fields) {
+            this.addFieldsRecursively(nested.fields, fullName);
+          }
+        } else {
+          const dummy = this.appendDummyInput(inputName);
+          dummy.appendField(fullName + ":");
+    
+          const saved = this.fieldValues[fullName] || "";
+    
+          if (field.type === "string") {
+            dummy.appendField(new Blockly.FieldTextInput(saved), fullName);
+          } else if (
+            field.type === "int64" || field.type === "int32" ||
+            field.type === "float64" || field.type === "float32"
+          ) {
+            dummy.appendField(new Blockly.FieldNumber(Number(saved) || 0), fullName);
+          } else if (field.type === "bool") {
+            const dropdown = new Blockly.FieldDropdown([
+              ["True", "True"],
+              ["False", "False"]
+            ]);
+            dropdown.setValue(saved === "False" ? "False" : "True");
+            dummy.appendField(dropdown, fullName);
+          } else {
+            // Tipo desconocido → input de texto
+            dummy.appendField(new Blockly.FieldTextInput(saved), fullName);
+          }
+        }
+      }
+    },   
+  
+    saveFieldValues: function () {
+      for (const input of this.inputList) {
+        if (input.name && input.name.startsWith("FIELD_")) {
+          const fieldName = input.name.replace("FIELD_", "");
+          const field = this.getField(fieldName);
+          if (field) {
+            this.fieldValues[fieldName] = field.getValue();
+          }
+        }
+      }
+    },
+  
+    mutationToDom: function () {
+      const container = document.createElement('mutation');
+      container.setAttribute('messageType', this.messageType || '');
+      container.setAttribute('messageFields', JSON.stringify(this.messageFields));
+      container.setAttribute('fieldValues', JSON.stringify(this.fieldValues));
+      return container;
+    },
+  
+    domToMutation: function (xmlElement: { getAttribute: (arg0: string) => string; }) {
+      this.messageType = xmlElement.getAttribute('messageType') || '';
+  
+      try {
+        this.messageFields = JSON.parse(xmlElement.getAttribute('messageFields') || "[]");
+      } catch (e) {
+        this.messageFields = [];
+      }
+  
+      try {
+        this.fieldValues = JSON.parse(xmlElement.getAttribute('fieldValues') || "{}");
+      } catch (e) {
+        this.fieldValues = {};
+      }
+  
+      const label = this.getField('MSG_TYPE_LABEL');
+      if (label) {
+        label.setValue(this.messageType.split('.').pop()?.replace(/\.msg$/, '') || this.messageType);
+      }
+  
+      this.updateShape_();
     }
   };
+  
+  
 
   // Block to create timer
   Blockly.Blocks['ros2_timer'] = {
@@ -207,7 +405,7 @@ export function definirBloquesROS2() {
       this.setPreviousStatement(true, "ros2_named_message");
       this.setNextStatement(true, "ros2_named_message");
       this.setColour(160);
-      this.setTooltip("Defines a parameter for the .srv service");
+      this.setTooltip("Defines a parameter for the .msg service");
       this.setHelpUrl("");
     }
   };
@@ -233,8 +431,8 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_message_block'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("Defines Menssage")
-        .appendField(new Blockly.FieldTextInput("MyMensaje"), "MESSAGE_NAME");
+        .appendField("Defines Message")
+        .appendField(new Blockly.FieldTextInput("MyMessage"), "MESSAGE_NAME");
       this.appendStatementInput("MESSAGE_FIELDS")
         .setCheck("ros2_named_message")
         .appendField("Message fields");

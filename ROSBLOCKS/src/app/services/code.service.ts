@@ -107,6 +107,13 @@ export class CodeService {
     );
   }
 
+  checkMsgFiles(): Observable<{ exists: boolean, files: string[] }> {
+    return this.http.get<{ exists: boolean, files: string[] }>(`${this.API_URL}/msgfiles`)
+      .pipe(
+      tap(response => console.log('checkMsgFiles returns:', response))
+    );
+  }
+
   //Funtion to delete a .srv or a .msg of the proyect
   deleteInterfaceFile(fileType: 'srv' | 'msg', fileName: string): Observable<any> {
     console.log('El endpoint es:', `${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);

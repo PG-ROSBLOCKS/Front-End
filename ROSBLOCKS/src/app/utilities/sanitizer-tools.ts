@@ -1,3 +1,6 @@
+import * as Blockly from 'blockly/core';
+import { pythonGenerator, Order} from 'blockly/python';
+import { TAB_SPACE } from '../blocks/ros2-blocks-code';
 export function sanitizePythonFilename(filename: string): string {
   let sanitized = filename
       .trim() // Removes spaces at the beginning and end
@@ -85,3 +88,80 @@ export function removeIndentation(code: string): string {
       .map(line => line.trimStart()) // Removes leading spaces and tabs from each line
       .join('\n');
 }
+
+export function indentSmart(code: string, defaultLevel: number = 2, structuredLevel: number = 1): string {
+  if (!code.trim()) return '';
+
+  const lines = code.split('\n');
+  const firstLine = lines.find(line => line.trim() !== '') || '';
+
+  // Detecta si el código comienza con una estructura como def, class, import, etc.
+  const startsStructured = /^(def |class |#|import |from )/.test(firstLine.trim());
+
+  const level = startsStructured ? structuredLevel : defaultLevel;
+  const indent = TAB_SPACE.repeat(level);
+
+  return lines
+    .map(line => line ? indent + line : '')
+    .join('\n');
+}
+
+export function indentSmartByLine(code: string, normalLevel = 2, structuredLevel = 1): string {
+  if (!code.trim()) return '';
+
+  const structuredRegex = /^\s*(def |class |import |from |#)/;
+  const indentStructured = TAB_SPACE.repeat(structuredLevel);
+  const indentNormal = TAB_SPACE.repeat(normalLevel);
+
+  return code
+    .split('\n')
+    .map(line => {
+      if (!line.trim()) return '';
+      const indent = structuredRegex.test(line) ? indentStructured : indentNormal;
+      return indent + line.trim();
+    })
+    .join('\n');
+}
+
+export function removeSelfInMain(code: string): string {
+  const lines = code.split('\n');
+  const result: string[] = [];
+
+  let inMain = false;
+  let mainIndent = '';
+
+  for (const line of lines) {
+    // Detectar inicio de main
+    if (/^\s*def\s+main\s*\(/.test(line)) {
+      inMain = true;
+      const match = line.match(/^(\s*)def\s+main/);
+      mainIndent = match ? match[1] + TAB_SPACE : TAB_SPACE; // Estimamos la indentación del bloque
+      result.push(line);
+      continue;
+    }
+
+    // Si estamos en main y la línea tiene indentación del bloque o más
+    if (inMain) {
+      const isIndented = line.startsWith(mainIndent) || line.trim() === '';
+
+      if (isIndented) {
+        // Solo si es línea no vacía
+        if (line.trim() !== '') {
+          result.push(line.replace(/self\./g, ''));
+        } else {
+          result.push(line); // líneas vacías se conservan
+        }
+      } else {
+        // Salimos del bloque main
+        inMain = false;
+        result.push(line);
+      }
+    } else {
+      result.push(line);
+    }
+  }
+
+  return result.join('\n');
+}
+
+

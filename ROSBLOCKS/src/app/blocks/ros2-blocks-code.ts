@@ -1,5 +1,5 @@
 import { pythonGenerator, Order } from 'blockly/python';
-import { removeIndentation } from '../utilities/sanitizer-tools';
+import { indentSmart, removeIndentation, indentSmartByLine } from '../utilities/sanitizer-tools';
 import { srvList } from '../shared/srv-list';
 
 export const TAB_SPACE = '    '; // Tab space
@@ -109,14 +109,36 @@ function removeCommonIndentation(code: string) {
 function definirGeneradoresROS2() {
   // Code generator for the "Create publisher" block
   pythonGenerator.forBlock['ros2_create_publisher'] = function (block) {
-    const topicName: string = block.getFieldValue('TOPIC_NAME');
-    const msgType: string = block.getFieldValue('MSG_TYPE');
-
+    const topicName = block.getFieldValue('TOPIC_NAME');
+    const msgType = block.getFieldValue('MSG_TYPE');
     const msgClass = addImport(msgType);
-
-    const code = `pub_sub\n${TAB_SPACE}${TAB_SPACE}self.publisher_ = self.create_publisher(${msgClass}, '${topicName}', 10)\n`;
+  
+    let mainBody = '';
+    const input = block.getInput('MAIN');
+    const targetBlock = input?.connection?.targetBlock();
+    if (targetBlock) {
+      const result = pythonGenerator.blockToCode(targetBlock);
+      mainBody = Array.isArray(result) ? result[0] : result;
+    }
+ 
+    const code =
+      `pub_sub\n` +
+      `${TAB_SPACE}${TAB_SPACE}self.publisher_ = self.create_publisher(${msgClass}, '${topicName}', 10)\n` +
+      indentSmartByLine(mainBody, 2, 1);
+  
     return code;
   };
+
+  pythonGenerator.forBlock['msg_variable'] = function (block) {
+    let varName = block.getFieldValue('VAR_NAME') || '';
+    
+    // Si no empieza con "msg.", lo anteponemos
+    if (!varName.startsWith('msg.')) {
+      varName = 'msg.' + varName;
+    }
+  
+    return [varName, Order.ATOMIC];
+  };  
 
   pythonGenerator.forBlock['ros2_minimal_publisher'] = function (block) {
     const topic = block.getFieldValue('TOPIC_NAME');
@@ -141,8 +163,14 @@ function definirGeneradoresROS2() {
   pythonGenerator.forBlock['ros2_create_subscriber'] = function (block) {
     const topic = block.getFieldValue('TOPIC_NAME');
     const msgType = block.getFieldValue('MSG_TYPE');
+    let callbackBody = '';
+    const input = block.getInput('CALLBACK');
+    const targetBlock = input?.connection?.targetBlock();
+    if (targetBlock) {
+      const result = pythonGenerator.blockToCode(targetBlock);
+      callbackBody = Array.isArray(result) ? result[0] : result;
+    }
     // "Callback"
-    const callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK');
     const msgClass = addImport(msgType);
 
     let code = `pub_sub\n${TAB_SPACE}${TAB_SPACE}self.subscription = self.create_subscription(${msgClass}, '${topic}', self.listener_callback, 10)\n`;
@@ -157,10 +185,10 @@ function definirGeneradoresROS2() {
 
     // try/except to catch excepcions
     code += `${TAB_SPACE}${TAB_SPACE}try:\n`;
-    if (!callbackCode.trim()) {
+    if (!callbackBody.trim()) {
       code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}pass\n`;
     } else {
-      code += pythonGenerator.prefixLines(callbackCode, `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}`);
+      code += pythonGenerator.prefixLines(callbackBody, `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}`);
     }
     code += `${TAB_SPACE}${TAB_SPACE}except Exception as e:\n`;
     code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error en el callback: {}".format(e))\n`;
@@ -180,26 +208,47 @@ function definirGeneradoresROS2() {
 
   // Code generator for the block "Publicar mensaje"
   pythonGenerator.forBlock['ros2_publish_message'] = function (block) {
-    const topicName: string = block.getFieldValue('TOPIC_NAME');
     const msgType: string = block.getFieldValue('MSG_TYPE');
-    const messageContent: string = block.getFieldValue('MESSAGE_CONTENT');
-
     const msgClass = addImport(msgType);
-
+  
     let code = `${TAB_SPACE}${TAB_SPACE}msg = ${msgClass}()\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}msg.data = "${messageContent}"\n`;
+  
+    for (const input of block.inputList) {
+      if (input.name && input.name.startsWith("FIELD_")) {
+        const fieldName = input.name.replace("FIELD_", "");
+        const field = block.getField(fieldName);
+        if (!field) continue;
+  
+        const rawValue = field.getValue();
+        const valueStr = String(rawValue);
+  
+        if (valueStr === "True" || valueStr === "False") {
+          code += `${TAB_SPACE}${TAB_SPACE}msg.${fieldName} = ${valueStr}\n`;
+        } else if (!isNaN(Number(rawValue)) && valueStr.trim() !== "") {
+          code += `${TAB_SPACE}${TAB_SPACE}msg.${fieldName} = ${rawValue}\n`;
+        } else {
+          code += `${TAB_SPACE}${TAB_SPACE}msg.${fieldName} = "${valueStr}"\n`;
+        }
+      }
+    }
+  
     code += `${TAB_SPACE}${TAB_SPACE}self.publisher_.publish(msg)\n`;
     return code;
-  };
+  };  
 
   // Code generator for the block "Crear Timer"
   pythonGenerator.forBlock['ros2_timer'] = function (block) {
     const interval = block.getFieldValue('INTERVAL');
-    const callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK');
-
-    let code = `${TAB_SPACE}${TAB_SPACE}self.timer_ = self.create_timer(${interval}, self.timer_callback)\n`;
-    code += `${TAB_SPACE}def timer_callback(self):\n`;
-    code += pythonGenerator.prefixLines(removeIndentation(callbackCode), `${TAB_SPACE}${TAB_SPACE}`);
+    let callbackCode = '';
+    const input = block.getInput('CALLBACK');
+    const targetBlock = input?.connection?.targetBlock();
+    if (targetBlock) {
+      const result = pythonGenerator.blockToCode(targetBlock);
+      callbackCode = Array.isArray(result) ? result[0] : result;
+    }
+    let code = `self.timer_ = self.create_timer(${interval}, self.timer_callback)\n`;
+    code += `def timer_callback(self):\n`;
+    code += callbackCode;
     return code;
   };
 
@@ -208,7 +257,7 @@ function definirGeneradoresROS2() {
     const logLevel = block.getFieldValue('LOG_LEVEL');
     const message = pythonGenerator.valueToCode(block, 'MESSAGE', Order.NONE) || '""';
 
-    const code = `${TAB_SPACE}${TAB_SPACE}${logLevel}(${message})\n`;
+    const code = `${logLevel}(str(${message}))\n`;
     return code;
   };
 
