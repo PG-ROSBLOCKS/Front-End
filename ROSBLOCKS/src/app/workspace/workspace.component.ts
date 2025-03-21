@@ -116,15 +116,13 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   loadFromFile(event: Event) {
-    console.log(22);
-    
+    this.setToZero();
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
     const file = input.files[0];
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        this.setToZero();
         const tabsData = JSON.parse(e.target?.result as string);
         this.tabs = tabsData;
         setTimeout(() => {
