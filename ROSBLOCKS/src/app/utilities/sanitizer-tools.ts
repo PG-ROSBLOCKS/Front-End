@@ -230,13 +230,17 @@ export function reorderCodeBelowFirstMarker(code: string): string {
     return [...beforeMarker, ...afterMarker].join('\n');
   }
 
-  return [
-    markerLine,
-    ...beforeMarker,
-    '# --- END OF BLOCKLY IMPORTS ---',
-    ...afterMarker
-  ].join('\n');
+  const result: string[] = [markerLine];
+
+  if (beforeMarker.length > 0) {
+    result.push(...beforeMarker, '# --- END OF BLOCKLY IMPORTS ---');
+  }
+
+  result.push(...afterMarker);
+
+  return result.join('\n');
 }
+
 
 
 
