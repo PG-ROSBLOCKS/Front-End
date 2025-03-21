@@ -45,6 +45,8 @@ export class WorkspaceComponent implements OnDestroy {
   tabs: { name: string; id: number; isPlaying: boolean }[] = [];
   selectedTabId: number | null = null;
   sanitizedVncUrl!: SafeResourceUrl;
+  tabsPlayed: number[] = [];  //List to manage the tabs played in the workspace
+
 
   constructor(
     private http: HttpClient,
@@ -52,8 +54,8 @@ export class WorkspaceComponent implements OnDestroy {
     private alertService: AlertService,
     private successService: SuccessService,
     private sanitizer: DomSanitizer
-    
-  ) {}
+
+  ) { }
 
   ngOnInit(): void {
     this.reloadTurtlesim();
@@ -63,7 +65,7 @@ export class WorkspaceComponent implements OnDestroy {
   reloadTurtlesim(): void {
     const url = this.codeService.vncTurtlesim();
     console.log(url);
-    
+
     if (url) {
       this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
     } else {
@@ -88,7 +90,7 @@ export class WorkspaceComponent implements OnDestroy {
   saveToFile() {
     try {
       const tabsData = this.tabs.map(tab => {
-        const workspaceXml = this.workspaces[tab.id] 
+        const workspaceXml = this.workspaces[tab.id]
           ? Blockly.Xml.workspaceToDom(this.workspaces[tab.id]).outerHTML
           : '';
         localStorage.setItem(`workspace_${tab.id}`, workspaceXml);
@@ -141,7 +143,7 @@ export class WorkspaceComponent implements OnDestroy {
   saveToLocalStorage() {
     try {
       const tabsData = this.tabs.map(tab => {
-        const workspaceXml = this.workspaces[tab.id] 
+        const workspaceXml = this.workspaces[tab.id]
           ? Blockly.Xml.workspaceToDom(this.workspaces[tab.id]).outerHTML
           : '';
         localStorage.setItem(`workspace_${tab.id}`, workspaceXml);
@@ -164,14 +166,14 @@ export class WorkspaceComponent implements OnDestroy {
         return;
       }
       this.setToZero();
-  
+
       this.tabs = tabsData;
       setTimeout(() => {
         tabsData.forEach((tab: any) => {
           this.selectTab(tab.id);
         });
       }, 100);
-  
+
       tabsData.forEach((tab: any) => {
         if (localStorage.getItem(`consoleService_${tab.id}`)) {
           this.consolesServices.set(tab.id.toString(), new CodeService(this.http));
@@ -181,7 +183,7 @@ export class WorkspaceComponent implements OnDestroy {
       this.showAlert('Error al cargar los datos en cache.', 'error');
     }
   }
-  
+
 
   setToZero(): void {
     this.consolesOutput = new Map();
@@ -327,19 +329,22 @@ export class WorkspaceComponent implements OnDestroy {
     // DELETE SUSCPRITOR & PUBLISHER
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
-        if (event.oldXml) {
-          const xmlString = Blockly.Xml.domToText(event.oldXml);
-          if (xmlString.includes('ros2_create_subscriber') ||
-            xmlString.includes('ros2_minimal_publisher') ||
-            xmlString.includes('ros2_create_publisher') ||
-            xmlString.includes('ros2_subscriber_msg_data') ||
-            xmlString.includes('ros2_publish_message')) {
-            console.log('Publisher or subscriber block removed');
-            const result = await this.alertService.showAlert('Acabas de eliminar un bloque de publicador o suscriptor, por ende la sesión terminará');
-            console.log('User pressed OK:', result);
-            this.stopTab(tabId);
-            this.consolesSessions.delete(tabId.toString());
-            this.consolesServices.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || '');
+        //Identify if the tab is playing or was played before 
+        if (this.tabs.find(tab => tab.id === tabId)?.isPlaying || this.tabsPlayed.includes(tabId)) {
+          if (event.oldXml) {
+            const xmlString = Blockly.Xml.domToText(event.oldXml);
+            if (xmlString.includes('ros2_create_subscriber') ||
+              xmlString.includes('ros2_minimal_publisher') ||
+              xmlString.includes('ros2_create_publisher') ||
+              xmlString.includes('ros2_subscriber_msg_data') ||
+              xmlString.includes('ros2_publish_message')) {
+              console.log('Publisher or subscriber block removed');
+              const result = await this.alertService.showAlert('Acabas de eliminar un bloque de publicador o suscriptor, por ende la sesión terminará');
+              console.log('User pressed OK:', result);
+              this.stopTab(tabId);
+              this.consolesSessions.delete(tabId.toString());
+              this.consolesServices.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || '');
+            }
           }
         }
       }
@@ -348,18 +353,21 @@ export class WorkspaceComponent implements OnDestroy {
 
     // DELETE CLIENTE
     this.workspaces[tabId].addChangeListener(async (event) => {
-      if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
-        if (event.oldXml) {
-          const xmlString = Blockly.Xml.domToText(event.oldXml);
-          if (xmlString.includes('ros_create_client')) {
-            console.log('Client block deleted');
-            console.log('Publisher or subscriber block removed');
-            //Alert to advice session will be deleted
-            const result = await this.alertService.showAlert('Acabas de eliminar un bloque de cliente, por ende la sesión terminará');
-            console.log('User pressed OK:', result);
-            this.stopTab(tabId);
-            this.consolesSessions.delete(tabId.toString());
-            this.consolesServices.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || '');
+      //Identify if the tab is playing or was played before 
+      if (this.tabs.find(tab => tab.id === tabId)?.isPlaying || this.tabsPlayed.includes(tabId)) {
+        if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
+          if (event.oldXml) {
+            const xmlString = Blockly.Xml.domToText(event.oldXml);
+            if (xmlString.includes('ros_create_client')) {
+              console.log('Client block deleted');
+              console.log('Publisher or subscriber block removed');
+              //Alert to advice session will be deleted
+              const result = await this.alertService.showAlert('Acabas de eliminar un bloque de cliente, por ende la sesión terminará');
+              console.log('User pressed OK:', result);
+              this.stopTab(tabId);
+              this.consolesSessions.delete(tabId.toString());
+              this.consolesServices.get(tabId.toString())?.deleteFile(this.tabs.find(tab => tab.id === tabId)?.name || '');
+            }
           }
         }
       }
@@ -369,17 +377,20 @@ export class WorkspaceComponent implements OnDestroy {
     // DELETE SERVER
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
-        if (event.oldXml) {
-          const xmlString = Blockly.Xml.domToText(event.oldXml);
-          if (xmlString.includes('ros_create_server')) {
-            console.log('Server block removed');
-            const result = await this.alertService.showAlert('Acabas de eliminar un bloque de servidor, por ende la sesión terminará');
-            console.log('User pressed OK:', result);
-            this.stopTab(tabId);
-            this.consolesSessions.delete(tabId.toString());
-            // It is assumed that for the server the node name is saved in the tab
-            const tabName = this.tabs.find(tab => tab.id === tabId)?.name || '';
-            this.consolesServices.get(tabId.toString())?.deleteFile(tabName);
+        //Identify if the tab is playing or was played before 
+        if (this.tabs.find(tab => tab.id === tabId)?.isPlaying || this.tabsPlayed.includes(tabId)) {
+          if (event.oldXml) {
+            const xmlString = Blockly.Xml.domToText(event.oldXml);
+            if (xmlString.includes('ros_create_server')) {
+              console.log('Server block removed');
+              const result = await this.alertService.showAlert('Acabas de eliminar un bloque de servidor, por ende la sesión terminará');
+              console.log('User pressed OK:', result);
+              this.stopTab(tabId);
+              this.consolesSessions.delete(tabId.toString());
+              // It is assumed that for the server the node name is saved in the tab
+              const tabName = this.tabs.find(tab => tab.id === tabId)?.name || '';
+              this.consolesServices.get(tabId.toString())?.deleteFile(tabName);
+            }
           }
         }
       }
@@ -389,49 +400,55 @@ export class WorkspaceComponent implements OnDestroy {
     // DELETE MESSAGE
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
-        if (event.oldXml) {
-          const xmlString = Blockly.Xml.domToText(event.oldXml);
-          if (xmlString.includes('ros2_message_block')) {
-            console.log('Message block removed');
-            const result = await this.alertService.showAlert('Acabas de eliminar un bloque de mensaje, este se eliminará definitivamente');
-            console.log('User pressed OK:', result);
-            this.stopTab(tabId);
-            // Extract the message name from the XML; the field is assumed to be called "MESSAGE_NAME"
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-            const messageName = xmlDoc.querySelector('field[name="MESSAGE_NAME"]')?.textContent || '';
-            console.log('Message name extracted:', messageName);
-            this.codeService.deleteInterfaceFile('msg', messageName)
-              .subscribe({
-                next: (response) => console.log("Successfully deleted (message):", response),
-                error: (error) => console.error("Error at deleting the interface (message):", error)
-              });
+        //Identify if the tab is playing or was played before 
+        if (this.tabs.find(tab => tab.id === tabId)?.isPlaying || this.tabsPlayed.includes(tabId)) {
+          if (event.oldXml) {
+            const xmlString = Blockly.Xml.domToText(event.oldXml);
+            if (xmlString.includes('ros2_message_block')) {
+              console.log('Message block removed');
+              const result = await this.alertService.showAlert('Acabas de eliminar un bloque de mensaje, este se eliminará definitivamente');
+              console.log('User pressed OK:', result);
+              this.stopTab(tabId);
+              // Extract the message name from the XML; the field is assumed to be called "MESSAGE_NAME"
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+              const messageName = xmlDoc.querySelector('field[name="MESSAGE_NAME"]')?.textContent || '';
+              console.log('Message name extracted:', messageName);
+              this.codeService.deleteInterfaceFile('msg', messageName)
+                .subscribe({
+                  next: (response) => console.log("Successfully deleted (message):", response),
+                  error: (error) => console.error("Error at deleting the interface (message):", error)
+                });
+            }
           }
         }
       }
       this.codeService.setNoBlocks(this.workspaces[tabId].getAllBlocks().length === 0);
     });
 
-    // DELETE SERVICIO
+    // DELETE SERVICE
     this.workspaces[tabId].addChangeListener(async (event) => {
-      if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
-        if (event.oldXml) {
-          const xmlString = Blockly.Xml.domToText(event.oldXml);
-          if (xmlString.includes('ros2_service_block')) {
-            console.log('Service block removed', xmlString);
-            const result = await this.alertService.showAlert('Acabas de eliminar un bloque de servicio, este se eliminará definitivamente');
-            console.log('User pressed OK:', result);
-            this.stopTab(tabId);
-            // Extract the service name from the XML; the field is assumed to be called "SERVICE_NAME"
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-            const serviceName = xmlDoc.querySelector('field[name="SERVICE_NAME"]')?.textContent || '';
-            console.log('Message name extracted:', serviceName);
-            this.codeService.deleteInterfaceFile('srv', serviceName)
-              .subscribe({
-                next: (response) => console.log("Successfully deleted (service):", response),
-                error: (error) => console.error("Error at deleting the interface (service):", error)
-              });
+      //Identify if the tab is playing or was played before 
+      if (this.tabs.find(tab => tab.id === tabId)?.isPlaying || this.tabsPlayed.includes(tabId)) {
+        if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
+          if (event.oldXml) {
+            const xmlString = Blockly.Xml.domToText(event.oldXml);
+            if (xmlString.includes('ros2_service_block')) {
+              console.log('Service block removed', xmlString);
+              const result = await this.alertService.showAlert('Acabas de eliminar un bloque de servicio, este se eliminará definitivamente');
+              console.log('User pressed OK:', result);
+              this.stopTab(tabId);
+              // Extract the service name from the XML; the field is assumed to be called "SERVICE_NAME"
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+              const serviceName = xmlDoc.querySelector('field[name="SERVICE_NAME"]')?.textContent || '';
+              console.log('Message name extracted:', serviceName);
+              this.codeService.deleteInterfaceFile('srv', serviceName)
+                .subscribe({
+                  next: (response) => console.log("Successfully deleted (service):", response),
+                  error: (error) => console.error("Error at deleting the interface (service):", error)
+                });
+            }
           }
         }
       }
@@ -490,7 +507,7 @@ export class WorkspaceComponent implements OnDestroy {
     this.testingCodeBackend = this.textCode.get(tabId.toString()) || '';
     this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) || '';
     console.log(22);
-    
+
   }
 
   storePreviousName(tab: any) {
@@ -527,6 +544,7 @@ export class WorkspaceComponent implements OnDestroy {
       ? (this.executeCode(this.textCode.get(tabId.toString()) || '', tabId),
         this.codeService.setWorkspaceChanged(false))
       : this.stopTab(tabId);
+    this.tabsPlayed.push(tabId);
   }
 
   stopTab(tabId: number) {
@@ -655,7 +673,7 @@ export class WorkspaceComponent implements OnDestroy {
       code = create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType);
     }
     const codeService = this.consolesServices.get(tabId.toString());
-    
+
     if (codeService === undefined) {
       console.error('Service not found for the tab', tabId);
       return;
@@ -664,7 +682,7 @@ export class WorkspaceComponent implements OnDestroy {
         this.websockets.get(tabId.toString())?.unsubscribe();
       }
       console.log(code);
-      
+
       this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code, type)
         .pipe(
           switchMap(() => {
