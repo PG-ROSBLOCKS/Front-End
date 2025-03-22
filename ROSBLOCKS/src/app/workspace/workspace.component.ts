@@ -48,6 +48,8 @@ export class WorkspaceComponent implements OnDestroy {
   tabs: { name: string; id: number; isPlaying: boolean }[] = [];
   selectedTabId: number | null = null;
   sanitizedVncUrl!: SafeResourceUrl;
+  matrixData: number[][] | undefined;
+  matrix: number[][] = [];
 
   constructor(
     private http: HttpClient,
@@ -286,7 +288,6 @@ export class WorkspaceComponent implements OnDestroy {
           code = paintMap(map3);
           break;
         case 4:
-          // Código personalizado o lógica adicional
           code = ''; 
           break;
         default:
@@ -812,18 +813,55 @@ export class WorkspaceComponent implements OnDestroy {
       this.deleteTab(tabId);
     }
   }
+  
+  /*
+  // Inicialmente la matriz está vacía y se actualizará al cargar el archivo
+  
 
-  imageSrc: string | ArrayBuffer | null = null;
+  // Tamaño de cada celda (píxel)
+  cellSize: number = 20;
 
-  onFileSelected(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    if (target.files && target.files[0]) {
-      const file = target.files[0];
+  @ViewChild('matrixCanvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
+
+  ngAfterViewInit(): void {
+    // Opcionalmente, podrías dibujar una matriz por defecto si quisieras
+    this.drawMatrix();
+  }
+
+  // Función que dibuja la matriz en el canvas
+  drawMatrix(): void {
+    const canvas = this.canvasRef.nativeElement;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || this.matrix.length === 0) return;
+
+    // Ajusta el tamaño del canvas según las dimensiones de la matriz
+    canvas.width = this.matrix[0].length * this.cellSize;
+    canvas.height = this.matrix.length * this.cellSize;
+
+    // Recorre la matriz y dibuja cada celda: 1 se dibuja en negro, 0 en blanco
+    for (let i = 0; i < this.matrix.length; i++) {
+      for (let j = 0; j < this.matrix[i].length; j++) {
+        ctx.fillStyle = this.matrix[i][j] === 1 ? '#000' : '#FFF';
+        ctx.fillRect(j * this.cellSize, i * this.cellSize, this.cellSize, this.cellSize);
+      }
+    }
+  }
+*/
+  onFileSelected(event: any): void {
+    const file: File = event.target.files[0];
+    if (file) {
       const reader = new FileReader();
       reader.onload = () => {
-        this.imageSrc = reader.result;
+        const text = reader.result as string;
+        
+        this.matrix = text.split('\n')
+          .map(line => line.trim())
+          .filter(line => line !== '')
+          .map(line => line.split(/[\s,]+/).map(num => Number(num)));
+        
+        //this.drawMatrix();
       };
-      reader.readAsDataURL(file);
+      reader.readAsText(file);
     }
   }
 
