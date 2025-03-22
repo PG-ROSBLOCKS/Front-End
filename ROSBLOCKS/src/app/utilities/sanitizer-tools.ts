@@ -258,7 +258,7 @@ export function separateHeaderFromMarker(code: string): { headerText: string; co
 
     if (trimmed === marker.trim()) {
       foundMarker = true;
-      continue; // omitimos el propio marcador
+      continue; // omitimos el marcador
     }
 
     if (!foundMarker) {
@@ -268,12 +268,15 @@ export function separateHeaderFromMarker(code: string): { headerText: string; co
     }
   }
 
+  if (!foundMarker) {
+    return {
+      headerText: '',
+      codeText: lines.join('\n'), // devolver todo el código como está
+    };
+  }
+
   return {
     headerText: header.join('\n'),
     codeText: rest.join('\n'),
   };
 }
-
-
-
-
