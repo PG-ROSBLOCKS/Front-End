@@ -14,6 +14,8 @@ import { srvList, SrvInfo } from '../shared/srv-list';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { toolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
+import { paintMap } from '../maps/mapBuilder';
+import { map1, map2, map3 } from '../maps/maps';
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
@@ -32,6 +34,7 @@ export class WorkspaceComponent implements OnDestroy {
 
   isResizing = false;
   private previousNames = new Map<number, string>();
+  private mapCodeService?: CodeService;
   maxTabs = 8;
   consolesOutput: Map<string, string> = new Map();
   consolesSessions: Map<string, string> = new Map();
@@ -270,7 +273,71 @@ export class WorkspaceComponent implements OnDestroy {
     });
   }*/
 
+    paint(map: number): void {
+      let code: string = '';
+      switch(map) { 
+        case 1:
+          code = paintMap(map1);
+          break;
+        case 2:
+          code = paintMap(map2);
+          break;
+        case 3:
+          code = paintMap(map3);
+          break;
+        case 4:
+          // Código personalizado o lógica adicional
+          code = ''; 
+          break;
+        default:
+          code = ''; 
+          break;
+      }
+      if (code) {
+        console.log(code);
+        
+        this.enviarCodigoMapa(code);
+      }
+    }
+
+    enviarCodigoMapa(code_to_send: string): void {
+      console.log('Enviando código para mapa...');
+      const fileName = "turtleMap.py";
+      const type = "pub_sub";
+      const code = code_to_send;
+    
+      if (!this.mapCodeService) {
+        this.mapCodeService = new CodeService(this.http);
+      }
+      const codeService = this.mapCodeService;
+    
+      console.log({ fileName, code, type });
+    
+      codeService.uploadCode(fileName, code, type)
+        .pipe(
+          switchMap(() => {
+            return codeService.executeCode(fileName);
+          }),
+          switchMap((response) => {
+            if (!response) return of(null);
+            console.log('Respuesta del backend:', response);
+            const sessionId = response.session_id;
+            console.log('ID de sesión:', sessionId);
+            return codeService.connectToWebSocket(sessionId);
+          })
+        )
+        .subscribe({
+          next: (response) => {
+            if (!response) return;
+            console.log('Mensaje del websocket:', response.output);
+          },
+          error: (error) => console.error('Error:', error),
+          complete: () => console.log('Proceso completado')
+        });
+    }
+
   initializeBlockly(tabId: number): void {
+    
     const blocklyDivId = `blocklyDiv-${tabId}`;
     const blocklyDiv = document.getElementById(blocklyDivId);
     definirBloquesROS2();
@@ -489,8 +556,6 @@ export class WorkspaceComponent implements OnDestroy {
     }, 0);
     this.testingCodeBackend = this.textCode.get(tabId.toString()) || '';
     this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) || '';
-    console.log(22);
-    
   }
 
   storePreviousName(tab: any) {
@@ -619,10 +684,7 @@ export class WorkspaceComponent implements OnDestroy {
   enviarCodigo(code_to_send: string, tabId: number) {
     console.log('Sending code...');
     const workspace = this.workspaces[tabId];
-    if (!workspace) {
-      console.error('Theres no workspace for the tab', tabId);
-      return;
-    }
+
     let code = '';
     let fileName = '';
     let type = '';
@@ -655,6 +717,7 @@ export class WorkspaceComponent implements OnDestroy {
       code = create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType);
     }
     const codeService = this.consolesServices.get(tabId.toString());
+    console.log(codeService);
     
     if (codeService === undefined) {
       console.error('Service not found for the tab', tabId);
