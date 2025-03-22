@@ -1,6 +1,8 @@
 import { pythonGenerator, Order } from 'blockly/python';
-import { indentSmart, removeIndentation, indentSmartByLine } from '../utilities/sanitizer-tools';
+import * as Blockly from 'blockly/core';
+import { indentSmart, removeIndentation, indentSmartByLine, indentSmartPreserveStructure } from '../utilities/sanitizer-tools';
 import { srvList } from '../shared/srv-list';
+import { get } from 'blockly/core/events/utils';
 
 export const TAB_SPACE = '    '; // Tab space
 export { addImport, getImports, clearImports, definirGeneradoresROS2 };
@@ -121,11 +123,12 @@ function definirGeneradoresROS2() {
       mainBody = Array.isArray(result) ? result[0] : result;
     }
  
-    const code =
-      `pub_sub\n` +
-      `${TAB_SPACE}${TAB_SPACE}self.publisher_ = self.create_publisher(${msgClass}, '${topicName}', 10)\n` +
-      indentSmartByLine(mainBody, 2, 1);
+    let code =
+    `pub_sub\n` +
+    `${TAB_SPACE}${TAB_SPACE}self.publisher_ = self.create_publisher(${msgClass}, '${topicName}', 10)\n` +
+    mainBody; // sin indentSmartByLine
   
+    code = indentSmartPreserveStructure(code, 2);
     return code;
   };
 
@@ -213,44 +216,36 @@ function definirGeneradoresROS2() {
   
     let code = `${TAB_SPACE}${TAB_SPACE}msg = ${msgClass}()\n`;
   
+    // Recorre la lista de inputs con block.inputList o conoces sus nombres
     for (const input of block.inputList) {
       if (input.name && input.name.startsWith("FIELD_")) {
-        const fieldName = input.name.replace("FIELD_", "");
-        const field = block.getField(fieldName);
-        if (!field) continue;
+        const fieldName = input.name.replace("FIELD_", ""); // "pose.position.x"
+        const valueCode = pythonGenerator.valueToCode(
+          block, 
+          input.name, 
+          Order.NONE
+        ) || '""'; // valor por defecto
   
-        const rawValue = field.getValue();
-        const valueStr = String(rawValue);
-  
-        if (valueStr === "True" || valueStr === "False") {
-          code += `${TAB_SPACE}${TAB_SPACE}msg.${fieldName} = ${valueStr}\n`;
-        } else if (!isNaN(Number(rawValue)) && valueStr.trim() !== "") {
-          code += `${TAB_SPACE}${TAB_SPACE}msg.${fieldName} = ${rawValue}\n`;
-        } else {
-          code += `${TAB_SPACE}${TAB_SPACE}msg.${fieldName} = "${valueStr}"\n`;
-        }
+        code += `msg.${fieldName} = ${valueCode}\n`;
       }
     }
   
-    code += `${TAB_SPACE}${TAB_SPACE}self.publisher_.publish(msg)\n`;
+    code += `self.publisher_.publish(msg)\n`;
     return code;
-  };  
-
+  };
+  
   // Code generator for the block "Crear Timer"
   pythonGenerator.forBlock['ros2_timer'] = function (block) {
     const interval = block.getFieldValue('INTERVAL');
-    let callbackCode = '';
-    const input = block.getInput('CALLBACK');
-    const targetBlock = input?.connection?.targetBlock();
-    if (targetBlock) {
-      const result = pythonGenerator.blockToCode(targetBlock);
-      callbackCode = Array.isArray(result) ? result[0] : result;
-    }
+    const callbackBody = pythonGenerator.statementToCode(block, 'CALLBACK');
+  
     let code = `self.timer_ = self.create_timer(${interval}, self.timer_callback)\n`;
     code += `def timer_callback(self):\n`;
-    code += callbackCode;
+    code += callbackBody;
+  
     return code;
   };
+  
 
   // Code generator for the block "Log de ROS 2"
   pythonGenerator.forBlock['ros2_log'] = function (block) {

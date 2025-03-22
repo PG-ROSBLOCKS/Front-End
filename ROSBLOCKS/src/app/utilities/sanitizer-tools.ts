@@ -280,3 +280,43 @@ export function separateHeaderFromMarker(code: string): { headerText: string; co
     codeText: rest.join('\n'),
   };
 }
+
+export function indentSmartPreserveStructure(code: string, baseLevel = 2): string {
+  const lines = code.split('\n').filter(line => line.trim() !== '');
+  const result: string[] = [];
+
+  const indent = (level: number) => TAB_SPACE.repeat(level);
+
+  let lastWasControl = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const trimmed = raw.trim();
+
+    // 1) Excepción específica para `def timer_callback(self):`
+    if (trimmed === 'def timer_callback(self):') {
+      // Le daremos un nivel menos de indentación
+      result.push(indent(baseLevel - 1) + trimmed);
+      lastWasControl = true;
+      continue;
+    }
+
+    // 2) Control flow: if, else, for, while, def, class
+    const isControl = /^(if |else:|elif |for |while |def |class )/.test(trimmed);
+
+    if (isControl) {
+      // Indentar a baseLevel
+      result.push(indent(baseLevel) + trimmed);
+      lastWasControl = true;
+    } else if (lastWasControl) {
+      // Si la línea anterior era un control, esta la indentamos a baseLevel + 1
+      result.push(indent(baseLevel + 1) + trimmed);
+      lastWasControl = false;
+    } else {
+      // Caso normal: baseLevel
+      result.push(indent(baseLevel) + trimmed);
+    }
+  }
+
+  return result.join('\n');
+}

@@ -47,15 +47,24 @@ export function definirBloquesROS2() {
       this.setColour(160);
       this.messageType = '';
   
-      this.setOnChange((event: { type: EventType; recordUndo: any; }) => {
-        if (
-          (event.type === Blockly.Events.BLOCK_CREATE ||
-            event.type === Blockly.Events.BLOCK_MOVE ||
-            event.type === Blockly.Events.BLOCK_CHANGE) && event.recordUndo
-        ) {
-          this.updateChildren_();
-        }
-      });
+      // ACTIVAMOS setOnChange con filtro
+      // this.setOnChange((event: { type: EventType; blockId: any; element: string; name: string; }) => {
+      //   // 1) Si es un BLOCK_CHANGE en ESTE bloque, revisamos si cambió MSG_TYPE
+      //   if (event.type === Blockly.Events.BLOCK_CHANGE && event.blockId === this.id) {
+      //     if (event.element === 'field' && event.name === 'MSG_TYPE') {
+      //       // El usuario cambió el dropdown de tipo
+      //       this.messageType = this.getFieldValue('MSG_TYPE');
+      //       this.updateChildren_();
+      //     }
+      //   }
+      //   // 2) O si es un BLOCK_MOVE, puede ser que estemos conectando un nuevo bloque
+      //   //    a la sección 'MAIN' (o moviendo un timer/publish_message)
+      //   else if (event.type === Blockly.Events.BLOCK_MOVE) {
+      //     // No te preocupes en exceso por filtrar quién se movió.
+      //     // Llamamos a updateChildren_ y que él haga la lógica de refrescar
+      //     this.updateChildren_();
+      //   }
+      // });
     },
   
     mutationToDom: function () {
@@ -68,16 +77,31 @@ export function definirBloquesROS2() {
       this.messageType = xmlElement.getAttribute('messageType') || '';
     },
   
-    updateChildren_: function () {
+    updateChildren_: function() {
       const mainInput = this.getInput('MAIN');
-      if (mainInput && mainInput.connection && mainInput.connection.targetBlock()) {
-        const childBlock = mainInput.connection.targetBlock();
-        if (childBlock && childBlock.type === 'ros2_publish_message') {
-          childBlock.updateFromParent(this.messageType);
+      if (!mainInput || !mainInput.connection) return;
+  
+      let currentBlock = mainInput.connection.targetBlock();
+      while (currentBlock) {
+        // Si es un 'ros2_timer', primero pásale el tipo para que él se lo pase a sus hijos
+        if (currentBlock.type === 'ros2_timer') {
+          currentBlock.updateFromParent(this.messageType);
+        }
+        // O si es un 'ros2_publish_message' directamente (sin timer)
+        else if (currentBlock.type === 'ros2_publish_message') {
+          currentBlock.updateFromParent(this.messageType);
+        }
+  
+        // Avanzamos al siguiente en la cadena de statements
+        if (currentBlock.nextConnection) {
+          currentBlock = currentBlock.nextConnection.targetBlock();
+        } else {
+          currentBlock = null;
         }
       }
     }
   };
+  
   
 
   //MinimalPublisher (Just for testing)
@@ -207,6 +231,7 @@ export function definirBloquesROS2() {
   // Block to publish a message
   Blockly.Blocks['ros2_publish_message'] = {
     init: function () {
+      // Un input "dummy" solo para mostrar la etiqueta de tipo seleccionado
       this.appendDummyInput("TITLE")
         .appendField('Publish type:')
         .appendField(new Blockly.FieldLabelSerializable('Sin tipo'), 'MSG_TYPE');
@@ -217,78 +242,121 @@ export function definirBloquesROS2() {
       this.setTooltip('Publishes a message to a ROS 2 topic.');
       this.setHelpUrl('');
   
+      // Variables internas
       this.messageType = '';
       this.messageFields = [];
       this.fieldValues = {};
     },
   
+    /** Llamado por el bloque padre (ej. create_publisher) para asignar el tipo */
     updateFromParent: function (messageType: string) {
       this.messageType = messageType;
+  
+      // Actualizar etiqueta de tipo
       const label = this.getField('MSG_TYPE');
       if (label) {
         label.setValue(messageType.split('.').pop()?.replace(/\.msg$/, '') || messageType);
       }
   
+      // Buscar en msgList la definición de campos
       const msgInfo = msgList.find(x => x.name === messageType);
       this.messageFields = msgInfo?.fields || [];
+  
       this.updateShape_();
     },
   
+    /** Reconstruye los inputs según la lista de messageFields */
     updateShape_: function () {
+      // Guardar los valores actuales
       this.saveFieldValues();
-    
-      // Eliminar todos los inputs excepto el título
+  
+      // Eliminar todos los inputs excepto TITLE
       const oldInputs = [...this.inputList];
       for (const input of oldInputs) {
         if (input.name !== "TITLE") {
           this.removeInput(input.name);
         }
       }
-    
-      // Agregar campos a partir de los campos del mensaje
+  
+      // Añadir dinámicamente los campos
       this.addFieldsRecursively(this.messageFields, "");
     },
-    
-    addFieldsRecursively: function (fields: MsgVariable[], parentPath: string) {
+  
+    /**
+     * Método recursivo para anidar campos
+     * Si el campo es otro mensaje, sube un nivel de recursión
+     * Si no, crea un ValueInput con .setCheck(...) apropiado
+     */
+    addFieldsRecursively: function (fields: any, parentPath: any) {
       for (const field of fields) {
         const fullName = parentPath ? `${parentPath}.${field.name}` : field.name;
         const inputName = `FIELD_${fullName}`;
-    
+  
+        // Determina si es un tipo de mensaje anidado
         const isNested = msgList.some(msg => msg.name === field.type || msg.name === `${field.type}.msg`);
-    
+  
         if (isNested) {
+          // Recursión para subcampos
           const nested = msgList.find(m => m.name === field.type || m.name === `${field.type}.msg`);
           if (nested && nested.fields) {
             this.addFieldsRecursively(nested.fields, fullName);
           }
         } else {
-          const dummy = this.appendDummyInput(inputName);
-          dummy.appendField(fullName + ":");
-    
+          // Crear la "ranura" (hueco) para conectar un bloque
+          const valueInput = this.appendValueInput(inputName)
+            .appendField(fullName + ":");
+  
+          // Opcional: cargar un valor guardado (si no usas shadow blocks)
+          // NOTA: Este "valor" no se mostrará directamente si es un ValueInput,
+          //       porque la "edición" vendrá del bloque conectado.
           const saved = this.fieldValues[fullName] || "";
-    
+  
+          // Ajusta .setCheck(...) según el tipo
           if (field.type === "string") {
-            dummy.appendField(new Blockly.FieldTextInput(saved), fullName);
-          } else if (
-            field.type === "int64" || field.type === "int32" ||
-            field.type === "float64" || field.type === "float32"
-          ) {
-            dummy.appendField(new Blockly.FieldNumber(Number(saved) || 0), fullName);
+            valueInput.setCheck("String");
+  
+            // // (Ejemplo) Si quieres un shadow block de texto por defecto:
+            // const shadowBlock = Blockly.utils.xml.createElement('shadow');
+            // shadowBlock.setAttribute('type', 'text');
+            // const fieldNode = Blockly.utils.xml.createElement('field');
+            // fieldNode.setAttribute('name', 'TEXT'); // para block "text"
+            // fieldNode.textContent = saved; // valor por defecto
+            // shadowBlock.appendChild(fieldNode);
+            // valueInput.connection.setShadowDom(shadowBlock);
+  
+          } else if (["int64", "int32", "float64", "float32"].includes(field.type)) {
+            valueInput.setCheck("Number");
+  
+            // // (Ejemplo) Shadow block numérico:
+            // const shadowNumber = Blockly.utils.xml.createElement('shadow');
+            // shadowNumber.setAttribute('type', 'math_number');
+            // const fieldNum = Blockly.utils.xml.createElement('field');
+            // fieldNum.setAttribute('name', 'NUM');
+            // fieldNum.textContent = saved || "0";
+            // shadowNumber.appendChild(fieldNum);
+            // valueInput.connection.setShadowDom(shadowNumber);
+  
           } else if (field.type === "bool") {
-            const dropdown = new Blockly.FieldDropdown([
-              ["True", "True"],
-              ["False", "False"]
-            ]);
-            dropdown.setValue(saved === "False" ? "False" : "True");
-            dummy.appendField(dropdown, fullName);
+            valueInput.setCheck("Boolean");
+  
+            // // (Ejemplo) Shadow block boolean:
+            // const shadowBool = Blockly.utils.xml.createElement('shadow');
+            // shadowBool.setAttribute('type', 'logic_boolean');
+            // valueInput.connection.setShadowDom(shadowBool);
+  
           } else {
-            // Tipo desconocido → input de texto
-            dummy.appendField(new Blockly.FieldTextInput(saved), fullName);
+            // Tipo desconocido => permitir cualquier bloque
+            valueInput.setCheck(null);
           }
         }
       }
-    },   
+    },
   
+    /**
+     * Guarda los valores de los inputs
+     * (Solo sirve si estás usando .appendField() con FieldTextInput, etc.)
+     * En caso de ValueInput, normalmente recuperas el valor en tu generador de código con `valueToCode`.
+     */
     saveFieldValues: function () {
       for (const input of this.inputList) {
         if (input.name && input.name.startsWith("FIELD_")) {
@@ -301,6 +369,9 @@ export function definirBloquesROS2() {
       }
     },
   
+    /**
+     * Mutations para serializar messageType, messageFields y fieldValues
+     */
     mutationToDom: function () {
       const container = document.createElement('mutation');
       container.setAttribute('messageType', this.messageType || '');
@@ -324,15 +395,17 @@ export function definirBloquesROS2() {
         this.fieldValues = {};
       }
   
+      // Actualiza etiqueta si existe
       const label = this.getField('MSG_TYPE_LABEL');
       if (label) {
-        label.setValue(this.messageType.split('.').pop()?.replace(/\.msg$/, '') || this.messageType);
+        label.setValue(
+          this.messageType.split('.').pop()?.replace(/\.msg$/, '') || this.messageType
+        );
       }
   
       this.updateShape_();
     }
   };
-  
   
 
   // Block to create timer
@@ -340,7 +413,7 @@ export function definirBloquesROS2() {
     init: function () {
       this.appendDummyInput()
         .appendField('Timer each')
-        .appendField(new Blockly.FieldNumber(1, 0.1, 60, 0.1), 'INTERVAL')
+        .appendField(new Blockly.FieldNumber(1, 0.1, Infinity, 0.1), 'INTERVAL')
         .appendField('seconds');
       this.appendStatementInput('CALLBACK')
         .appendField('Ejecutar');
@@ -349,8 +422,52 @@ export function definirBloquesROS2() {
       this.setColour(120);
       this.setTooltip('Creates a timer that executes periodically a callback.');
       this.setHelpUrl('');
+      this.setInputsInline(false);
+  
+      this.messageType = ''; // para guardar el tipo de mensaje que viene del padre
+  
+      // setOnChange con filtro
+      // this.setOnChange((event: { type: EventType; }) => {
+      //   // Si este block no está conectado a nada, no hacemos nada
+      //   if (!this.parentBlock_) return;
+  
+      //   // 1) Si es un BLOCK_CHANGE en este timer, mirar si cambió algo que requiera refrescar 
+      //   //    (Por ahora, no hay un dropdown que indique tipo, pero podrías filtrar si 
+      //   //    cambió un field que requiera refrescar.)
+        
+      //   // 2) O si es un BLOCK_MOVE => puede que conectemos un publish_message en 'CALLBACK'
+      //   if (event.type === Blockly.Events.BLOCK_MOVE) {
+      //     // Llamamos a updateChildren_ para refrescar a los publish_message conectados
+      //     this.updateChildren_();
+      //   }
+      // });
+    },
+  
+    updateFromParent: function(messageType: any) {
+      this.messageType = messageType;
+      // Cuando me avise mi padre, se lo paso a mis hijos
+      this.updateChildren_();
+    },
+  
+    updateChildren_: function() {
+      const callbackInput = this.getInput('CALLBACK');
+      if (!callbackInput?.connection) return;
+  
+      let childBlock = callbackInput.connection.targetBlock();
+      while (childBlock) {
+        if (childBlock.type === 'ros2_publish_message') {
+          childBlock.updateFromParent(this.messageType);
+        }
+        // Siguiente en la cadena
+        if (childBlock.nextConnection) {
+          childBlock = childBlock.nextConnection.targetBlock();
+        } else {
+          childBlock = null;
+        }
+      }
     }
   };
+  
 
   // Log ROS 2
   Blockly.Blocks['ros2_log'] = {

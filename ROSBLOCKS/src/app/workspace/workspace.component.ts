@@ -16,7 +16,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { toolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
 import { initializeCommonMsgs } from '../blocks/ros2-msgs';
-
+9
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
@@ -634,13 +634,13 @@ export class WorkspaceComponent implements OnDestroy {
     let type = '';
     let serverType = '';
     const { firstLine, remainingText } = extractFirstLine(reorderCodeBelowFirstMarker(code_to_send));
-    console.log('First line:', firstLine);
+    console.log('First line:', firstLine.trim());
     if (firstLine.indexOf('|') !== -1) {
       const parts = firstLine.split('|');
       type = parts[0];
       serverType = parts[1];
     } else {
-      type = firstLine;
+      type = firstLine.trim();
     }
     code = remainingText;
     if (type === "pub_sub") {
