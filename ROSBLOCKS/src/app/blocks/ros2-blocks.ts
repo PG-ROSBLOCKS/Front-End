@@ -53,29 +53,6 @@ export function definirBloquesROS2() {
     }
   };
 
-  //MinimalPublisher (Just for testing)
-  Blockly.Blocks['ros2_minimal_publisher'] = {
-    init: function () {
-      this.appendDummyInput()
-        .appendField("Minimal Publisher")
-        .appendField("Topic")
-        .appendField(new Blockly.FieldTextInput("/my_topic"), "TOPIC_NAME")
-        .appendField("Type")
-        .appendField(new Blockly.FieldDropdown(common_msgs), "MSG_TYPE");
-      this.appendDummyInput()
-        .appendField("Timer (seconds)")
-        .appendField(new Blockly.FieldNumber(0.5, 0.1, 60, 0.1), "TIMER");
-      this.appendDummyInput()
-        .appendField("Base Message")
-        .appendField(new Blockly.FieldTextInput("Hello, ROS2!"), "MESSAGE_BASE");
-      this.setPreviousStatement(true, null);
-      this.setNextStatement(true, null);
-      this.setColour(160);
-      this.setTooltip("Creates a minimal ROS2 publisher node");
-      this.setHelpUrl("");
-    }
-  };
-
   // Block to create a subscriber
   Blockly.Blocks['ros2_create_subscriber'] = {
     init: function () {
@@ -102,7 +79,7 @@ export function definirBloquesROS2() {
         .appendField("Subscriber Response");
       // This block returns a value (output), so we use setOutput(true)
       this.setOutput(true, "String");
-      this.setColour(230);
+      this.setColour(160);
       this.setTooltip("Returns the content of msg.data (only valid inside listener_callback).");
       this.setHelpUrl("");
     }
@@ -110,15 +87,18 @@ export function definirBloquesROS2() {
 
   Blockly.Blocks['ros2_print_msg_type'] = {
     init: function () {
-      this.appendDummyInput()
-        .appendField("Print Received Data Type");
+      this.appendValueInput("VAR_EXPR")
+        .setCheck(null)
+        .appendField("Print type of");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(230);
-      this.setTooltip("Prints the received message data type in the console.");
+      this.setColour(160);
+      this.setTooltip("Prints the type of the selected variable or expression.");
       this.setHelpUrl("");
     }
   };
+  
+  
 
   // Block to publish a message
   Blockly.Blocks['ros2_publish_message'] = {
@@ -173,25 +153,6 @@ export function definirBloquesROS2() {
       this.setNextStatement(true, null);
       this.setColour(230);
       this.setTooltip("Registers a menssage in the ROS2 log with the selected level.");
-      this.setHelpUrl("");
-    }
-  };
-
-  // Block to retrieve a specific field from turtlesim.msg.Pose
-  Blockly.Blocks['ros2_turtlesim_pose_field'] = {
-    init: function () {
-      this.appendDummyInput()
-        .appendField("turtlesim msg")
-        .appendField(new Blockly.FieldDropdown([
-          ["x", "x"],
-          ["y", "y"],
-          ["theta", "theta"],
-          ["linear_velocity", "linear_velocity"],
-          ["angular_velocity", "angular_velocity"]
-        ]), "FIELD");
-      this.setOutput(true, "Number"); // The output type is Number
-      this.setColour(230);
-      this.setTooltip("Returns the selected field from turtlesim.msg.Pose (only valid inside listener_callback).");
       this.setHelpUrl("");
     }
   };
