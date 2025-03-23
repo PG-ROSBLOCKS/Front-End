@@ -53,6 +53,7 @@ export class WorkspaceComponent implements OnDestroy {
   matrix: number[][] = [];
   matrixLoaded = false;
   mapFullyLoaded = true;
+  loadingMap = false;
 
   constructor(
     private http: HttpClient,
@@ -206,12 +207,14 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   resetTurtleContainer(): void {
+    this.mapFullyLoaded = false
+    //TODO: Falta revisar el CORS de /reset/
     this.http.post(this.codeService.vncTurtlesimReset(), {}).subscribe({
       next: (response) => {
-        console.log("Turltesim restarted:", response);
+        this.mapFullyLoaded = true
       },
       error: (error) => {
-        console.error("Error restarting Turtlesim:", error);
+        this.mapFullyLoaded = true
       }
     });
   }
@@ -279,6 +282,9 @@ export class WorkspaceComponent implements OnDestroy {
   }*/
 
   paint(map: number): void {
+    this.resetTurtleContainer()
+    
+    this.mapFullyLoaded  =false
     let code: string = '';
     switch(map) { 
       case 1:
@@ -326,6 +332,7 @@ export class WorkspaceComponent implements OnDestroy {
         switchMap((response) => {
           if (!response) return of(null);
           console.log('Respuesta del backend:', response);
+          this.mapFullyLoaded  =false
           const sessionId = response.session_id;
           console.log('ID de sesión:', sessionId);
           return codeService.connectToWebSocket(sessionId);
