@@ -70,14 +70,15 @@
                     </div>
                 </button>
                 <!-- matrix-image.component.html -->
-            <button (click)="fileInput.click()" class="sampleMap addMap" [ngClass]="{'addedMap': matrixData}">
-                <p>+</p>
-                <div *ngIf="matrixData" class="mapInsight">
-                <!-- Se muestra la matriz en formato JSON para visualizarla -->
-                <pre>{{ matrixData | json }}</pre>
-                </div>
-            </button>
-            <input type="file" #fileInput (change)="onFileSelected($event)" accept=".txt" style="display: none;">
+                <button (click)="fileInput.click()" class="sampleMap addMap" [ngClass]="{'addedMap': matrixLoaded}">
+                    <p>+</p>
+                    <div *ngIf="matrixLoaded" class="mapInsight">
+                      <canvas #matrixCanvas></canvas>
+                    </div>
+                  </button>
+                  
+                  <input type="file" #fileInput (change)="onFileSelected($event)" accept=".txt" style="display: none;">
+                  
   
                 <!--<canvas #matrixCanvas></canvas>-->
             </div>
@@ -88,6 +89,9 @@
             </div>
             <div class="turtlesim">
                 <iframe #iframeElement [src]="sanitizedVncUrl" _ngcontent-ng-c809167999="" src="sanitizedVncUrl" title="VNC"></iframe>
+                <div class="turtleSimCover" *ngIf="!mapFullyLoaded">
+                    <img src="../../assets/loading.gif">
+                </div>
             </div>
             <div class="bottomBarTurtle"></div>
             <div class="resetTurtleDiv">

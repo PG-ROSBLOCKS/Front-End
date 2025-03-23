@@ -1,3 +1,6 @@
+import { create_map } from "../blocks/code-generator";
+import { addImport, getImports } from "../blocks/ros2-blocks-code";
+
 export function isValidMap(matrix: any[][]): boolean {
     const numFilas = matrix.length;
   
@@ -22,149 +25,148 @@ function MatrixToString(matrix: number[][]): String {
       matrix
         .map(fila => '  [' + fila.join(', ') + ']') + ']';
   }
-  
+
+function generarPalabra(): string {
+    const letras = 'abcdefghijklmnopqrstuvwxyz';
+    let palabra = '';
+
+    for (let i = 0; i < 5; i++) {
+        const indice = Math.floor(Math.random() * letras.length);
+        palabra += letras[indice];
+    }
+
+    return palabra;
+}
 
 export function paintMap(matrix: any[][]): string {
     if (!isValidMap(matrix)) {
+        console.log("uuuuppps");
+        
         return '';
     }
 
-    return `import rclpy
-from rclpy.node import Node
-from turtlesim.srv import TeleportAbsolute, SetPen, Spawn, Kill
-import time
-import ast
-import threading
+    let turtle = generarPalabra()
 
-class MatrixPainter(Node):
-    def __init__(self):
-        super().__init__('matrix_painter')
-        
-        # Parámetro con la matriz en forma de string
+    addImport('turtlesim.srv.TeleportAbsolute');
+    addImport('turtlesim.srv.SetPen');
+    addImport('turtlesim.srv.Spawn');
+    addImport('turtlesim.srv.Kill');
+
+    getImports()
+
+    const codeBody = `
+    def run(self):
         self.declare_parameter('matrix_str', '${MatrixToString(matrix)}')
-        
-        self.cli_tp = self.create_client(TeleportAbsolute, '/turtle1/teleport_absolute')
-        self.cli_pen = self.create_client(SetPen, '/turtle1/set_pen')
-        while not self.cli_tp.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Esperando /turtle1/teleport_absolute...')
-        while not self.cli_pen.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Esperando /turtle1/set_pen...')
-        
-        # Cliente para el servicio spawn que creará nuevas tortugas
-        self.cli_spawn = self.create_client(Spawn, '/spawn')
-        while not self.cli_spawn.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Esperando /spawn service...')
-        
-        self.paint_matrix()
+        self.turtle_name = '${turtle}'
+        self.spawn_turtle()
 
-    def set_pen_turtle(self, turtle_name, r, g, b, width, off):
-        client = self.create_client(SetPen, f'/{turtle_name}/set_pen')
-        while not client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info(f'Esperando /{turtle_name}/set_pen...')
+        self.cli_tp = self.create_client(TeleportAbsolute, f'/{self.turtle_name}/teleport_absolute')
+        self.cli_pen = self.create_client(SetPen, f'/{self.turtle_name}/set_pen')
+
+        self.get_logger().info('Esperando servicios...')
+        self.cli_tp.wait_for_service()
+        self.cli_pen.wait_for_service()
+        self.get_logger().info('Servicios disponibles. Dibujando...')
+
+        self.draw_matrix()
+        self.kill_turtle()
+
+    def spawn_turtle(self):
+        cli_spawn = self.create_client(Spawn, '/spawn')
+        cli_spawn.wait_for_service()
+        req = Spawn.Request()
+        req.x = 5.0
+        req.y = 5.0
+        req.theta = 0.0
+        req.name = self.turtle_name
+        future = cli_spawn.call_async(req)
+        rclpy.spin_until_future_complete(self, future)
+        if future.result() is not None:
+            self.get_logger().info(f'Tortuga {future.result().name} creada.')
+        else:
+            self.get_logger().error('Fallo al crear turtle')
+
+    def kill_turtle(self):
+        cli_kill = self.create_client(Kill, '/kill')
+        cli_kill.wait_for_service()
+        req = Kill.Request()
+        req.name = self.turtle_name
+        future = cli_kill.call_async(req)
+        rclpy.spin_until_future_complete(self, future)
+        self.get_logger().info(f'Tortuga {self.turtle_name} eliminada.')
+
+    def set_pen(self, r, g, b, width, off):
         req = SetPen.Request()
         req.r = r
         req.g = g
         req.b = b
         req.width = width
-        req.off = off  # 0 = dibuja, 1 = no dibuja
-        future = client.call_async(req)
+        req.off = off
+        future = self.cli_pen.call_async(req)
         rclpy.spin_until_future_complete(self, future)
 
-    def teleport_turtle(self, turtle_name, x, y, theta=0.0):
-        client = self.create_client(TeleportAbsolute, f'/{turtle_name}/teleport_absolute')
-        while not client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info(f'Esperando /{turtle_name}/teleport_absolute...')
+    def teleport(self, x, y, theta=0.0):
         req = TeleportAbsolute.Request()
         req.x = x
         req.y = y
         req.theta = theta
-        future = client.call_async(req)
+        future = self.cli_tp.call_async(req)
         rclpy.spin_until_future_complete(self, future)
-        time.sleep(0.05)
 
-    def kill_turtle(self, turtle_name):
-        client = self.create_client(Kill, '/kill')
-        while not client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Esperando /kill service...')
-        req = Kill.Request()
-        req.name = turtle_name
-        future = client.call_async(req)
-        rclpy.spin_until_future_complete(self, future)
-        self.get_logger().info(f'{turtle_name} ha sido eliminada.')
-
-    def paint_cell(self, turtle_name, x_start, y_start, cell_width, cell_height, pencil_size):
-        # Configuramos la tortuga: desactivamos el lápiz, la posicionamos y activamos el lápiz
-        self.set_pen_turtle(turtle_name, 0, 0, 0, 0, 1)
-        self.teleport_turtle(turtle_name, x_start, y_start)
-        self.set_pen_turtle(turtle_name, 0, 0, 0, pencil_size, 0)
-
-        # Dibujar el cuadrado recorriendo sus cuatro vértices:
-        # Lado superior
-        self.teleport_turtle(turtle_name, x_start + cell_width, y_start)
-        # Lado derecho
-        self.teleport_turtle(turtle_name, x_start + cell_width, y_start - cell_height)
-        # Lado inferior
-        self.teleport_turtle(turtle_name, x_start, y_start - cell_height)
-        # Cierre del cuadrado
-        self.teleport_turtle(turtle_name, x_start, y_start)
-
-        # Una vez terminado el dibujo, eliminamos la tortuga para liberar recursos
-        self.kill_turtle(turtle_name)
-
-    def paint_matrix(self):
+    def draw_matrix(self):
         matrix_str = self.get_parameter('matrix_str').get_parameter_value().string_value
-        matrix = ast.literal_eval(matrix_str)  # Convertir string a lista de listas
-        
-        # Definición del área a pintar
-        x0 = 0
-        y0 = 10.6
-        xf = 11
-        yf = 0
+        matrix = ast.literal_eval(matrix_str)
+
+        x0, y0 = 0.0, 10.6
+        xf, yf = 11.0, 0.0
 
         size = len(matrix)
-        cell_width = (xf - x0) / size
-        cell_height = (y0 - yf) / size
-        pencil_size = 6
+        cell_w = (xf - x0) / size
+        cell_h = (y0 - yf) / size
+        pen_size = 6
 
-        threads = []
-        # Por cada celda con valor 1 se spawnea una tortuga y se crea un hilo para dibujar el cuadrado
-        for i in range(size):
-            for j in range(size):
-                if matrix[i][j] == 1:
-                    x_start = x0 + j * cell_width
-                    y_start = y0 - i * cell_height
-                    
-                    # Request para spawnear la tortuga en la posición de inicio de la celda
-                    spawn_req = Spawn.Request()
-                    spawn_req.x = x_start
-                    spawn_req.y = y_start
-                    spawn_req.theta = 0.0
-                    spawn_req.name = f'turtle_{i}_{j}'  # Nombre único
+        self.set_pen(0, 0, 0, pen_size, 1)  # Apagar lápiz
 
-                    future_spawn = self.cli_spawn.call_async(spawn_req)
-                    rclpy.spin_until_future_complete(self, future_spawn)
-                    turtle_name = future_spawn.result().name
-                    self.get_logger().info(f'Spawneada {turtle_name} en ({x_start:.2f}, {y_start:.2f})')
+        # === DIBUJAR LÍNEAS HORIZONTALES (superior/inferior) ===
+        for i in range(1, size):
+            j = 0
+            while j < size:
+                if matrix[i][j] != matrix[i - 1][j]:
+                    j_start = j
+                    while j < size and matrix[i][j] != matrix[i - 1][j]:
+                        j += 1
+                    x1 = x0 + j_start * cell_w
+                    x2 = x0 + j * cell_w
+                    y = y0 - i * cell_h
+                    self.teleport(x1, y)
+                    self.set_pen(0, 0, 0, pen_size, 0)
+                    self.teleport(x2, y)
+                    self.set_pen(0, 0, 0, pen_size, 1)
+                else:
+                    j += 1
 
-                    # Se crea un hilo para que esta tortuga dibuje el cuadrado y luego se elimine
-                    thread = threading.Thread(target=self.paint_cell, args=(turtle_name, x_start, y_start, cell_width, cell_height, pencil_size))
-                    thread.start()
-                    threads.append(thread)
-        
-        # Esperamos a que todas las tortugas terminen de pintar y se eliminen
-        for t in threads:
-            t.join()
+        # === DIBUJAR LÍNEAS VERTICALES (izquierda/derecha) ===
+        for j in range(1, size):
+            i = 0
+            while i < size:
+                if matrix[i][j] != matrix[i][j - 1]:
+                    i_start = i
+                    while i < size and matrix[i][j] != matrix[i][j - 1]:
+                        i += 1
+                    x = x0 + j * cell_w
+                    y1 = y0 - i_start * cell_h
+                    y2 = y0 - i * cell_h
+                    self.teleport(x, y1)
+                    self.set_pen(0, 0, 0, pen_size, 0)
+                    self.teleport(x, y2)
+                    self.set_pen(0, 0, 0, pen_size, 1)
+                else:
+                    i += 1
 
-        rclpy.shutdown()
+        self.get_logger().info('¡Matriz dibujada de forma optimizada y sin bordes externos!')
 
-def main(args=None):
-    rclpy.init(args=args)
-    node = MatrixPainter()
-    rclpy.spin(node)
-    rclpy.shutdown()
+`
+    const pythonCode = create_map(codeBody, 'paint_map');
 
-if __name__ == '__main__':
-    main()
-
-`;
+    return pythonCode;
 }

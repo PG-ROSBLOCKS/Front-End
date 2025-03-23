@@ -14,7 +14,7 @@ import { srvList, SrvInfo } from '../shared/srv-list';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { toolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
-import { paintMap } from '../maps/mapBuilder';
+import { paintMap, isValidMap } from '../maps/mapBuilder';
 import { map1, map2, map3 } from '../maps/maps';
 @Component({
   selector: 'app-workspace',
@@ -25,6 +25,7 @@ export class WorkspaceComponent implements OnDestroy {
   @ViewChild('resizer') resizer!: ElementRef;
   @ViewChild('leftSection') leftSection!: ElementRef;
   @ViewChild('rightSection') rightSection!: ElementRef;
+  @ViewChild('matrixCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
 
   @HostListener('window:beforeunload', ['$event'])
   unloadNotification(event: BeforeUnloadEvent): void {
@@ -48,8 +49,10 @@ export class WorkspaceComponent implements OnDestroy {
   tabs: { name: string; id: number; isPlaying: boolean }[] = [];
   selectedTabId: number | null = null;
   sanitizedVncUrl!: SafeResourceUrl;
-  matrixData: number[][] | undefined;
+
   matrix: number[][] = [];
+  matrixLoaded = false;
+  mapFullyLoaded = true;
 
   constructor(
     private http: HttpClient,
@@ -275,67 +278,80 @@ export class WorkspaceComponent implements OnDestroy {
     });
   }*/
 
-    paint(map: number): void {
-      let code: string = '';
-      switch(map) { 
-        case 1:
-          code = paintMap(map1);
-          break;
-        case 2:
-          code = paintMap(map2);
-          break;
-        case 3:
-          code = paintMap(map3);
-          break;
-        case 4:
-          code = ''; 
-          break;
-        default:
-          code = ''; 
-          break;
-      }
-      if (code) {
-        console.log(code);
-        
-        this.enviarCodigoMapa(code);
-      }
+  paint(map: number): void {
+    let code: string = '';
+    switch(map) { 
+      case 1:
+        code = paintMap(map1);
+        break;
+      case 2:
+        code = paintMap(map2);
+        break;
+      case 3:
+        code = paintMap(map3);
+        break;
+      case 4:
+        code = paintMap(this.matrix);; 
+        break;
+      default:
+        this.alertService.showAlert("Error loading map");
+        return
     }
+    if (code) {
+      console.log(code);
+      
+      this.enviarCodigoMapa(code);
+    }
+  }
 
-    enviarCodigoMapa(code_to_send: string): void {
-      console.log('Enviando código para mapa...');
-      const fileName = "turtleMap.py";
-      const type = "pub_sub";
-      const code = code_to_send;
-    
-      if (!this.mapCodeService) {
-        this.mapCodeService = new CodeService(this.http);
-      }
-      const codeService = this.mapCodeService;
-    
-      console.log({ fileName, code, type });
-    
-      codeService.uploadCode(fileName, code, type)
-        .pipe(
-          switchMap(() => {
-            return codeService.executeCode(fileName);
-          }),
-          switchMap((response) => {
-            if (!response) return of(null);
-            console.log('Respuesta del backend:', response);
-            const sessionId = response.session_id;
-            console.log('ID de sesión:', sessionId);
-            return codeService.connectToWebSocket(sessionId);
-          })
-        )
-        .subscribe({
-          next: (response) => {
-            if (!response) return;
-            console.log('Mensaje del websocket:', response.output);
-          },
-          error: (error) => console.error('Error:', error),
-          complete: () => console.log('Proceso completado')
-        });
+  enviarCodigoMapa(code_to_send: string): void {
+    let contador = 2;
+    console.log('Enviando código para mapa...');
+    const fileName = "turtleMap.py";
+    const type = "pub_sub";
+    const code = code_to_send;
+  
+    if (!this.mapCodeService) {
+      this.mapCodeService = new CodeService(this.http);
     }
+    const codeService = this.mapCodeService;
+  
+    console.log({ fileName, code, type });
+    this.mapFullyLoaded = false
+    codeService.uploadCode(fileName, code, type)
+      .pipe(
+        switchMap(() => {
+          return codeService.executeCode(fileName);
+        }),
+        switchMap((response) => {
+          if (!response) return of(null);
+          console.log('Respuesta del backend:', response);
+          const sessionId = response.session_id;
+          console.log('ID de sesión:', sessionId);
+          return codeService.connectToWebSocket(sessionId);
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          if (!response) return;
+          console.log('Mensaje del websocket:', response.output);
+          console.log("Mapa terminado de realizar");
+          contador--
+          if (contador == 0) {
+            console.log("mapa terminado de cargar");
+            this.mapFullyLoaded = true
+          }
+        },
+        error: (error) => {
+          console.error('Error:', error)
+          this.mapFullyLoaded = true
+        },
+        complete: () => {
+          console.log('Proceso completado')
+          this.mapFullyLoaded = true
+        }
+      });
+  }
 
   initializeBlockly(tabId: number): void {
     
@@ -847,21 +863,58 @@ export class WorkspaceComponent implements OnDestroy {
     }
   }
 */
-  onFileSelected(event: any): void {
-    const file: File = event.target.files[0];
-    if (file) {
+  onFileSelected(event: Event): void {
+    console.log("sdfsdfsdf");
+    
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+      const file = target.files[0];
       const reader = new FileReader();
       reader.onload = () => {
-        const text = reader.result as string;
-        
-        this.matrix = text.split('\n')
-          .map(line => line.trim())
-          .filter(line => line !== '')
-          .map(line => line.split(/[\s,]+/).map(num => Number(num)));
-        
-        //this.drawMatrix();
+        const content = reader.result as string;
+        this.matrix = this.parseMatrix(content);
+        if (isValidMap(this.matrix)) {
+          this.matrixLoaded = true;
+          this.paint(4)
+        }
+        else {
+          this.alertService.showAlert("File is not a map")
+          return
+        }
+        setTimeout(() => {
+          this.drawMatrixOnCanvas(this.canvasRef.nativeElement, this.matrix);
+        });
       };
       reader.readAsText(file);
+    }
+  }
+
+  parseMatrix(content: string): number[][] {
+    return content.trim().split('\n').map(row =>
+      row.trim().split('').map(char => (char === '1' ? 1 : 0))
+    );
+  }
+
+  drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: number[][]): void {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const cellSize = 20;
+    const rows = matrix.length;
+    const cols = matrix[0].length;
+
+    canvas.width = cols * cellSize;
+    canvas.height = rows * cellSize;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        ctx.fillStyle = matrix[y][x] === 1 ? '#000' : '#fff';
+        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        ctx.strokeStyle = '#ccc';
+        ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+      }
     }
   }
 
