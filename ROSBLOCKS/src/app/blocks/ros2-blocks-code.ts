@@ -166,36 +166,32 @@ function definirGeneradoresROS2() {
   pythonGenerator.forBlock['ros2_create_subscriber'] = function (block) {
     const topic = block.getFieldValue('TOPIC_NAME');
     const msgType = block.getFieldValue('MSG_TYPE');
-    let callbackBody = '';
-    const input = block.getInput('CALLBACK');
-    const targetBlock = input?.connection?.targetBlock();
-    if (targetBlock) {
-      const result = pythonGenerator.blockToCode(targetBlock);
-      callbackBody = Array.isArray(result) ? result[0] : result;
-    }
-    // "Callback"
+
     const msgClass = addImport(msgType);
 
-    let code = `pub_sub\n${TAB_SPACE}${TAB_SPACE}self.subscription = self.create_subscription(${msgClass}, '${topic}', self.listener_callback, 10)\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.subscription  # Evitar warning de variable no usada\n\n`;
+    const callbackBlock = block.getInputTargetBlock('CALLBACK');
+    let callbackCode: string = '';
+
+    if (callbackBlock) {
+      const generated = pythonGenerator.blockToCode(callbackBlock);
+      if (Array.isArray(generated)) {
+        callbackCode = generated[0];
+      } else {
+        callbackCode = generated;
+      }
+    }
+
+    let code = 'pub_sub\n';
+    code += `${TAB_SPACE}${TAB_SPACE}self.subscription = self.create_subscription(${msgClass}, '${topic}', self.listener_callback, 10)\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.subscription\n\n`;
 
     code += `${TAB_SPACE}def listener_callback(self, msg):\n`;
 
-    // checks received type
-    code += `${TAB_SPACE}${TAB_SPACE}if not isinstance(msg, ${msgClass}):\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error: Tipo de mensaje incorrecto. Se esperaba ${msgClass}.")\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}return\n\n`;
-
-    // try/except to catch excepcions
-    code += `${TAB_SPACE}${TAB_SPACE}try:\n`;
-    if (!callbackBody.trim()) {
-      code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}pass\n`;
+    if (!callbackCode.trim()) {
+      code += `${TAB_SPACE}${TAB_SPACE}pass\n`;
     } else {
-      code += pythonGenerator.prefixLines(callbackBody, `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}`);
+      code += pythonGenerator.prefixLines(callbackCode, TAB_SPACE.repeat(2));
     }
-    code += `${TAB_SPACE}${TAB_SPACE}except Exception as e:\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error en el callback: {}".format(e))\n`;
-
     return code;
   };
 
@@ -205,7 +201,8 @@ function definirGeneradoresROS2() {
   };
 
   pythonGenerator.forBlock['ros2_print_msg_type'] = function (block) {
-    const code = `print("Tipo de dato recibido:", type(msg))\n`;
+    const varCode = pythonGenerator.valueToCode(block, 'VAR_EXPR', Order.NONE) || 'msg';
+    const code = `print("Tipo de dato recibido:", type(${varCode}))\n`;
     return code;
   };
 
