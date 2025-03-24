@@ -282,41 +282,134 @@ export function separateHeaderFromMarker(code: string): { headerText: string; co
 }
 
 export function indentSmartPreserveStructure(code: string, baseLevel = 2): string {
+  console.log("llega" + code);
   const lines = code.split('\n').filter(line => line.trim() !== '');
   const result: string[] = [];
+  const indent = (n: number) => TAB_SPACE.repeat(n);
 
-  const indent = (level: number) => TAB_SPACE.repeat(level);
+  let currentIndent = baseLevel;
 
-  let lastWasControl = false;
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
 
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i];
-    const trimmed = raw.trim();
-
-    // 1) Excepción específica para `def timer_callback(self):`
+    // Línea especial: definición de la función timer_callback.
     if (trimmed === 'def timer_callback(self):') {
-      // Le daremos un nivel menos de indentación
+      // Se indenta a baseLevel - 1 (por ejemplo, si está dentro de una clase)
       result.push(indent(baseLevel - 1) + trimmed);
-      lastWasControl = true;
+      // Después, el cuerpo de la función se inicia en baseLevel
+      currentIndent = baseLevel;
       continue;
     }
 
-    // 2) Control flow: if, else, for, while, def, class
-    const isControl = /^(if |else:|elif |for |while |def |class )/.test(trimmed);
-
-    if (isControl) {
-      // Indentar a baseLevel
-      result.push(indent(baseLevel) + trimmed);
-      lastWasControl = true;
-    } else if (lastWasControl) {
-      // Si la línea anterior era un control, esta la indentamos a baseLevel + 1
-      result.push(indent(baseLevel + 1) + trimmed);
-      lastWasControl = false;
-    } else {
-      // Caso normal: baseLevel
-      result.push(indent(baseLevel) + trimmed);
+    // Si la línea es un marcador de inicio de bloque (por ejemplo, #STARTREPEAT, #STARTWHILE, #STARTIF, #STARTELSE)
+    if (/^#START/.test(trimmed)) {
+      result.push(indent(currentIndent) + trimmed);
+      currentIndent++; // Aumenta el nivel para el bloque que comienza
+      continue;
     }
+
+    // Si la línea es un marcador de fin de bloque (por ejemplo, #ENDREPEAT, #ENDWHILE, #ENDIF, #ENDELSE)
+    if (/^#END/.test(trimmed)) {
+      currentIndent = Math.max(currentIndent - 1, baseLevel);
+      result.push(indent(currentIndent) + trimmed);
+      continue;
+    }
+
+    // Para las demás líneas, se indenta con el nivel actual
+    result.push(indent(currentIndent) + trimmed);
   }
 
   return result.join('\n');
 }
+
+
+export function removeCommonIndentation(code: string) {
+    let lines = code.split('\n');
+  
+    // Remove blank lines at the beginning and end
+    while (lines.length && !lines[0].trim()) {
+      lines.shift();
+    }
+    while (lines.length && !lines[lines.length - 1].trim()) {
+      lines.pop();
+    }
+  
+    // Calculates minimum indentation
+    let minIndent = Infinity;
+    for (const line of lines) {
+      if (!line.trim()) continue; // Ignore empty lines
+      const match = line.match(/^(\s*)/);
+      const indentCount = match ? match[1].length : 0;
+      if (indentCount < minIndent) {
+        minIndent = indentCount;
+      }
+    }
+    if (minIndent === Infinity) {
+      return code; // If there are no lines with content
+    }
+  
+    // Deletes minIndent on every line
+    lines = lines.map(line => line.slice(minIndent));
+    return lines.join('\n');
+  }
+
+  export function sanitizeGlobalVariables(code: string): string {
+    const lines = code.split('\n');
+  
+    const varRegex = /^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*None\s*$/;
+    const classRegex = /^(\s*)class\s+\w+/;
+    const defRegex = /^(\s*)def\s+\w+\(/;
+  
+    const globalVars = new Set<string>();
+  
+    // 1) Recolectar variables globales definidas como x = None a nivel toplevel
+    for (const line of lines) {
+      if (line.startsWith(' ') || line.startsWith('\t')) {
+        continue;
+      }
+      const match = varRegex.exec(line.trim());
+      if (match) {
+        globalVars.add(match[1]);
+      }
+    }
+  
+    if (globalVars.size === 0) {
+      return code;
+    }
+  
+    const newLines: string[] = [];
+    const classIndentStack: string[] = [];
+  
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      newLines.push(line);
+  
+      // Detectar inicio de clase
+      const classMatch = classRegex.exec(line);
+      if (classMatch) {
+        classIndentStack.push(classMatch[1]);
+        continue;
+      }
+  
+      // Limpiar clases cerradas por dedent
+      while (
+        classIndentStack.length > 0 &&
+        line.trim() !== '' &&
+        line.startsWith(classIndentStack[classIndentStack.length - 1]) === false
+      ) {
+        classIndentStack.pop();
+      }
+  
+      // Si estamos dentro de una clase y encontramos un def, insertamos la línea global
+      const defMatch = defRegex.exec(line);
+      if (defMatch && classIndentStack.length > 0) {
+        const indentForDef = defMatch[1];
+        const indentForBody = indentForDef + TAB_SPACE;
+        const joined = [...globalVars].sort().join(', ');
+        newLines.push(`${indentForBody}global ${joined}`);
+      }
+    }
+  
+    return newLines.join('\n');
+  }
+  

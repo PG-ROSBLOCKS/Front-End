@@ -1,6 +1,6 @@
 import { pythonGenerator, Order } from 'blockly/python';
 import * as Blockly from 'blockly/core';
-import { indentSmart, removeIndentation, indentSmartByLine, indentSmartPreserveStructure } from '../utilities/sanitizer-tools';
+import { indentSmart, removeIndentation, removeCommonIndentation, indentSmartPreserveStructure } from '../utilities/sanitizer-tools';
 import { srvList } from '../shared/srv-list';
 import { get } from 'blockly/core/events/utils';
 
@@ -78,36 +78,6 @@ function clearImports(): void {
   }
 }
 
-function removeCommonIndentation(code: string) {
-    let lines = code.split('\n');
-  
-    // Remove blank lines at the beginning and end
-    while (lines.length && !lines[0].trim()) {
-      lines.shift();
-    }
-    while (lines.length && !lines[lines.length - 1].trim()) {
-      lines.pop();
-    }
-  
-    // Calculates minimum indentation
-    let minIndent = Infinity;
-    for (const line of lines) {
-      if (!line.trim()) continue; // Ignore empty lines
-      const match = line.match(/^(\s*)/);
-      const indentCount = match ? match[1].length : 0;
-      if (indentCount < minIndent) {
-        minIndent = indentCount;
-      }
-    }
-    if (minIndent === Infinity) {
-      return code; // If there are no lines with content
-    }
-  
-    // Deletes minIndent on every line
-    lines = lines.map(line => line.slice(minIndent));
-    return lines.join('\n');
-  }
-
 function definirGeneradoresROS2() {
   // Code generator for the "Create publisher" block
   pythonGenerator.forBlock['ros2_create_publisher'] = function (block) {
@@ -122,13 +92,14 @@ function definirGeneradoresROS2() {
       const result = pythonGenerator.blockToCode(targetBlock);
       mainBody = Array.isArray(result) ? result[0] : result;
     }
- 
+
     let code =
     `pub_sub\n` +
     `${TAB_SPACE}${TAB_SPACE}self.publisher_ = self.create_publisher(${msgClass}, '${topicName}', 10)\n` +
     mainBody; // sin indentSmartByLine
   
     code = indentSmartPreserveStructure(code, 2);
+    console.log(code);
     return code;
   };
 
@@ -543,6 +514,123 @@ function definirGeneradoresROS2() {
   
     return code;
   };
+
+  //override for if in order to comment the start and the end of the if block
+  pythonGenerator.forBlock['controls_if'] = function (block) {
+    // Inicializamos variables para generar el código.
+    let n = 0;
+    let code = '';
+    let branchCode = '';
+  
+    // Procesa la parte "if" y las cláusulas "elif"
+    do {
+      // Obtiene el código de la condición.
+      const conditionCode = pythonGenerator.valueToCode(block, 'IF' + n, Order.NONE) || 'False';
+      // Obtiene el código del cuerpo asociado a la condición.
+      branchCode = pythonGenerator.statementToCode(block, 'DO' + n);
+      // Agrega los marcadores al inicio y al final del bloque if/elif.
+      branchCode = "#STARTIF\n" + branchCode + "#ENDIF\n";
+      // Usa "if" para la primera condición y "elif" para las siguientes.
+      code += (n === 0 ? "if " : "elif ") + conditionCode + ":\n" + branchCode;
+      n++;
+    } while (block.getInput('IF' + n));
+  
+    // Procesa la parte "else" si existe.
+    if (block.getInput('ELSE')) {
+      branchCode = pythonGenerator.statementToCode(block, 'ELSE');
+      branchCode = "#STARTELSE\n" + branchCode + "#ENDELSE\n";
+      code += "else:\n" + branchCode;
+    }
+    return code;
+  };
+
+  //override for if else in order to comment the start and the end of the if else block
+  pythonGenerator.forBlock['controls_ifelse'] = function (block) {
+    // Inicializamos variables para generar el código.
+    let n = 0;
+    let code = '';
+    let branchCode = '';
+  
+    // Procesa la parte "if" y las cláusulas "elif"
+    do {
+      // Obtiene el código de la condición.
+      const conditionCode = pythonGenerator.valueToCode(block, 'IF' + n, Order.NONE) || 'False';
+      // Obtiene el código del cuerpo asociado a la condición.
+      branchCode = pythonGenerator.statementToCode(block, 'DO' + n);
+      // Agrega los marcadores al inicio y al final del bloque if/elif.
+      branchCode = "#STARTIF\n" + branchCode + "#ENDIF\n";
+      // Usa "if" para la primera condición y "elif" para las siguientes.
+      code += (n === 0 ? "if " : "elif ") + conditionCode + ":\n" + branchCode;
+      n++;
+    } while (block.getInput('IF' + n));
+  
+    // Procesa la parte "else" si existe.
+    if (block.getInput('ELSE')) {
+      branchCode = pythonGenerator.statementToCode(block, 'ELSE');
+      branchCode = "#STARTELSE\n" + branchCode + "#ENDELSE\n";
+      code += "else:\n" + branchCode;
+    }
+    return code;
+  }
+
+  //override de controls_repeat in order to comment the start and the end of the repeat block
+  pythonGenerator.forBlock['controls_repeat'] = function (block) {
+    const repeats = block.getFieldValue('TIMES') || '0'; // Ensure 'TIMES' is retrieved correctly
+    let branch = pythonGenerator.statementToCode(block, 'DO');
+    branch = "#STARTREPEAT\n" + branch + "#ENDREPEAT\n";
+    return `for _ in range(${repeats}):\n${branch}`
+  }
+
+    //override for repeat in order to comment the start and the end of the repeat block
+    pythonGenerator.forBlock['controls_repeat_ext'] = function (block) {
+      const repeats = pythonGenerator.valueToCode(block, 'TIMES', Order.NONE) || '0';
+      let branch = pythonGenerator.statementToCode(block, 'DO');
+      branch = "#STARTREPEAT\n" + branch + "#ENDREPEAT\n";
+      return `for _ in range(${repeats}):\n${branch}`;
+    }
+
+  //override for while in order to comment the start and the end of the while block
+  pythonGenerator.forBlock['controls_whileUntil'] = function (block) {
+    const until = block.getFieldValue('MODE') === 'UNTIL';
+    const argument0 = pythonGenerator.valueToCode(block, 'BOOL', until ? Order.LOGICAL_NOT : Order.NONE) || 'False';
+    let branch = pythonGenerator.statementToCode(block, 'DO');
+    branch = "#STARTWHILE\n" + branch + "#ENDWHILE\n";
+    return `${until ? 'while not ' : 'while '}${argument0}:\n${branch}`;
+  };
+
+  //override for for in order to comment the start and the end of the for block
+  pythonGenerator.forBlock['controls_for'] = function (block) {
+    const variable0 = pythonGenerator.nameDB_?.getName(
+      block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+    const argument0 = pythonGenerator.valueToCode(block, 'FROM', Order.NONE) || '0';
+    const argument1 = pythonGenerator.valueToCode(block, 'TO', Order.NONE) || '0';
+    const increment = pythonGenerator.valueToCode(block, 'BY', Order.NONE) || '1';
+    let branch = pythonGenerator.statementToCode(block, 'DO');
+    branch = "#STARTFOR\n" + branch + "#ENDFOR\n";
+    let code;
+    let inc;
+    if (argument0.match(/\d+/) && argument1.match(/\d+/) && increment.match(/\d+/)) {
+      inc = parseInt(increment);
+      code = `for ${variable0} in range(${argument0}, ${argument1} + 1, ${inc}):\n${branch}`;
+    } else {
+      code = `for ${variable0} in range(${argument0}, ${argument1} + 1):\n${branch}`;
+    }
+    return code;
+  }
+
+  //override the foreach block in order to comment the start and the end of the foreach block
+  pythonGenerator.forBlock['controls_forEach'] = function (block) {
+    const variable0 = pythonGenerator.nameDB_?.getName(
+      block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+    const argument0 = pythonGenerator.valueToCode(block, 'LIST', Order.NONE) || '[]';
+    let branch = pythonGenerator.statementToCode(block, 'DO');
+    branch = "#STARTFOREACH\n" + branch + "#ENDFOREACH\n";
+    return `for ${variable0} in ${argument0}:\n${branch}`;
+  }
+
+
+
+  
 }
 
 /**

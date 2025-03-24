@@ -77,28 +77,38 @@ export function definirBloquesROS2() {
       this.messageType = xmlElement.getAttribute('messageType') || '';
     },
   
+    // Esta función recorre recursivamente un bloque y sus sub-bloques
+    traverseAndUpdate_: function (block: { type: string; updateFromParent: (arg0: any) => void; inputList: { connection: { targetBlock: () => any; }; }[]; nextConnection: { targetBlock: () => any; }; }, messageType: any) {
+      if (!block) return;
+  
+      // Si el bloque es ros2_timer o ros2_publish_message, actualizamos
+      if (block.type === 'ros2_timer' || block.type === 'ros2_publish_message') {
+        block.updateFromParent(messageType);
+      }
+  
+      // Recorremos todos los inputs del bloque (tanto statement como value)
+      block.inputList.forEach((input: { connection: { targetBlock: () => any; }; }) => {
+        const target = input.connection && input.connection.targetBlock();
+        if (target) {
+          this.traverseAndUpdate_(target, messageType);
+        }
+      });
+  
+      // Y luego continuamos con el siguiente bloque en la cadena
+      const next = block.nextConnection && block.nextConnection.targetBlock();
+      if (next) {
+        this.traverseAndUpdate_(next, messageType);
+      }
+    },
+  
     updateChildren_: function() {
       const mainInput = this.getInput('MAIN');
       if (!mainInput || !mainInput.connection) return;
   
+      // Obtenemos el primer bloque conectado a la entrada MAIN
       let currentBlock = mainInput.connection.targetBlock();
-      while (currentBlock) {
-        // Si es un 'ros2_timer', primero pásale el tipo para que él se lo pase a sus hijos
-        if (currentBlock.type === 'ros2_timer') {
-          currentBlock.updateFromParent(this.messageType);
-        }
-        // O si es un 'ros2_publish_message' directamente (sin timer)
-        else if (currentBlock.type === 'ros2_publish_message') {
-          currentBlock.updateFromParent(this.messageType);
-        }
-  
-        // Avanzamos al siguiente en la cadena de statements
-        if (currentBlock.nextConnection) {
-          currentBlock = currentBlock.nextConnection.targetBlock();
-        } else {
-          currentBlock = null;
-        }
-      }
+      // Recorremos todos los sub-bloques y next blocks
+      this.traverseAndUpdate_(currentBlock, this.messageType);
     }
   };
   

@@ -8,7 +8,7 @@ import { definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
 import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain } from '../utilities/sanitizer-tools';
+import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
 import { msgList, MsgInfo } from '../shared/msg-list';
@@ -326,6 +326,11 @@ export class WorkspaceComponent implements OnDestroy {
 
     this.workspaces[tabId].addChangeListener((event) => {
       this.saveToLocalStorage();
+
+      //actual tab code to testingCodeBackend
+      if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+        this.testingCodeBackend = pythonGenerator.workspaceToCode(this.workspaces[this.selectedTabId]);
+      }
     });
 
     // DELETE SUBSCRIBER & PUBLISHER
@@ -670,6 +675,8 @@ export class WorkspaceComponent implements OnDestroy {
       if (this.websockets.get(tabId.toString())) {
         this.websockets.get(tabId.toString())?.unsubscribe();
       }
+      //make variables global in each "def"
+      code = sanitizeGlobalVariables(code);
       console.log(code);
       
       this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code, type)
