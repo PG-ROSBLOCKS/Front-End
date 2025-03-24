@@ -53,7 +53,7 @@ export class WorkspaceComponent implements OnDestroy {
   matrix: number[][] = [];
   matrixLoaded = false;
   mapFullyLoaded = true;
-  loadingMap = false;
+  currentMap: number = 1;
 
   constructor(
     private http: HttpClient,
@@ -206,12 +206,20 @@ export class WorkspaceComponent implements OnDestroy {
     this.selectedTabId = null;
   }
 
-  resetTurtleContainer(): void {
+  resetTurtleContainer(map?: number): void {
+    //When presing restart button
+    if (map) {
+      this.currentMap = map
+    }
     this.mapFullyLoaded = false
-    //TODO: Falta revisar el CORS de /reset/
     this.http.post(this.codeService.vncTurtlesimReset(), {}).subscribe({
       next: (response) => {
-        this.mapFullyLoaded = true
+        if (this.currentMap == 1) {
+          this.mapFullyLoaded = true
+        }
+        else {
+          this.paint()
+        }
       },
       error: (error) => {
         this.mapFullyLoaded = true
@@ -281,14 +289,12 @@ export class WorkspaceComponent implements OnDestroy {
     });
   }*/
 
-  paint(map: number): void {
-    this.resetTurtleContainer()
-    
-    this.mapFullyLoaded  =false
+  paint(): void {
+    this.mapFullyLoaded  = false
     let code: string = '';
-    switch(map) { 
+    switch(this.currentMap) { 
       case 1:
-        code = paintMap(map1);
+        code = ''
         break;
       case 2:
         code = paintMap(map2);
@@ -311,8 +317,9 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   enviarCodigoMapa(code_to_send: string): void {
-    let contador = 2;
-    console.log('Enviando código para mapa...');
+    //Why count to 2?, because 2 turtles are painting the map, so this indicates when a turtle ends his job
+    let count = 2;
+    console.log('Sending code to map...');
     const fileName = "turtleMap.py";
     const type = "pub_sub";
     const code = code_to_send;
@@ -331,21 +338,20 @@ export class WorkspaceComponent implements OnDestroy {
         }),
         switchMap((response) => {
           if (!response) return of(null);
-          console.log('Respuesta del backend:', response);
+          console.log('Backend request:', response);
           this.mapFullyLoaded  =false
           const sessionId = response.session_id;
-          console.log('ID de sesión:', sessionId);
+          console.log('Session id:', sessionId);
           return codeService.connectToWebSocket(sessionId);
         })
       )
       .subscribe({
         next: (response) => {
           if (!response) return;
-          console.log('Mensaje del websocket:', response.output);
-          console.log("Mapa terminado de realizar");
-          contador--
-          if (contador == 0) {
-            console.log("mapa terminado de cargar");
+          console.log('Websocket message:', response.output);
+          count--
+          if (count == 0) {
+            console.log("map fully loaded");
             this.mapFullyLoaded = true
           }
         },
@@ -354,7 +360,7 @@ export class WorkspaceComponent implements OnDestroy {
           this.mapFullyLoaded = true
         },
         complete: () => {
-          console.log('Proceso completado')
+          console.log('Process ended')
           this.mapFullyLoaded = true
         }
       });
@@ -695,7 +701,7 @@ export class WorkspaceComponent implements OnDestroy {
       if (!this.workspaces[tabId]) continue;
       this.stopTab(tabId);
     }
-    this.resetTurtleContainer();
+    this.resetTurtleContainer(this.currentMap);
   }
 
   cleanConsole() {
@@ -871,7 +877,6 @@ export class WorkspaceComponent implements OnDestroy {
   }
 */
   onFileSelected(event: Event): void {
-    console.log("sdfsdfsdf");
     
     const target = event.target as HTMLInputElement;
     if (target.files && target.files[0]) {
@@ -882,7 +887,8 @@ export class WorkspaceComponent implements OnDestroy {
         this.matrix = this.parseMatrix(content);
         if (isValidMap(this.matrix)) {
           this.matrixLoaded = true;
-          this.paint(4)
+          this.currentMap = 4
+          this.resetTurtleContainer()
         }
         else {
           this.alertService.showAlert("File is not a map")

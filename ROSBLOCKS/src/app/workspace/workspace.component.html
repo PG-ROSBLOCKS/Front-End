@@ -38,7 +38,7 @@
                         placeholder="Search"
                         (input)="onSearch($event)"
                     />
-                    <img id="createImg" class="noSelect" src="../../assets/CreaNuevoNodo.png">
+                    <img id="createImg" class="noSelect" *ngIf="!selectedTabId" src="../../assets/CreaNuevoNodo.png">
                     <div *ngFor="let tab of tabs" 
                         [hidden]="tab.id !== selectedTabId" 
                         [attr.id]="'blocklyDiv-' + tab.id" 
@@ -51,19 +51,19 @@
         </div>
         <div #rightSection class="rightSection">
             <div class="maps">
-                <button class="sampleMap" (click)="paint(1)">
+                <button class="sampleMap" (click)="resetTurtleContainer(1)">
                     <p>1</p>
                     <div class="mapInsight">
                         <img src="../../assets/maps/map1.png">
                     </div>
                 </button>
-                <button class="sampleMap"(click)="paint(2)">
+                <button class="sampleMap"(click)="resetTurtleContainer(2)">
                     <p>2</p>
                     <div class="mapInsight">
                         <img src="../../assets/maps/map2.png">
                     </div>
                 </button>
-                <button class="sampleMap"(click)="paint(3)">
+                <button class="sampleMap"(click)="resetTurtleContainer(3)">
                     <p>3</p>
                     <div class="mapInsight">
                         <img src="../../assets/maps/map3.png">
@@ -102,7 +102,7 @@
                 <br>
                 <app-console-output [output]="getConsoleLines()" [autoScrollEnabled]="autoScrollEnabled"></app-console-output>           
             </div>
-            <button (click)="cleanConsole()" class="btnClean">Clean console</button>
+            <button (click)="cleanConsole()" class="btnClean">Clear console</button>
         </div>
     </div>
 </div>
