@@ -528,17 +528,39 @@ export class WorkspaceComponent implements OnDestroy {
   playTab(tabId: number, playAllTabs: boolean) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (!tab) return;
-    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
-      this.textCode.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
+  
+    const workspace = this.workspaces[tabId];
+    if (!workspace) return;
+  
+    // 1. Validar bloques antes de ejecutar
+    const topBlocks = workspace.getTopBlocks(true);
+    for (const block of topBlocks) {
+      if (block.type === 'ros2_create_publisher') {
+        const mainInput = block.getInput('MAIN');
+        const childBlock = mainInput?.connection?.targetBlock();
+        const hasPublisher = hasValidPublisherChain(childBlock ?? null);
+        if (!hasPublisher) {
+          alert('Error: El bloque "Create Publisher" necesita al menos un "Publish Message" en su interior.');
+          return;
+        }
+      }
     }
+  
+    // 2. Continuar con lógica original
+    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+      this.textCode.set(tabId.toString(), pythonGenerator.workspaceToCode(workspace));
+    }
+  
     this.updateSrvList();
     this.updateMsgList();
     tab.isPlaying = playAllTabs ? true : !tab.isPlaying;
+  
     tab.isPlaying
       ? (this.executeCode(this.textCode.get(tabId.toString()) || '', tabId),
         this.codeService.setWorkspaceChanged(false))
       : this.stopTab(tabId);
   }
+  
 
   stopTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
@@ -964,4 +986,39 @@ export function linesAfter(code: string): string {
     return "";
   }
   return code.substring(index + marker.length).trimStart();
+}
+
+export function hasValidPublisherChain(block: Blockly.Block | null): boolean {
+  if (!block) return false;
+
+  if (block.type === 'ros2_publish_message') {
+    // Validar que tiene al menos un campo conectado (extendido)
+    for (const input of block.inputList) {
+      if (
+        input.name?.startsWith('FIELD_') &&
+        input.connection &&
+        input.connection.targetBlock()
+      ) {
+        return true; // Al menos un campo del mensaje está conectado
+      }
+    }
+
+    return false; // Tiene el bloque, pero no está extendido
+  }
+
+  // Revisa inputs recursivamente
+  for (const input of block.inputList) {
+    const child = input.connection?.targetBlock();
+    if (hasValidPublisherChain(child ?? null)) {
+      return true;
+    }
+  }
+
+  // También revisa el siguiente bloque conectado en cadena
+  const next = block.nextConnection?.targetBlock();
+  if (hasValidPublisherChain(next ?? null)) {
+    return true;
+  }
+
+  return false;
 }
