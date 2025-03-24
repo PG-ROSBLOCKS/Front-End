@@ -47,24 +47,22 @@ export function definirBloquesROS2() {
       this.setColour(160);
       this.messageType = '';
   
-      // ACTIVAMOS setOnChange con filtro
-      // this.setOnChange((event: { type: EventType; blockId: any; element: string; name: string; }) => {
-      //   // 1) Si es un BLOCK_CHANGE en ESTE bloque, revisamos si cambió MSG_TYPE
-      //   if (event.type === Blockly.Events.BLOCK_CHANGE && event.blockId === this.id) {
-      //     if (event.element === 'field' && event.name === 'MSG_TYPE') {
-      //       // El usuario cambió el dropdown de tipo
-      //       this.messageType = this.getFieldValue('MSG_TYPE');
-      //       this.updateChildren_();
-      //     }
-      //   }
-      //   // 2) O si es un BLOCK_MOVE, puede ser que estemos conectando un nuevo bloque
-      //   //    a la sección 'MAIN' (o moviendo un timer/publish_message)
-      //   else if (event.type === Blockly.Events.BLOCK_MOVE) {
-      //     // No te preocupes en exceso por filtrar quién se movió.
-      //     // Llamamos a updateChildren_ y que él haga la lógica de refrescar
-      //     this.updateChildren_();
-      //   }
-      // });
+      this.setOnChange((event: { type: EventType; blockId: any; element: string; name: string; }) => {
+        if (!this.workspace || this.workspace.isDragging()) return;
+      
+        if (event.type === Blockly.Events.BLOCK_CHANGE && event.blockId === this.id) {
+          if (event.element === 'field' && event.name === 'MSG_TYPE') {
+            this.messageType = this.getFieldValue('MSG_TYPE');
+            this.updateChildren_(); // aquí sí directo
+          }
+        } else if (event.type === Blockly.Events.BLOCK_MOVE) {
+          // Delay para evitar conflictos durante el drag-and-drop
+          setTimeout(() => {
+            this.updateChildren_();
+          }, 10); // puede ajustarse
+        }
+      });
+      
     },
   
     mutationToDom: function () {
@@ -142,7 +140,7 @@ export function definirBloquesROS2() {
     init: function () {
       this.appendDummyInput()
         .appendField("Create Subscriber")
-        .appendField(new Blockly.FieldTextInput("/mi_topico"), "TOPIC_NAME")
+        .appendField(new Blockly.FieldTextInput("/my_topic"), "TOPIC_NAME")
         .appendField("Type")
         .appendField(new Blockly.FieldDropdown(() => {
           const allOptionsMap = new Map<string, string>();
@@ -257,23 +255,29 @@ export function definirBloquesROS2() {
       this.messageFields = [];
       this.fieldValues = {};
     },
+    
   
     /** Llamado por el bloque padre (ej. create_publisher) para asignar el tipo */
     updateFromParent: function (messageType: string) {
-      this.messageType = messageType;
-  
-      // Actualizar etiqueta de tipo
-      const label = this.getField('MSG_TYPE');
-      if (label) {
-        label.setValue(messageType.split('.').pop()?.replace(/\.msg$/, '') || messageType);
+      const alreadyConnected = this.inputList.some((input: { name: string; connection: { targetBlock: () => any; }; }) =>
+        input.name?.startsWith("FIELD_") && input.connection?.targetBlock()
+      );
+    
+      // Solo regenerar si no hay campos conectados
+      if (this.messageType !== messageType && !alreadyConnected) {
+        this.messageType = messageType;
+    
+        const label = this.getField('MSG_TYPE');
+        if (label) {
+          label.setValue(messageType.split('.').pop()?.replace(/\.msg$/, '') || messageType);
+        }
+    
+        const msgInfo = msgList.find(x => x.name === messageType);
+        this.messageFields = msgInfo?.fields || [];
+        this.updateShape_();
       }
-  
-      // Buscar en msgList la definición de campos
-      const msgInfo = msgList.find(x => x.name === messageType);
-      this.messageFields = msgInfo?.fields || [];
-  
-      this.updateShape_();
-    },
+    }
+    ,
   
     /** Reconstruye los inputs según la lista de messageFields */
     updateShape_: function () {
@@ -426,7 +430,7 @@ export function definirBloquesROS2() {
         .appendField(new Blockly.FieldNumber(1, 0.1, Infinity, 0.1), 'INTERVAL')
         .appendField('seconds');
       this.appendStatementInput('CALLBACK')
-        .appendField('Ejecutar');
+        .appendField('Execute');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(120);
@@ -436,21 +440,22 @@ export function definirBloquesROS2() {
   
       this.messageType = ''; // para guardar el tipo de mensaje que viene del padre
   
-      // setOnChange con filtro
-      // this.setOnChange((event: { type: EventType; }) => {
-      //   // Si este block no está conectado a nada, no hacemos nada
-      //   if (!this.parentBlock_) return;
-  
-      //   // 1) Si es un BLOCK_CHANGE en este timer, mirar si cambió algo que requiera refrescar 
-      //   //    (Por ahora, no hay un dropdown que indique tipo, pero podrías filtrar si 
-      //   //    cambió un field que requiera refrescar.)
-        
-      //   // 2) O si es un BLOCK_MOVE => puede que conectemos un publish_message en 'CALLBACK'
-      //   if (event.type === Blockly.Events.BLOCK_MOVE) {
-      //     // Llamamos a updateChildren_ para refrescar a los publish_message conectados
-      //     this.updateChildren_();
-      //   }
-      // });
+      this.setOnChange((event: { type: EventType; blockId: any; element: string; name: string; }) => {
+        if (!this.workspace || this.workspace.isDragging()) return;
+      
+        if (event.type === Blockly.Events.BLOCK_CHANGE && event.blockId === this.id) {
+          if (event.element === 'field' && event.name === 'MSG_TYPE') {
+            this.messageType = this.getFieldValue('MSG_TYPE');
+            this.updateChildren_(); // aquí sí directo
+          }
+        } else if (event.type === Blockly.Events.BLOCK_MOVE) {
+          // Delay para evitar conflictos durante el drag-and-drop
+          setTimeout(() => {
+            this.updateChildren_();
+          }, 10); // puede ajustarse
+        }
+      });
+      
     },
   
     updateFromParent: function(messageType: any) {

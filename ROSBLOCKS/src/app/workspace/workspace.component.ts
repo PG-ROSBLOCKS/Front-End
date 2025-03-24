@@ -538,9 +538,18 @@ export class WorkspaceComponent implements OnDestroy {
       if (block.type === 'ros2_create_publisher') {
         const mainInput = block.getInput('MAIN');
         const childBlock = mainInput?.connection?.targetBlock();
-        const hasPublisher = hasValidPublisherChain(childBlock ?? null);
+        const hasPublisher = hasValidChain(childBlock ?? null, "ros2_publish_message");
         if (!hasPublisher) {
-          alert('Error: El bloque "Create Publisher" necesita al menos un "Publish Message" en su interior.');
+          this.alertService.showAlert('Error: El bloque "Create Publisher" necesita al menos un "Publish Message" en su interior.');
+          return;
+        }
+      }
+      if (block.type === 'ros_create_client') {
+        const mainInput = block.getInput('MAIN');
+        const childBlock = mainInput?.connection?.targetBlock();
+        const hasClient = hasValidChain(childBlock ?? null, "ros_send_request"); 
+        if (!hasClient) {
+          this.alertService.showAlert('Error: El bloque "Create Client" necesita al menos un "Send request" en su interior.');
           return;
         }
       }
@@ -988,10 +997,10 @@ export function linesAfter(code: string): string {
   return code.substring(index + marker.length).trimStart();
 }
 
-export function hasValidPublisherChain(block: Blockly.Block | null): boolean {
+export function hasValidChain(block: Blockly.Block | null, childBlock: string): boolean {
   if (!block) return false;
 
-  if (block.type === 'ros2_publish_message') {
+  if (block.type === childBlock) {
     // Validar que tiene al menos un campo conectado (extendido)
     for (const input of block.inputList) {
       if (
@@ -1009,14 +1018,14 @@ export function hasValidPublisherChain(block: Blockly.Block | null): boolean {
   // Revisa inputs recursivamente
   for (const input of block.inputList) {
     const child = input.connection?.targetBlock();
-    if (hasValidPublisherChain(child ?? null)) {
+    if (hasValidChain(child ?? null, childBlock)) {
       return true;
     }
   }
 
   // También revisa el siguiente bloque conectado en cadena
   const next = block.nextConnection?.targetBlock();
-  if (hasValidPublisherChain(next ?? null)) {
+  if (hasValidChain(next ?? null, childBlock)) {
     return true;
   }
 
