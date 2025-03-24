@@ -55,8 +55,8 @@ export class WorkspaceComponent implements OnDestroy {
     private alertService: AlertService,
     private successService: SuccessService,
     private sanitizer: DomSanitizer
-    
-  ) {}
+
+  ) { }
 
   ngOnInit(): void {
     this.reloadTurtlesim();
@@ -67,7 +67,7 @@ export class WorkspaceComponent implements OnDestroy {
   reloadTurtlesim(): void {
     const url = this.codeService.vncTurtlesim();
     console.log(url);
-    
+
     if (url) {
       this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
     } else {
@@ -92,7 +92,7 @@ export class WorkspaceComponent implements OnDestroy {
   saveToFile() {
     try {
       const tabsData = this.tabs.map(tab => {
-        const workspaceXml = this.workspaces[tab.id] 
+        const workspaceXml = this.workspaces[tab.id]
           ? Blockly.Xml.workspaceToDom(this.workspaces[tab.id]).outerHTML
           : '';
         localStorage.setItem(`workspace_${tab.id}`, workspaceXml);
@@ -145,7 +145,7 @@ export class WorkspaceComponent implements OnDestroy {
   saveToLocalStorage() {
     try {
       const tabsData = this.tabs.map(tab => {
-        const workspaceXml = this.workspaces[tab.id] 
+        const workspaceXml = this.workspaces[tab.id]
           ? Blockly.Xml.workspaceToDom(this.workspaces[tab.id]).outerHTML
           : '';
         localStorage.setItem(`workspace_${tab.id}`, workspaceXml);
@@ -168,14 +168,14 @@ export class WorkspaceComponent implements OnDestroy {
         return;
       }
       this.setToZero();
-  
+
       this.tabs = tabsData;
       setTimeout(() => {
         tabsData.forEach((tab: any) => {
           this.selectTab(tab.id);
         });
       }, 100);
-  
+
       tabsData.forEach((tab: any) => {
         if (localStorage.getItem(`consoleService_${tab.id}`)) {
           this.consolesServices.set(tab.id.toString(), new CodeService(this.http));
@@ -185,7 +185,7 @@ export class WorkspaceComponent implements OnDestroy {
       this.showAlert('Error al cargar los datos en cache.', 'error');
     }
   }
-  
+
 
   setToZero(): void {
     this.consolesOutput = new Map();
@@ -528,10 +528,10 @@ export class WorkspaceComponent implements OnDestroy {
   playTab(tabId: number, playAllTabs: boolean) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (!tab) return;
-  
+
     const workspace = this.workspaces[tabId];
     if (!workspace) return;
-  
+
     // 1. Validar bloques antes de ejecutar
     const topBlocks = workspace.getTopBlocks(true);
     for (const block of topBlocks) {
@@ -547,29 +547,29 @@ export class WorkspaceComponent implements OnDestroy {
       if (block.type === 'ros_create_client') {
         const mainInput = block.getInput('MAIN');
         const childBlock = mainInput?.connection?.targetBlock();
-        const hasClient = hasValidChain(childBlock ?? null, "ros_send_request"); 
+        const hasClient = hasValidChain(childBlock ?? null, "ros_send_request");
         if (!hasClient) {
-          this.alertService.showAlert('Error: El bloque "Create Client" necesita al menos un "Send request" en su interior.');
+          this.alertService.showAlert('Error: El bloque "Create Client" necesita al menos un "Send request" válido en su interior.');
           return;
         }
       }
     }
-  
+
     // 2. Continuar con lógica original
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.textCode.set(tabId.toString(), pythonGenerator.workspaceToCode(workspace));
     }
-  
+
     this.updateSrvList();
     this.updateMsgList();
     tab.isPlaying = playAllTabs ? true : !tab.isPlaying;
-  
+
     tab.isPlaying
       ? (this.executeCode(this.textCode.get(tabId.toString()) || '', tabId),
         this.codeService.setWorkspaceChanged(false))
       : this.stopTab(tabId);
   }
-  
+
 
   stopTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
@@ -698,7 +698,7 @@ export class WorkspaceComponent implements OnDestroy {
       code = replaceSelfWithNodeInMain(create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType));
     }
     const codeService = this.consolesServices.get(tabId.toString());
-    
+
     if (codeService === undefined) {
       console.error('Service not found for the tab', tabId);
       return;
@@ -709,7 +709,7 @@ export class WorkspaceComponent implements OnDestroy {
       //make variables global in each "def"
       code = sanitizeGlobalVariables(code);
       console.log(code);
-      
+
       this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code, type)
         .pipe(
           switchMap(() => {
@@ -836,7 +836,7 @@ export class WorkspaceComponent implements OnDestroy {
       }
     };
   }
-  
+
 
   updateSrvVariablesCategory(): void {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
@@ -896,7 +896,7 @@ export class WorkspaceComponent implements OnDestroy {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
       ? { ...toolbox }
       : { kind: 'categoryToolbox', contents: [] };
-  
+
     const msgVariablesCategory = {
       kind: 'category',
       type: 'category',
@@ -905,7 +905,7 @@ export class WorkspaceComponent implements OnDestroy {
         const fieldBlocks = message.fields?.map((variable: any) =>
           this.createMsgVariableBlock(variable)
         ) || [];
-  
+
         return {
           kind: 'category',
           type: 'category',
@@ -915,7 +915,7 @@ export class WorkspaceComponent implements OnDestroy {
               return parts[2]; // Ej: 'Twist'
             }
             return message.name; // Ej: 'mensaje3'
-          })(),          
+          })(),
           contents: [
             { kind: 'label', text: "Campos del mensaje:" },
             ...fieldBlocks
@@ -923,7 +923,7 @@ export class WorkspaceComponent implements OnDestroy {
         };
       })
     };
-  
+
     const contents = toolboxObj.contents;
     const existingIdx = contents.findIndex((c: any) => c.name === 'Variables de Mensaje');
     if (existingIdx !== -1) {
@@ -931,7 +931,7 @@ export class WorkspaceComponent implements OnDestroy {
     } else {
       contents.push(msgVariablesCategory);
     }
-  
+
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.workspaces[this.selectedTabId].updateToolbox({
         kind: 'categoryToolbox',
@@ -939,8 +939,8 @@ export class WorkspaceComponent implements OnDestroy {
       });
     }
   }
-  
-  
+
+
 
   updateSrvList(): void {
     this.codeService.checkSrvFiles().subscribe(response => {
@@ -975,8 +975,8 @@ export class WorkspaceComponent implements OnDestroy {
       console.error("Error getting list of msg files:", error);
     });
   }
-  
-  
+
+
 }
 
 export function linesBeforeComment(code: string): string {

@@ -390,33 +390,31 @@ function definirGeneradoresROS2() {
     return code;
   };
 
-  pythonGenerator.forBlock["ros_send_request"] = function (block) {
-    const myBlock = block as any;  // ⬅ cast a 'any'
+  pythonGenerator.forBlock["ros_send_request"] = function (block, generator) {
+    const myBlock = block as any;
     const clientType = myBlock.clientType || "UnknownSrv";
     const requestFields = myBlock.requestFields || [];
-    let values: any[] = [];
-
-    // For each field => we generate lines “self.req.<field> = (whatever is in the input)”
+  
     let assignments = "";
+  
     for (const field of requestFields) {
-      // Use the same identifier you used in the updateShape_
-      const value = block.getFieldValue(field.name) || "0";
-      values.push(`${field.name} = ${value}\n`);
+      const inputName = `FIELD_${field.name}`;
+  
+      // Obtener el código conectado al input dinámico
+      const valueCode =
+        generator.valueToCode(block, inputName, Order.NONE) || "None";
+  
+      assignments += `self.req.${field.name} = ${valueCode}\n`;
     }
-
+  
     let code = `#main-sendrequest\n`;
-    // We assume that in the parent class we define “self.req = X.Request()” and “self.client_”
     code += assignments;
-
-    //for each attribute of the request, send it to the method of the form a = input, b = input
-    let request = `future = node.send_request(${values.join(', ')})\n`;
-    code += request;
-
+    code += `future = node.send_request(self.req)\n`;
     code += `rclpy.spin_until_future_complete(node, future)\n`;
     code += `response = future.result()\n`;
-    code += `node.get_logger().info("Respuesta: {}".format(response))\n`;
     return code;
   };
+  
 
   pythonGenerator.forBlock['ros2_sleep'] = function (block) {
     const seconds = block.getFieldValue('SECONDS');

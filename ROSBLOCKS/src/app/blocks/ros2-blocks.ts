@@ -254,9 +254,33 @@ export function definirBloquesROS2() {
       this.messageType = '';
       this.messageFields = [];
       this.fieldValues = {};
+
+      //agregamos advertencia cuando el bloque no es dinámico (no acepta drag and drop de otros bloques)
+      this.setOnChange( (event: any) => {
+        if (!this.workspace || this.workspace.isDragging()) return;
+      
+        // Bloque no dinámico = sin messageType válido
+        const isDynamic = !!this.messageType;
+      
+        if (!isDynamic) {
+          // Mostrar advertencia
+          this.setWarningText("Este bloque debe estar dentro de un 'Create Publisher'.");
+          
+          // Si tiene inputs, los eliminamos
+          const hasDynamicInputs = this.inputList.some((input: { name: string; }) => input.name?.startsWith("FIELD_"));
+          if (hasDynamicInputs) {
+            this.messageFields = [];
+            this.updateShape_(); // Limpiar ranuras de entrada
+          }
+      
+        } else {
+          // Dinámico, todo bien
+          this.setWarningText(null);
+        }
+      });
+      
     },
     
-  
     /** Llamado por el bloque padre (ej. create_publisher) para asignar el tipo */
     updateFromParent: function (messageType: string) {
       const alreadyConnected = this.inputList.some((input: { name: string; connection: { targetBlock: () => any; }; }) =>
@@ -591,7 +615,7 @@ export function definirBloquesROS2() {
               return [displayName, displayName];
             });
           } else {
-            return [["Sin servicios", ""]];
+            return [["No services", ""]];
           }
         }), "SERVER_TYPE");
       this.appendStatementInput("CALLBACK")
@@ -681,10 +705,10 @@ export function definirBloquesROS2() {
       this.appendDummyInput()
         .appendField("Create Client")
         .appendField(new Blockly.FieldTextInput("minimal_client_async"), "CLIENT_NAME")
-        .appendField("Type")
+        .appendField("Service Type")
         .appendField(new Blockly.FieldDropdown(() => {
           // Options according to `srvList`
-          if (srvList.length === 0) return [["Sin servicios", ""]];
+          if (srvList.length === 0) return [["No services", ""]];
           return srvList.map(srv => {
             const displayName = srv.name.replace(/\.srv$/, "");
             return [displayName, srv.name]; // Ej. ["AddTwoInts", "AddTwoInts.srv"]
@@ -716,18 +740,22 @@ export function definirBloquesROS2() {
       // Internally we save the serviceType and the serviceName
       this.clientType = "";
       this.serviceName = this.getFieldValue("SERVICE_NAME");
-      this.setOnChange((event: { type: EventType; recordUndo: any; }) => {
-        // Check if the event is of type CREATE, CHANGE, MOVE, etc.
-        // and if the user is not in the middle of an “undo/redo” (event.recordUndo).
-        if (
-          (event.type === Blockly.Events.BLOCK_CREATE ||
-            event.type === Blockly.Events.BLOCK_MOVE ||
-            event.type === Blockly.Events.BLOCK_CHANGE) && event.recordUndo
-        ) {
-          // Forces update of children
-          this.updateChildren_();
+      this.setOnChange((event: { type: EventType; blockId: any; element: string; name: string; }) => {
+        if (!this.workspace || this.workspace.isDragging()) return;
+      
+        if (event.type === Blockly.Events.BLOCK_CHANGE && event.blockId === this.id) {
+          if (event.element === 'field' && event.name === 'MSG_TYPE') {
+            this.messageType = this.getFieldValue('MSG_TYPE');
+            this.updateChildren_(); // aquí sí directo
+          }
+        } else if (event.type === Blockly.Events.BLOCK_MOVE) {
+          // Delay para evitar conflictos durante el drag-and-drop
+          setTimeout(() => {
+            this.updateChildren_();
+          }, 10); // puede ajustarse
         }
       });
+      
     },
     // We save the info in the mutation
     mutationToDom: function () {
@@ -775,12 +803,41 @@ export function definirBloquesROS2() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(230);
-      this.setTooltip("Sends the request and waits for the response.");
+      this.setTooltip("Send the request and wait for the response.");
       this.setHelpUrl("");
       // Internal variables:
       this.clientType = "";       // Will be updated with “updateFromParent”
       this.requestFields = [];    // List of request fields
       this.fieldValues = {};      // *** Object to store the entered values
+
+      this.setOnChange( (event: any) => {
+        if (!this.workspace || this.workspace.isDragging()) return;
+      
+        // Si no está dentro de un bloque padre, salimos
+        const parent = this.getSurroundParent();
+        if (!parent || parent.type !== 'ros_create_client') return;
+      
+        // Verificamos si soy el primer bloque en la entrada MAIN
+        const mainInput = parent.getInput('MAIN');
+        const firstBlock = mainInput?.connection?.targetBlock();
+      
+        const isFirst = firstBlock && firstBlock.id === this.id;
+      
+        if (!isFirst) {
+          // Si no soy el primero: limpiar y bloquear
+          if (this.clientType !== '') {
+            this.clientType = '';
+            this.requestFields = [];
+            this.updateShape_();
+          }
+      
+          this.setWarningText('Este bloque solo puede estar en la primera posición del cliente.');
+        } else {
+          // Si es el primero, eliminar advertencia
+          this.setWarningText(null);
+        }
+      });
+      
     },
     // Mutation
     mutationToDom: function () {
@@ -814,66 +871,75 @@ export function definirBloquesROS2() {
     * and redraw the inputs according to the fields in the request.
     */
     updateFromParent(newClientType: string) {
-      this.clientType = newClientType;
-      const info = srvList.find(x => x.name === newClientType);
-      this.requestFields = info?.variables?.request || [];
-      this.updateShape_();
+      const alreadyConnected = this.inputList.some((input: { name: string; connection: { targetBlock: () => any; }; }) =>
+        input.name?.startsWith("FIELD_") && input.connection?.targetBlock()
+      );
+    
+      // Solo regenerar si el tipo cambia Y no hay campos conectados
+      if (this.clientType !== newClientType && !alreadyConnected) {
+        this.clientType = newClientType;
+    
+        const info = srvList.find(x => x.name === newClientType);
+        this.requestFields = info?.variables?.request || [];
+    
+        this.updateShape_();
+      }
     },
-
+    
     updateShape_: function () {
-      // 1) We save the current values ​​of the fields before redoing the shape
       this.saveFieldValues();
-      // 2) We remove all inputs except “TITLE”
+    
+      // Eliminar todos los inputs excepto TITLE
       const oldInputs = [...this.inputList];
       for (const inp of oldInputs) {
         if (inp.name !== "TITLE") {
           this.removeInput(inp.name);
         }
       }
-      // 3) For each request field, we create a new DummyInput and assign the value that is saved
+    
+      // Crear ranuras tipo ValueInput para cada campo del request
       for (const field of this.requestFields) {
-        const inputName = "FIELD_" + field.name;
-        const dummy = this.appendDummyInput(inputName);
-        dummy.appendField(field.name + ": ");
-        // Recuperamos el valor previo (si existe) o ponemos alguno por defecto
-        const storedValue = this.fieldValues[field.name] || "";
-        if (field.type === "int64") {
-          // We recover the previous value (if it exists) or we put a default one
-          const numValue = parseFloat(storedValue) || 0;
-          dummy.appendField(new Blockly.FieldNumber(numValue), field.name);
-        }
-        else if (field.type === "string") {
-          dummy.appendField(new Blockly.FieldTextInput(storedValue), field.name);
-        }
-        else if (field.type === "bool") {
-          // If nothing is saved, we assume "True"
-          // 1) Create an instance of FieldDropdown
-          const boolField = new Blockly.FieldDropdown(
-            [
-              ["True", "True"],
-              ["False", "False"]
-            ]
-          );
-          // This value determines which initial option will be displayed
-          boolField.setValue(storedValue === "False" ? "False" : "True");
-          dummy.appendField(boolField, field.name);
+        const inputName = `FIELD_${field.name}`;
+        const valueInput = this.appendValueInput(inputName)
+          .appendField(field.name + ":");
+    
+        // Opcionalmente puedes guardar valores default si no hay bloque conectado
+        const saved = this.fieldValues[field.name] || "";
+    
+        // Ajusta el tipo de dato esperado (setCheck) según el tipo del campo
+        if (field.type === "string") {
+          valueInput.setCheck("String");
+        } else if (["int64", "int32", "float64", "float32"].includes(field.type)) {
+          valueInput.setCheck("Number");
+        } else if (field.type === "bool") {
+          valueInput.setCheck("Boolean");
+        } else {
+          valueInput.setCheck(null); // Tipo desconocido => permitir cualquier bloque
         }
       }
     },
+    
 /**
 * Read the current values ​​of the fields in the block and save them
 * in this.fieldValues, to use them later and not lose the information.
 */
-    saveFieldValues() {
-      if (!this.requestFields) return;
-      for (const f of this.requestFields) {
-        const fieldObj = this.getField(f.name);
-        if (fieldObj) {
-          this.fieldValues[f.name] = fieldObj.getValue();
-        }
+saveFieldValues() {
+  if (!this.requestFields) return;
+  for (const f of this.requestFields) {
+    const input = this.getInput(`FIELD_${f.name}`);
+    const connectedBlock = input?.connection?.targetBlock();
+
+    // Si está conectado, no se guarda valor (se usará desde el bloque conectado)
+    if (!connectedBlock) {
+      const field = this.getField(f.name); // Por compatibilidad, si existe
+      if (field) {
+        this.fieldValues[f.name] = field.getValue();
       }
     }
+  }
+}
   };
+
   
   Blockly.Blocks['ros2_turtle_set_pose'] = {
     init: function() {
@@ -922,7 +988,7 @@ export function definirBloquesROS2() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(300);
-      this.setTooltip("Sends a request to kill a specified turtle.");
+      this.setTooltip("Send a request to kill a specified turtle.");
       this.setHelpUrl("");
     }
   };
