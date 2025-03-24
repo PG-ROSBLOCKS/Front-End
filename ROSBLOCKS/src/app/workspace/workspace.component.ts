@@ -548,11 +548,26 @@ export class WorkspaceComponent implements OnDestroy {
         const mainInput = block.getInput('MAIN');
         const childBlock = mainInput?.connection?.targetBlock();
         const hasClient = hasValidChain(childBlock ?? null, "ros_send_request");
+      
         if (!hasClient) {
           this.alertService.showAlert('Error: El bloque "Create Client" necesita al menos un "Send request" válido en su interior.');
           return;
         }
-      }
+      
+        // 🔍 Verificar que el ros_send_request tenga TODOS los campos conectados
+        let current = childBlock;
+        while (current) {
+          if (current.type === 'ros_send_request') {
+            const allFieldsConnected = hasAllFieldsConnected(current);
+            if (!allFieldsConnected) {
+              this.alertService.showAlert('Error: El bloque "Send request" tiene campos incompletos.');
+              return;
+            }
+            break; // ya lo encontramos y validamos
+          }
+          current = current.nextConnection?.targetBlock() ?? null;
+        }
+      }      
     }
 
     // 2. Continuar con lógica original
@@ -1030,4 +1045,14 @@ export function hasValidChain(block: Blockly.Block | null, childBlock: string): 
   }
 
   return false;
+}
+
+export function hasAllFieldsConnected(block: Blockly.Block): boolean {
+  if (!block || block.type !== 'ros_send_request') return false;
+
+  const fieldInputs = block.inputList.filter(input => input.name?.startsWith("FIELD_"));
+  if (fieldInputs.length === 0) return false;
+
+  // Verifica que todos los inputs tengan un bloque conectado
+  return fieldInputs.every(input => input.connection?.targetBlock());
 }
