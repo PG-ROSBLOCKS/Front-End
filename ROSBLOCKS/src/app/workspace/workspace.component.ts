@@ -48,8 +48,6 @@ export class WorkspaceComponent implements OnDestroy {
   sanitizedVncUrl!: SafeResourceUrl;
   tabsPlayed: { tabId: number; blockName: string }[] = [];  // List to manage played tabs with the block name "ros2_create_subscriber"
 
-
-
   constructor(
     private http: HttpClient,
     private codeService: CodeService,
@@ -71,7 +69,7 @@ export class WorkspaceComponent implements OnDestroy {
     if (url) {
       this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
     } else {
-      this.alertService.showAlert('No se pudo obtener la URL');
+      this.alertService.showAlert('Could not get URL');
     }
   }
 
@@ -102,20 +100,20 @@ export class WorkspaceComponent implements OnDestroy {
       localStorage.setItem('workspace_tabs', JSON.stringify(tabsData));
       const tabsDataSaved = JSON.parse(localStorage.getItem('workspace_tabs') || '[]');
       if (tabsDataSaved.length === 0) {
-        this.showAlert('No se ha guardado ningun proyecto.', 'error');
+        this.showAlert('No project has been saved.', 'error');
         return;
       } else {
-        this.showMessage('Datos guardados exitosamente.', 'success');
+        this.showMessage('data saved successfully.', 'success');
       }
 
-      const blob = new Blob([JSON.stringify(tabsData)], { type: 'application/json' });
+      const blob = new Blob([this.localStorageAsJSON()], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'proyect.rosblocks';
       a.click();
       URL.revokeObjectURL(a.href);
     } catch (error) {
-      this.showMessage('Error al guardar los datos.', 'error');
+      this.showMessage('Error saving data.', 'error');
     }
   }
 
@@ -128,18 +126,14 @@ export class WorkspaceComponent implements OnDestroy {
     reader.onload = (e) => {
       try {
         const tabsData = JSON.parse(e.target?.result as string);
-        this.tabs = tabsData;
-        setTimeout(() => {
-          tabsData.forEach((tab: any) => {
-            this.selectTab(tab.id);
-          });
-        }, 100);
+        this.rewriteLocalStorageFromJSON(tabsData)
+        this.loadFromLocalStorage()
       } catch (error) {
-        this.showAlert('Error al cargar los datos desde el archivo.', 'error');
+        this.showAlert('Error loading data from file.', 'error');
       }
     };
     reader.readAsText(file);
-    this.showMessage('Datos cargados exitosamente.', 'success');
+    this.showMessage('Data loaded successfully.', 'success');
   }
 
   saveToLocalStorage() {
@@ -159,6 +153,44 @@ export class WorkspaceComponent implements OnDestroy {
       }
     } catch (error) {
     }
+
+    this.rewriteLocalStorageFromJSON(this.localStorageAsJSON());
+  }
+
+  rewriteLocalStorageFromJSON(jsonData: string): void {
+    jsonData = JSON.stringify(jsonData, null, 2);
+    
+    try {
+      const parsedData = JSON.parse(jsonData);
+  
+      if (typeof parsedData === 'object' && parsedData !== null) {
+        localStorage.clear();
+  
+        for (const key in parsedData) {
+          if (Object.prototype.hasOwnProperty.call(parsedData, key)) {
+            localStorage.setItem(key, parsedData[key]);
+          }
+        }
+      } else {
+        console.error('The data provided is not a valid object.');
+      }
+    } catch (error) {
+      console.error('Error parsing JSON:', error);
+    }
+  }
+
+  localStorageAsJSON(): string {
+    const localStorageData: { [key: string]: string | null } = {};
+    const length = localStorage.length;
+  
+    for (let i = 0; i < length; i++) {
+      const key = localStorage.key(i);
+      if (key) {
+        localStorageData[key] = localStorage.getItem(key);
+      }
+    }
+  
+    return JSON.stringify(localStorageData, null, 2);
   }
 
   loadFromLocalStorage() {
@@ -182,7 +214,7 @@ export class WorkspaceComponent implements OnDestroy {
         }
       });
     } catch (error) {
-      this.showAlert('Error al cargar los datos en cache.', 'error');
+      this.showAlert('Error loading data into cache.', 'error');
     }
   }
 
@@ -346,7 +378,7 @@ export class WorkspaceComponent implements OnDestroy {
 
   async addTab() {
     if (this.tabs.length >= this.maxTabs) {
-      const result = await this.alertService.showAlert('No se pueden agregar más de ' + this.maxTabs + ' pestañas.');
+      const result = await this.alertService.showAlert('Cannot add more than ' + this.maxTabs + ' tabs.');
       return;
     }
     this.updateSrvList();
@@ -392,12 +424,12 @@ export class WorkspaceComponent implements OnDestroy {
     const previousName = this.previousNames.get(tabId) || tab.name;
     let sanitizedNewName = sanitizePythonFilename(newName).replace(/\.py$/, "");
     if (!sanitizedNewName) {
-      const result = await this.alertService.showAlert('El nombre de la pestaña no puede estar vacío.');
+      const result = await this.alertService.showAlert('The tab name cannot be empty.');
       tab.name = previousName;
       return;
     }
     if (this.tabs.some(t => t.name === sanitizedNewName && t.id !== tabId)) {
-      const result = await this.alertService.showAlert('Ya existe una pestaña con ese nombre.');
+      const result = await this.alertService.showAlert('A tab with that name already exists.');
       tab.name = previousName;
       return;
     }
@@ -598,7 +630,7 @@ export class WorkspaceComponent implements OnDestroy {
   cleanConsole() {
     if (this.currentDisplayedConsoleOutput !== '' && this.selectedTabId) {
       this.consolesOutput.set(this.selectedTabId.toString(), '');
-      this.currentDisplayedConsoleOutput = 'Consola limpia';
+      this.currentDisplayedConsoleOutput = 'console cleared';
     }
   }
 

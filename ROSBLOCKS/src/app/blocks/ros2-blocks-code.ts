@@ -118,55 +118,38 @@ function definirGeneradoresROS2() {
     return code;
   };
 
-  pythonGenerator.forBlock['ros2_minimal_publisher'] = function (block) {
-    const topic = block.getFieldValue('TOPIC_NAME');
-    const msgType = block.getFieldValue('MSG_TYPE');
-    const timer = block.getFieldValue('TIMER');
-    const messageBase = block.getFieldValue('MESSAGE_BASE');
-    const msgClass = addImport(msgType);
-
-    let code = `${TAB_SPACE}${TAB_SPACE}self.publisher_ = self.create_publisher(${msgClass}, '${topic}', 10)\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.timer_ = self.create_timer(${timer}, self.timer_callback)\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.i = 0\n\n`;
-    code += `${TAB_SPACE}def timer_callback(self):\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}msg = ${msgClass}()\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}msg.data = '${messageBase}: %d' % self.i\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.publisher_.publish(msg)\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.get_logger().info('Publishing: "%s"' % msg.data)\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.i += 1\n`;
-    return code;
-  };
-
   // Code generator for the "Create subscriber" block
   pythonGenerator.forBlock['ros2_create_subscriber'] = function (block) {
     const topic = block.getFieldValue('TOPIC_NAME');
     const msgType = block.getFieldValue('MSG_TYPE');
-    // "Callback"
-    const callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK');
     const msgClass = addImport(msgType);
 
-    let code = `pub_sub\n${TAB_SPACE}${TAB_SPACE}self.subscription = self.create_subscription(${msgClass}, '${topic}', self.listener_callback, 10)\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.subscription  # Evitar warning de variable no usada\n\n`;
+    const callbackBlock = block.getInputTargetBlock('CALLBACK');
+    let callbackCode: string = '';
+
+    if (callbackBlock) {
+      const generated = pythonGenerator.blockToCode(callbackBlock);
+      if (Array.isArray(generated)) {
+        callbackCode = generated[0];
+      } else {
+        callbackCode = generated;
+      }
+    }
+
+    let code = 'pub_sub\n';
+    code += `${TAB_SPACE}${TAB_SPACE}self.subscription = self.create_subscription(${msgClass}, '${topic}', self.listener_callback, 10)\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.subscription\n\n`;
 
     code += `${TAB_SPACE}def listener_callback(self, msg):\n`;
-
-    // checks received type
-    code += `${TAB_SPACE}${TAB_SPACE}if not isinstance(msg, ${msgClass}):\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error: Tipo de mensaje incorrecto. Se esperaba ${msgClass}.")\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}return\n\n`;
-
-    // try/except to catch excepcions
-    code += `${TAB_SPACE}${TAB_SPACE}try:\n`;
     if (!callbackCode.trim()) {
-      code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}pass\n`;
+      code += `${TAB_SPACE}${TAB_SPACE}pass\n`;
     } else {
-      code += pythonGenerator.prefixLines(callbackCode, `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}`);
+      code += pythonGenerator.prefixLines(callbackCode, TAB_SPACE.repeat(2));
     }
-    code += `${TAB_SPACE}${TAB_SPACE}except Exception as e:\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error en el callback: {}".format(e))\n`;
 
     return code;
   };
+
 
   pythonGenerator.forBlock['ros2_subscriber_msg_data'] = function (block) {
     const code = 'msg.data';
@@ -174,9 +157,13 @@ function definirGeneradoresROS2() {
   };
 
   pythonGenerator.forBlock['ros2_print_msg_type'] = function (block) {
-    const code = `print("Tipo de dato recibido:", type(msg))\n`;
+    const varCode = pythonGenerator.valueToCode(block, 'VAR_EXPR', Order.NONE) || 'msg';
+    const code = `print("Tipo de dato recibido:", type(${varCode}))\n`;
     return code;
   };
+  
+  
+  
 
   // Code generator for the block "Publicar mensaje"
   pythonGenerator.forBlock['ros2_publish_message'] = function (block) {
@@ -210,13 +197,6 @@ function definirGeneradoresROS2() {
 
     const code = `${TAB_SPACE}${TAB_SPACE}${logLevel}(${message})\n`;
     return code;
-  };
-
-  // Python generator for the turtlesim msg field block
-  pythonGenerator.forBlock['ros2_turtlesim_pose_field'] = function (block) {
-    const field = block.getFieldValue('FIELD');
-    const code = 'msg.' + field;
-    return [code, Order.ATOMIC];
   };
 
   // Python generator for the service message block
