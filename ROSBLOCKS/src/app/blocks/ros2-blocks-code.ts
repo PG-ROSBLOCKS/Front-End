@@ -1,6 +1,8 @@
 import { pythonGenerator, Order } from 'blockly/python';
-import { removeIndentation } from '../utilities/sanitizer-tools';
+import * as Blockly from 'blockly/core';
+import { indentSmart, removeIndentation, removeCommonIndentation, indentSmartPreserveStructure } from '../utilities/sanitizer-tools';
 import { srvList } from '../shared/srv-list';
+import { get } from 'blockly/core/events/utils';
 
 export const TAB_SPACE = '    '; // Tab space
 export { addImport, getImports, clearImports, definirGeneradoresROS2 };
@@ -59,9 +61,9 @@ function getImports(): string {
   }
 
   for (const [pkg, srvs] of Object.entries(importsDictSrvs)) {
-      if (srvs.size > 0) {
-          importCode += `from ${pkg}.srv import ${Array.from(srvs).join(', ')}\n`;
-      }
+    if (srvs.size > 0) {
+      importCode += `from ${pkg}.srv import ${Array.from(srvs).join(', ')}\n`;
+    }
   }
 
   return importCode + '\n';
@@ -69,53 +71,46 @@ function getImports(): string {
 
 function clearImports(): void {
   for (const key in importsDictMsgs) {
-      importsDictMsgs[key].clear();
+    importsDictMsgs[key].clear();
   }
   for (const key in importsDictSrvs) {
-      importsDictSrvs[key].clear();
+    importsDictSrvs[key].clear();
   }
 }
-
-function removeCommonIndentation(code: string) {
-    let lines = code.split('\n');
-  
-    // Remove blank lines at the beginning and end
-    while (lines.length && !lines[0].trim()) {
-      lines.shift();
-    }
-    while (lines.length && !lines[lines.length - 1].trim()) {
-      lines.pop();
-    }
-  
-    // Calculates minimum indentation
-    let minIndent = Infinity;
-    for (const line of lines) {
-      if (!line.trim()) continue; // Ignore empty lines
-      const match = line.match(/^(\s*)/);
-      const indentCount = match ? match[1].length : 0;
-      if (indentCount < minIndent) {
-        minIndent = indentCount;
-      }
-    }
-    if (minIndent === Infinity) {
-      return code; // If there are no lines with content
-    }
-  
-    // Deletes minIndent on every line
-    lines = lines.map(line => line.slice(minIndent));
-    return lines.join('\n');
-  }
 
 function definirGeneradoresROS2() {
   // Code generator for the "Create publisher" block
   pythonGenerator.forBlock['ros2_create_publisher'] = function (block) {
-    const topicName: string = block.getFieldValue('TOPIC_NAME');
-    const msgType: string = block.getFieldValue('MSG_TYPE');
-
+    const topicName = block.getFieldValue('TOPIC_NAME');
+    const msgType = block.getFieldValue('MSG_TYPE');
     const msgClass = addImport(msgType);
 
-    const code = `pub_sub\n${TAB_SPACE}${TAB_SPACE}self.publisher_ = self.create_publisher(${msgClass}, '${topicName}', 10)\n`;
+    let mainBody = '';
+    const input = block.getInput('MAIN');
+    const targetBlock = input?.connection?.targetBlock();
+    if (targetBlock) {
+      const result = pythonGenerator.blockToCode(targetBlock);
+      mainBody = Array.isArray(result) ? result[0] : result;
+    }
+
+    let code =
+      `pub_sub\n` +
+      `${TAB_SPACE}${TAB_SPACE}self.publisher_ = self.create_publisher(${msgClass}, '${topicName}', 10)\n` +
+      mainBody; // sin indentSmartByLine
+
+    code = indentSmartPreserveStructure(code, 2);
     return code;
+  };
+
+  pythonGenerator.forBlock['msg_variable'] = function (block) {
+    let varName = block.getFieldValue('VAR_NAME') || '';
+
+    // Si no empieza con "msg.", lo anteponemos
+    if (!varName.startsWith('msg.')) {
+      varName = 'msg.' + varName;
+    }
+
+    return [varName, Order.ATOMIC];
   };
 
   pythonGenerator.forBlock['ros2_minimal_publisher'] = function (block) {
@@ -141,30 +136,32 @@ function definirGeneradoresROS2() {
   pythonGenerator.forBlock['ros2_create_subscriber'] = function (block) {
     const topic = block.getFieldValue('TOPIC_NAME');
     const msgType = block.getFieldValue('MSG_TYPE');
-    // "Callback"
-    const callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK');
+
     const msgClass = addImport(msgType);
 
-    let code = `pub_sub\n${TAB_SPACE}${TAB_SPACE}self.subscription = self.create_subscription(${msgClass}, '${topic}', self.listener_callback, 10)\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.subscription  # Evitar warning de variable no usada\n\n`;
+    const callbackBlock = block.getInputTargetBlock('CALLBACK');
+    let callbackCode: string = '';
+
+    if (callbackBlock) {
+      const generated = pythonGenerator.blockToCode(callbackBlock);
+      if (Array.isArray(generated)) {
+        callbackCode = generated[0];
+      } else {
+        callbackCode = generated;
+      }
+    }
+
+    let code = 'pub_sub\n';
+    code += `${TAB_SPACE}${TAB_SPACE}self.subscription = self.create_subscription(${msgClass}, '${topic}', self.listener_callback, 10)\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.subscription\n\n`;
 
     code += `${TAB_SPACE}def listener_callback(self, msg):\n`;
 
-    // checks received type
-    code += `${TAB_SPACE}${TAB_SPACE}if not isinstance(msg, ${msgClass}):\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error: Tipo de mensaje incorrecto. Se esperaba ${msgClass}.")\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}return\n\n`;
-
-    // try/except to catch excepcions
-    code += `${TAB_SPACE}${TAB_SPACE}try:\n`;
     if (!callbackCode.trim()) {
-      code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}pass\n`;
+      code += `${TAB_SPACE}${TAB_SPACE}pass\n`;
     } else {
-      code += pythonGenerator.prefixLines(callbackCode, `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}`);
+      code += pythonGenerator.prefixLines(callbackCode, TAB_SPACE.repeat(2));
     }
-    code += `${TAB_SPACE}${TAB_SPACE}except Exception as e:\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error en el callback: {}".format(e))\n`;
-
     return code;
   };
 
@@ -174,41 +171,55 @@ function definirGeneradoresROS2() {
   };
 
   pythonGenerator.forBlock['ros2_print_msg_type'] = function (block) {
-    const code = `print("Tipo de dato recibido:", type(msg))\n`;
+    const varCode = pythonGenerator.valueToCode(block, 'VAR_EXPR', Order.NONE) || 'msg';
+    const code = `print("Tipo de dato recibido:", type(${varCode}))\n`;
     return code;
   };
 
   // Code generator for the block "Publicar mensaje"
   pythonGenerator.forBlock['ros2_publish_message'] = function (block) {
-    const topicName: string = block.getFieldValue('TOPIC_NAME');
     const msgType: string = block.getFieldValue('MSG_TYPE');
-    const messageContent: string = block.getFieldValue('MESSAGE_CONTENT');
-
     const msgClass = addImport(msgType);
 
     let code = `${TAB_SPACE}${TAB_SPACE}msg = ${msgClass}()\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}msg.data = "${messageContent}"\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.publisher_.publish(msg)\n`;
+
+    // Recorre la lista de inputs con block.inputList o conoces sus nombres
+    for (const input of block.inputList) {
+      if (input.name && input.name.startsWith("FIELD_")) {
+        const fieldName = input.name.replace("FIELD_", ""); // "pose.position.x"
+        const valueCode = pythonGenerator.valueToCode(
+          block,
+          input.name,
+          Order.NONE
+        ) || '""'; // valor por defecto
+
+        code += `msg.${fieldName} = ${valueCode}\n`;
+      }
+    }
+
+    code += `self.publisher_.publish(msg)\n`;
     return code;
   };
 
   // Code generator for the block "Crear Timer"
   pythonGenerator.forBlock['ros2_timer'] = function (block) {
     const interval = block.getFieldValue('INTERVAL');
-    const callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK');
+    const callbackBody = pythonGenerator.statementToCode(block, 'CALLBACK');
 
-    let code = `${TAB_SPACE}${TAB_SPACE}self.timer_ = self.create_timer(${interval}, self.timer_callback)\n`;
-    code += `${TAB_SPACE}def timer_callback(self):\n`;
-    code += pythonGenerator.prefixLines(removeIndentation(callbackCode), `${TAB_SPACE}${TAB_SPACE}`);
+    let code = `self.timer_ = self.create_timer(${interval}, self.timer_callback)\n`;
+    code += `def timer_callback(self):\n`;
+    code += callbackBody;
+
     return code;
   };
+
 
   // Code generator for the block "Log de ROS 2"
   pythonGenerator.forBlock['ros2_log'] = function (block) {
     const logLevel = block.getFieldValue('LOG_LEVEL');
     const message = pythonGenerator.valueToCode(block, 'MESSAGE', Order.NONE) || '""';
 
-    const code = `${TAB_SPACE}${TAB_SPACE}${logLevel}(${message})\n`;
+    const code = `${logLevel}(str(${message}))\n`;
     return code;
   };
 
@@ -257,31 +268,21 @@ function definirGeneradoresROS2() {
     const serviceName = block.getFieldValue('SERVER_NAME');
     const serviceType = block.getFieldValue('SERVER_TYPE');
     let callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK');
-    // Deletes extra lines
     callbackCode = removeIndentation(callbackCode);
+  
+    let code =
+      `server|${serviceType}\n` +
+      `${TAB_SPACE}${TAB_SPACE}self.service_ = self.create_service(${serviceType}, '${serviceName}', self.service_callback)\n\n` +
+      `${TAB_SPACE}def service_callback(self, request, response):\n` +
+      `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}${callbackCode}\n` +
+      `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}return response\n`;
 
-    // Usamos el nombre del servicio para crear la clase (puedes sanitizarlo según necesites)
-    const nodeName = serviceName;
-
-    let code = `server|${serviceType}\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.service_ = self.create_service(${serviceType}, '${serviceName}', self.service_callback)\n\n`;
-
-    code += `${TAB_SPACE}def service_callback(self, request, response):\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}try:\n`;
-    if (!callbackCode.trim()) {
-      code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}pass\n`;
-    } else {
-      // Three identation levels
-      code += pythonGenerator.prefixLines(callbackCode, `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}`);
-      code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}return response\n`;
-    }
-    code += `${TAB_SPACE}${TAB_SPACE}except Exception as e:\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error en el callback: {}".format(e))\n`;
-
+    code = indentSmartPreserveStructure(code, 2);
     return code;
   };
+  
 
-  pythonGenerator.forBlock['ros2_publish_twist'] = function(block) {
+  pythonGenerator.forBlock['ros2_publish_twist'] = function (block) {
     const msgClass = addImport('geometry_msgs.msg.Twist');
     const turtleName = block.getFieldValue('TURTLE_NAME');
     let linear = pythonGenerator.valueToCode(block, 'LINEAR', Order.ATOMIC) || '0.0';
@@ -294,9 +295,9 @@ function definirGeneradoresROS2() {
     code += `self.get_logger().info("Mensaje Twist publicado")\n`;
 
     return code;
-};
+  };
 
-  pythonGenerator.forBlock['ros2_turtle_set_pose'] = function(block) {
+  pythonGenerator.forBlock['ros2_turtle_set_pose'] = function (block) {
     const turtleName = block.getFieldValue('TURTLE_NAME');
     const x = pythonGenerator.valueToCode(block, 'X', Order.ATOMIC) || '0';
     const y = pythonGenerator.valueToCode(block, 'Y', Order.ATOMIC) || '0';
@@ -315,7 +316,7 @@ function definirGeneradoresROS2() {
     code += `self.get_logger().info('Posicionando tortuga en (${x}, ${y}) con orientación ${theta}.')\n`;
 
     return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
-};
+  };
 
 
   pythonGenerator.forBlock['srv_variable'] = function (block) {
@@ -343,77 +344,60 @@ function definirGeneradoresROS2() {
     // 1) Search on srvList the object SrvInfo needed and extract the fields of request
     const srvInfo = srvList.find(srv => srv.name === clientType);
     const requestFields = srvInfo?.variables.request || [];
-    console.log(requestFields);
 
     clientType = clientType.replace('.srv', '');
     // 3) Generates class and construction
-  // Start building the generated code; the first line is to identify the block type
-  let code = `client|${clientType}\n`;
-  
-  // The next line is written inside the constructor (1 level of indentation)
-  code += `${TAB_SPACE}${TAB_SPACE}self.cli = self.create_client(${clientType}, '${serviceName}')\n`;
-  
-  // The while is generated to wait for the service; the while line is at the same level as the previous one
-  code += `${TAB_SPACE}${TAB_SPACE}while not self.cli.wait_for_service(timeout_sec=${timer}):\n`;
-  // Inside the while, an additional indentation is added
-  code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().info('${messageBase}')\n`;
-  
-  // After the while, the request is created, at the same level as the while
-  code += `${TAB_SPACE}${TAB_SPACE}self.req = ${clientType}.Request()\n\n`;
-  
-    // 4) Generate the "send_request" method with the request fields
+    // Start building the generated code; the first line is to identify the block type
+    let code = `client|${clientType}\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.cli = self.create_client(${clientType}, '${serviceName}')\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}while not self.cli.wait_for_service(timeout_sec=${timer}):\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}#STARTWHILE\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().info('${messageBase}')\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}#ENDWHILE\n`;
+    code += `${TAB_SPACE}${TAB_SPACE}self.req = ${clientType}.Request()\n\n`;
     const paramList = requestFields.map(field => field.name).join(', ');
     code += `${TAB_SPACE}def send_request(self, ${paramList}):\n`;
-  
     // 5) Assign each field in self.req.<field> = <field>
     requestFields.forEach(field => {
       code += `${TAB_SPACE}${TAB_SPACE}self.req.${field.name} = ${field.name}\n`;
     });
     // 6) Return asynchronous call
     code += `${TAB_SPACE}${TAB_SPACE}return self.cli.call_async(self.req)\n`;
-  
     let main_code = pythonGenerator.statementToCode(block, 'MAIN');
-    main_code = removeCommonIndentation(main_code);
-    code += main_code;
+    code += main_code
+    code = indentSmartPreserveStructure(code, 2);
     return code;
   };
-  
-  pythonGenerator.forBlock['ros2_service_available'] = function (block) {
-    const timeout = block.getFieldValue('TIMEOUT') || 1.0;
-    // Generate the code that returns True/False according to wait_for_service
-    const code = `self.cli.wait_for_service(timeout_sec=${timeout})`;
-    // The second element of the array is the order of precedence;
-    // use pythonGenerator.ORDER_LOGICAL_NOT if you're combining it with a 'not'
-    return [code, Order.NONE];
-  };
 
-  pythonGenerator.forBlock["ros_send_request"] = function (block) {
-    const myBlock = block as any;  // ⬅ cast a 'any'
+  pythonGenerator.forBlock["ros_send_request"] = function (block, generator) {
+    const myBlock = block as any;
     const clientType = myBlock.clientType || "UnknownSrv";
     const requestFields = myBlock.requestFields || [];
     let values: any[] = [];
-
-    // For each field => we generate lines “self.req.<field> = (whatever is in the input)”
     let assignments = "";
+  
     for (const field of requestFields) {
-      // Use the same identifier you used in the updateShape_
-      const value = block.getFieldValue(field.name) || "0";
-      values.push(`${field.name} = ${value}\n`);
+      const inputName = `FIELD_${field.name}`;
+  
+      // Obtener el código conectado al input dinámico
+      const valueCode =
+        generator.valueToCode(block, inputName, Order.NONE) || "None";
+  
+      assignments += `self.req.${field.name} = ${valueCode}\n`;
+      values.push(valueCode);
     }
-
+  
     let code = `#main-sendrequest\n`;
-    // We assume that in the parent class we define “self.req = X.Request()” and “self.client_”
     code += assignments;
 
-    //for each attribute of the request, send it to the method of the form a = input, b = input
     let request =  `future = node.send_request(${values.join(', ')})\n`;
     code += request;
 
     code += `rclpy.spin_until_future_complete(node, future)\n`;
     code += `response = future.result()\n`;
-    code += `node.get_logger().info("Respuesta: {}".format(response))\n`;
     return code;
   };
+  
 
   pythonGenerator.forBlock['ros2_sleep'] = function (block) {
     const seconds = block.getFieldValue('SECONDS');
@@ -422,7 +406,7 @@ function definirGeneradoresROS2() {
     return code;
   };
 
-  pythonGenerator.forBlock['ros2_kill_turtle'] = function(block) {
+  pythonGenerator.forBlock['ros2_kill_turtle'] = function (block) {
     const turtleName = block.getFieldValue('TURTLE_NAME').replace('/', '');
     const srvClass = addImport('turtlesim.srv.Kill');
     let code = `
@@ -434,8 +418,8 @@ function definirGeneradoresROS2() {
   `;
     return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
   };
-  
-  pythonGenerator.forBlock['ros2_spawn_turtle'] = function(block) {
+
+  pythonGenerator.forBlock['ros2_spawn_turtle'] = function (block) {
     const name = block.getFieldValue('TURTLE_NAME') || '"turtle1"';
     const x = pythonGenerator.valueToCode(block, 'X', Order.ATOMIC) || '5.0';
     const y = pythonGenerator.valueToCode(block, 'Y', Order.ATOMIC) || '5.0';
@@ -454,9 +438,9 @@ function definirGeneradoresROS2() {
     code += `future.add_done_callback(lambda future: self.get_logger().info('Tortuga ' + '${name}' + ' creada en (${x}, ${y}) con orientación ${theta}.'))\n`;
 
     return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
-};
+  };
 
-  pythonGenerator.forBlock['ros2_turtle_set_pen'] = function(block) {
+  pythonGenerator.forBlock['ros2_turtle_set_pen'] = function (block) {
     const turtleName = block.getFieldValue('TURTLE_NAME');
     const r = pythonGenerator.valueToCode(block, 'R', Order.ATOMIC) || '0';
     const g = pythonGenerator.valueToCode(block, 'G', Order.ATOMIC) || '0';
@@ -477,7 +461,7 @@ function definirGeneradoresROS2() {
   self.pen_client.call_async(pen_request)
   self.get_logger().info('Cambiando lápiz de ${turtleName} (RGB: ${r}, ${g}, ${b}, Grosor: ${width}, Estado: ${penState}).')
   `;
-      return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
+    return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
   };
 
   pythonGenerator.forBlock['ros2_turtlesim_publisher'] = function (block) {
@@ -489,19 +473,138 @@ function definirGeneradoresROS2() {
     return code;
   };
 
-  pythonGenerator.forBlock['ros2_turtle_rotate'] = function(block) {
+  pythonGenerator.forBlock['ros2_turtle_rotate'] = function (block) {
     const degrees = pythonGenerator.valueToCode(block, 'GRADOS', Order.ATOMIC) || '0';
     const turtleName = block.getFieldValue('TURTLE_NAME');
     const msgClass = addImport('geometry_msgs.msg.Twist');
-  
+
     let code = `self.publisher_ = self.create_publisher(Twist, '/${turtleName}/cmd_vel', 10)\n`;
     code += `msg = Twist()\n`;
     code += `msg.angular.z = float(${degrees})\n`;
     code += `self.publisher_.publish(msg)\n`;
     code += `self.get_logger().info("Mensaje Twist publicado")\n`;
-  
+
     return code;
   };
+
+  //override for if in order to comment the start and the end of the if block
+  pythonGenerator.forBlock['controls_if'] = function (block) {
+    // Inicializamos variables para generar el código.
+    let n = 0;
+    let code = '';
+    let branchCode = '';
+
+    // Procesa la parte "if" y las cláusulas "elif"
+    do {
+      // Obtiene el código de la condición.
+      const conditionCode = pythonGenerator.valueToCode(block, 'IF' + n, Order.NONE) || 'False';
+      // Obtiene el código del cuerpo asociado a la condición.
+      branchCode = pythonGenerator.statementToCode(block, 'DO' + n);
+      // Agrega los marcadores al inicio y al final del bloque if/elif.
+      branchCode = "#STARTIF\n" + branchCode + "#ENDIF\n";
+      // Usa "if" para la primera condición y "elif" para las siguientes.
+      code += (n === 0 ? "if " : "elif ") + conditionCode + ":\n" + branchCode;
+      n++;
+    } while (block.getInput('IF' + n));
+
+    // Procesa la parte "else" si existe.
+    if (block.getInput('ELSE')) {
+      branchCode = pythonGenerator.statementToCode(block, 'ELSE');
+      branchCode = "#STARTELSE\n" + branchCode + "#ENDELSE\n";
+      code += "else:\n" + branchCode;
+    }
+    return code;
+  };
+
+  //override for if else in order to comment the start and the end of the if else block
+  pythonGenerator.forBlock['controls_ifelse'] = function (block) {
+    // Inicializamos variables para generar el código.
+    let n = 0;
+    let code = '';
+    let branchCode = '';
+
+    // Procesa la parte "if" y las cláusulas "elif"
+    do {
+      // Obtiene el código de la condición.
+      const conditionCode = pythonGenerator.valueToCode(block, 'IF' + n, Order.NONE) || 'False';
+      // Obtiene el código del cuerpo asociado a la condición.
+      branchCode = pythonGenerator.statementToCode(block, 'DO' + n);
+      // Agrega los marcadores al inicio y al final del bloque if/elif.
+      branchCode = "#STARTIF\n" + branchCode + "#ENDIF\n";
+      // Usa "if" para la primera condición y "elif" para las siguientes.
+      code += (n === 0 ? "if " : "elif ") + conditionCode + ":\n" + branchCode;
+      n++;
+    } while (block.getInput('IF' + n));
+
+    // Procesa la parte "else" si existe.
+    if (block.getInput('ELSE')) {
+      branchCode = pythonGenerator.statementToCode(block, 'ELSE');
+      branchCode = "#STARTELSE\n" + branchCode + "#ENDELSE\n";
+      code += "else:\n" + branchCode;
+    }
+    return code;
+  }
+
+  //override de controls_repeat in order to comment the start and the end of the repeat block
+  pythonGenerator.forBlock['controls_repeat'] = function (block) {
+    const repeats = block.getFieldValue('TIMES') || '0'; // Ensure 'TIMES' is retrieved correctly
+    let branch = pythonGenerator.statementToCode(block, 'DO');
+    branch = "#STARTREPEAT\n" + branch + "#ENDREPEAT\n";
+    return `for _ in range(${repeats}):\n${branch}`
+  }
+
+  //override for repeat in order to comment the start and the end of the repeat block
+  pythonGenerator.forBlock['controls_repeat_ext'] = function (block) {
+    const repeats = pythonGenerator.valueToCode(block, 'TIMES', Order.NONE) || '0';
+    let branch = pythonGenerator.statementToCode(block, 'DO');
+    branch = "#STARTREPEAT\n" + branch + "#ENDREPEAT\n";
+    return `for _ in range(${repeats}):\n${branch}`;
+  }
+
+  //override for while in order to comment the start and the end of the while block
+  pythonGenerator.forBlock['controls_whileUntil'] = function (block) {
+    const until = block.getFieldValue('MODE') === 'UNTIL';
+    const argument0 = pythonGenerator.valueToCode(block, 'BOOL', until ? Order.LOGICAL_NOT : Order.NONE) || 'False';
+    let branch = pythonGenerator.statementToCode(block, 'DO');
+    branch = "#STARTWHILE\n" + branch + "#ENDWHILE\n";
+    return `${until ? 'while not ' : 'while '}${argument0}:\n${branch}`;
+  };
+
+  //override for for in order to comment the start and the end of the for block
+  pythonGenerator.forBlock['controls_for'] = function (block) {
+    const variable0 = pythonGenerator.nameDB_?.getName(
+      block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+    const argument0 = pythonGenerator.valueToCode(block, 'FROM', Order.NONE) || '0';
+    const argument1 = pythonGenerator.valueToCode(block, 'TO', Order.NONE) || '0';
+    const increment = pythonGenerator.valueToCode(block, 'BY', Order.NONE) || '1';
+    let branch = pythonGenerator.statementToCode(block, 'DO');
+    branch = "#STARTFOR\n" + branch + "#ENDFOR\n";
+    let code;
+    let inc;
+    if (argument0.match(/\d+/) && argument1.match(/\d+/) && increment.match(/\d+/)) {
+      inc = parseInt(increment);
+      // Se elimina el "+ 1" para que el rango vaya de argument0 a argument1-1 según la semántica de range()
+      code = `for ${variable0} in range(${argument0}, ${argument1}, ${inc}):\n${branch}`;
+    } else {
+      code = `for ${variable0} in range(${argument0}, ${argument1}):\n${branch}`;
+    }
+    return code;
+  }
+  
+
+  //override the foreach block in order to comment the start and the end of the foreach block
+  pythonGenerator.forBlock['controls_forEach'] = function (block) {
+    const variable0 = pythonGenerator.nameDB_?.getName(
+      block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+    const argument0 = pythonGenerator.valueToCode(block, 'LIST', Order.NONE) || '[]';
+    let branch = pythonGenerator.statementToCode(block, 'DO');
+    branch = "#STARTFOREACH\n" + branch + "#ENDFOREACH\n";
+    return `for ${variable0} in ${argument0}:\n${branch}`;
+  }
+
+
+
+
 }
 
 /**

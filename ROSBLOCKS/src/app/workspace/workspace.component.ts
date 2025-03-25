@@ -8,12 +8,15 @@ import { definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
 import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { extractFirstLine, extractServiceFilename, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename } from '../utilities/sanitizer-tools';
+import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables, removeOneIndentLevel } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
+import { msgList, MsgInfo } from '../shared/msg-list';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { toolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
+import { initializeCommonMsgs } from '../blocks/ros2-msgs';
+9
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
@@ -52,18 +55,19 @@ export class WorkspaceComponent implements OnDestroy {
     private alertService: AlertService,
     private successService: SuccessService,
     private sanitizer: DomSanitizer
-    
-  ) {}
+
+  ) { }
 
   ngOnInit(): void {
     this.reloadTurtlesim();
-    this.loadFromLocalStorage()
+    this.loadFromLocalStorage();
+    initializeCommonMsgs();
   }
 
   reloadTurtlesim(): void {
     const url = this.codeService.vncTurtlesim();
     console.log(url);
-    
+
     if (url) {
       this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
     } else {
@@ -88,7 +92,7 @@ export class WorkspaceComponent implements OnDestroy {
   saveToFile() {
     try {
       const tabsData = this.tabs.map(tab => {
-        const workspaceXml = this.workspaces[tab.id] 
+        const workspaceXml = this.workspaces[tab.id]
           ? Blockly.Xml.workspaceToDom(this.workspaces[tab.id]).outerHTML
           : '';
         localStorage.setItem(`workspace_${tab.id}`, workspaceXml);
@@ -141,7 +145,7 @@ export class WorkspaceComponent implements OnDestroy {
   saveToLocalStorage() {
     try {
       const tabsData = this.tabs.map(tab => {
-        const workspaceXml = this.workspaces[tab.id] 
+        const workspaceXml = this.workspaces[tab.id]
           ? Blockly.Xml.workspaceToDom(this.workspaces[tab.id]).outerHTML
           : '';
         localStorage.setItem(`workspace_${tab.id}`, workspaceXml);
@@ -164,14 +168,14 @@ export class WorkspaceComponent implements OnDestroy {
         return;
       }
       this.setToZero();
-  
+
       this.tabs = tabsData;
       setTimeout(() => {
         tabsData.forEach((tab: any) => {
           this.selectTab(tab.id);
         });
       }, 100);
-  
+
       tabsData.forEach((tab: any) => {
         if (localStorage.getItem(`consoleService_${tab.id}`)) {
           this.consolesServices.set(tab.id.toString(), new CodeService(this.http));
@@ -181,7 +185,7 @@ export class WorkspaceComponent implements OnDestroy {
       this.showAlert('Error al cargar los datos en cache.', 'error');
     }
   }
-  
+
 
   setToZero(): void {
     this.consolesOutput = new Map();
@@ -322,9 +326,14 @@ export class WorkspaceComponent implements OnDestroy {
 
     this.workspaces[tabId].addChangeListener((event) => {
       this.saveToLocalStorage();
+
+      //actual tab code to testingCodeBackend
+      if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+        this.testingCodeBackend = pythonGenerator.workspaceToCode(this.workspaces[this.selectedTabId]);
+      }
     });
 
-    // DELETE SUSCPRITOR & PUBLISHER
+    // DELETE SUBSCRIBER & PUBLISHER
     this.workspaces[tabId].addChangeListener(async (event) => {
       if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
         if (event.oldXml) {
@@ -461,6 +470,7 @@ export class WorkspaceComponent implements OnDestroy {
       return;
     }
     this.updateSrvList();
+    this.updateMsgList();
     const newTabId = Date.now();
     this.tabs.push({ name: this.getUniqueTabName(), id: newTabId, isPlaying: false });
     this.consolesServices.set(newTabId.toString(), new CodeService(this.http));
@@ -489,8 +499,8 @@ export class WorkspaceComponent implements OnDestroy {
     }, 0);
     this.testingCodeBackend = this.textCode.get(tabId.toString()) || '';
     this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) || '';
-    console.log(22);
-    
+    this.updateMsgList();
+    this.updateSrvList();
   }
 
   storePreviousName(tab: any) {
@@ -518,16 +528,74 @@ export class WorkspaceComponent implements OnDestroy {
   playTab(tabId: number, playAllTabs: boolean) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (!tab) return;
-    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
-      this.textCode.set(tabId.toString(), pythonGenerator.workspaceToCode(this.workspaces[tabId]));
+
+    const workspace = this.workspaces[tabId];
+    if (!workspace) return;
+
+    // 1. Validar bloques antes de ejecutar
+    const topBlocks = workspace.getTopBlocks(true);
+    for (const block of topBlocks) {
+      if (block.type === 'ros2_create_publisher') {
+        const mainInput = block.getInput('MAIN');
+        const childBlock = mainInput?.connection?.targetBlock();
+        const hasPublisher = hasValidChain(childBlock ?? null, "ros2_publish_message");
+        if (!hasPublisher) {
+          this.alertService.showAlert('Error: El bloque "Create Publisher" necesita al menos un "Publish Message" en su interior.');
+          return;
+        }
+      }
+      if (block.type === 'ros_create_client') {
+        const mainInput = block.getInput('MAIN');
+        const childBlock = mainInput?.connection?.targetBlock();
+        const hasClient = hasValidChain(childBlock ?? null, "ros_send_request");
+        const serviceType = block.getFieldValue('CLIENT_TYPE');
+        if (serviceType === ""){
+          this.alertService.showAlert('Error: El bloque "Create Client" necesita un servicio válido.');
+          return;
+        }
+        if (!hasClient) {
+          this.alertService.showAlert('Error: El bloque "Create Client" necesita al menos un "Send request" válido en su interior.');
+          return;
+        }
+      
+        // 🔍 Verificar que el ros_send_request tenga TODOS los campos conectados
+        let current = childBlock;
+        while (current) {
+          if (current.type === 'ros_send_request') {
+            const allFieldsConnected = hasAllFieldsConnected(current);
+            if (!allFieldsConnected) {
+              this.alertService.showAlert('Error: El bloque "Send request" tiene campos incompletos.');
+              return;
+            }
+            break; // ya lo encontramos y validamos
+          }
+          current = current.nextConnection?.targetBlock() ?? null;
+        }
+      }
+      if (block.type === 'ros_create_server') {
+        const serviceType = block.getFieldValue('SERVER_TYPE');
+        if (serviceType === "") {
+          this.alertService.showAlert('Error: El bloque "Create Client" necesita un servicio válido.');
+          return;
+        }
+      }
     }
+
+    // 2. Continuar con lógica original
+    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+      this.textCode.set(tabId.toString(), pythonGenerator.workspaceToCode(workspace));
+    }
+
     this.updateSrvList();
+    this.updateMsgList();
     tab.isPlaying = playAllTabs ? true : !tab.isPlaying;
+
     tab.isPlaying
       ? (this.executeCode(this.textCode.get(tabId.toString()) || '', tabId),
         this.codeService.setWorkspaceChanged(false))
       : this.stopTab(tabId);
   }
+
 
   stopTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
@@ -627,13 +695,16 @@ export class WorkspaceComponent implements OnDestroy {
     let fileName = '';
     let type = '';
     let serverType = '';
-    const { firstLine, remainingText } = extractFirstLine(code_to_send);
+    const { firstLine, remainingText } = extractFirstLine(reorderCodeBelowFirstMarker(code_to_send));
+    console.log('First line:', firstLine.trim());
     if (firstLine.indexOf('|') !== -1) {
       const parts = firstLine.split('|');
-      type = parts[0];
-      serverType = parts[1];
+      type = parts[0].trim();
+      serverType = parts[1].trim();
+      console.log('Type:', type);
+      console.log('Server type:', serverType);
     } else {
-      type = firstLine;
+      type = firstLine.trim();
     }
     code = remainingText;
     if (type === "pub_sub") {
@@ -650,12 +721,12 @@ export class WorkspaceComponent implements OnDestroy {
       fileName = sanitizeMsgFilename(extractMessageFilename(code) || 'FailedMsg.msg');
       code = replaceMessageFilename(code, fileName);
     } else if (type === "client") {
-      console.log('Creanting client...');
+      console.log('Creating client...');
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Cliente');
-      code = create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType);
+      code = replaceSelfWithNodeInMain(create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType));
     }
     const codeService = this.consolesServices.get(tabId.toString());
-    
+
     if (codeService === undefined) {
       console.error('Service not found for the tab', tabId);
       return;
@@ -663,8 +734,10 @@ export class WorkspaceComponent implements OnDestroy {
       if (this.websockets.get(tabId.toString())) {
         this.websockets.get(tabId.toString())?.unsubscribe();
       }
+      //make variables global in each "def"
+      code = sanitizeGlobalVariables(code);
       console.log(code);
-      
+
       this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code, type)
         .pipe(
           switchMap(() => {
@@ -781,6 +854,17 @@ export class WorkspaceComponent implements OnDestroy {
       }
     };
   }
+  private createMsgVariableBlock(variable: any): any {
+    return {
+      kind: 'block',
+      type: 'msg_variable',
+      fields: {
+        VAR_NAME: variable.name,
+        VAR_TYPE: variable.type
+      }
+    };
+  }
+
 
   updateSrvVariablesCategory(): void {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
@@ -836,6 +920,55 @@ export class WorkspaceComponent implements OnDestroy {
       });
     }
   }
+  updateMsgVariablesCategory(): void {
+    const toolboxObj = toolbox.contents && toolbox.contents.length > 0
+      ? { ...toolbox }
+      : { kind: 'categoryToolbox', contents: [] };
+
+    const msgVariablesCategory = {
+      kind: 'category',
+      type: 'category',
+      name: 'Variables de Mensaje',
+      contents: msgList.map((message: MsgInfo) => {
+        const fieldBlocks = message.fields?.map((variable: any) =>
+          this.createMsgVariableBlock(variable)
+        ) || [];
+
+        return {
+          kind: 'category',
+          type: 'category',
+          name: (() => {
+            const parts = message.name.split('.');
+            if (parts.length === 3 && parts[1] === 'msg') {
+              return parts[2]; // Ej: 'Twist'
+            }
+            return message.name; // Ej: 'mensaje3'
+          })(),
+          contents: [
+            { kind: 'label', text: "Campos del mensaje:" },
+            ...fieldBlocks
+          ]
+        };
+      })
+    };
+
+    const contents = toolboxObj.contents;
+    const existingIdx = contents.findIndex((c: any) => c.name === 'Variables de Mensaje');
+    if (existingIdx !== -1) {
+      contents[existingIdx] = msgVariablesCategory;
+    } else {
+      contents.push(msgVariablesCategory);
+    }
+
+    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+      this.workspaces[this.selectedTabId].updateToolbox({
+        kind: 'categoryToolbox',
+        contents: contents
+      });
+    }
+  }
+
+
 
   updateSrvList(): void {
     this.codeService.checkSrvFiles().subscribe(response => {
@@ -854,6 +987,24 @@ export class WorkspaceComponent implements OnDestroy {
       srvList.length = 0;
     });
   }
+  updateMsgList(): void {
+    this.codeService.checkMsgFiles().subscribe(response => {
+      if (response.exists) {
+        response.files.forEach((file: any) => {
+          const alreadyExists = msgList.some(msg => msg.name === file.name);
+          if (!alreadyExists) {
+            msgList.push(file);
+          }
+        });
+      }
+      console.log("msgList updated:", msgList);
+      this.updateMsgVariablesCategory();
+    }, error => {
+      console.error("Error getting list of msg files:", error);
+    });
+  }
+
+
 }
 
 export function linesBeforeComment(code: string): string {
@@ -868,8 +1019,54 @@ export function linesBeforeComment(code: string): string {
 export function linesAfter(code: string): string {
   const marker = "#main-sendrequest";
   const index = code.indexOf(marker);
-  if (index === -1) {
-    return "";
-  }
-  return code.substring(index + marker.length).trimStart();
+  if (index === -1) return "";
+  // Extrae todo lo que sigue al marcador, sin alterar la indentación original.
+  return removeOneIndentLevel(code.substring(index + marker.length))
 }
+
+export function hasValidChain(block: Blockly.Block | null, childBlock: string): boolean {
+  if (!block) return false;
+
+  if (block.type === childBlock) {
+    // Validar que tiene al menos un campo conectado (extendido)
+    for (const input of block.inputList) {
+      if (
+        input.name?.startsWith('FIELD_') &&
+        input.connection &&
+        input.connection.targetBlock()
+      ) {
+        return true; // Al menos un campo del mensaje está conectado
+      }
+    }
+
+    return false; // Tiene el bloque, pero no está extendido
+  }
+
+  // Revisa inputs recursivamente
+  for (const input of block.inputList) {
+    const child = input.connection?.targetBlock();
+    if (hasValidChain(child ?? null, childBlock)) {
+      return true;
+    }
+  }
+
+  // También revisa el siguiente bloque conectado en cadena
+  const next = block.nextConnection?.targetBlock();
+  if (hasValidChain(next ?? null, childBlock)) {
+    return true;
+  }
+
+  return false;
+}
+
+export function hasAllFieldsConnected(block: Blockly.Block): boolean {
+  if (!block || block.type !== 'ros_send_request') return false;
+
+  const fieldInputs = block.inputList.filter(input => input.name?.startsWith("FIELD_"));
+  if (fieldInputs.length === 0) return false;
+
+  // Verifica que todos los inputs tengan un bloque conectado
+  return fieldInputs.every(input => input.connection?.targetBlock());
+}
+
+
