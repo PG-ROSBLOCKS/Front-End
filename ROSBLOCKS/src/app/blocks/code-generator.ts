@@ -35,15 +35,18 @@ if __name__ == '__main__':
 
 export function create_server(code: string, name: string, serverType:string): string {
     const nameWithoutExtension = name.replace(/\.py$/, '');
+    const { headerText, codeText: codeWithoutVariables } = separateHeaderFromMarker(code);
     return `# Archivo ${nameWithoutExtension}.py generado por ROSBlocks
 ${getImports()}
 from sample_interfaces.srv import ${serverType}
+${headerText}
+
 
 class ${nameWithoutExtension.toUpperCase()}(Node):
 
     def __init__(self):
         super().__init__('${nameWithoutExtension.toLowerCase()}')
-${code}
+${codeWithoutVariables}
 
 
 def main(args=None):
@@ -64,23 +67,25 @@ if __name__ == '__main__':
 
 export function create_client(code: string, name: string, main_code: string, serverType: string): string {
     const nameWithoutExtension = name.replace(/\.py$/, '');
+    const { headerText, codeText: codeWithoutVariables } = separateHeaderFromMarker(main_code);
     const TAB_SPACE = '    ';
-    const mainCodeIndented = pythonGenerator.prefixLines(main_code,  TAB_SPACE);
+    const { headerText: headerText2, codeText: codeWithoutVariables2 } = separateHeaderFromMarker(code);
     return `# Archivo ${nameWithoutExtension}.py generado por ROSBlocks
 ${getImports()}
 from sample_interfaces.srv import ${serverType}
+${headerText}
+${headerText2}
 
 class ${nameWithoutExtension.toUpperCase()}(Node):
 
     def __init__(self):
         super().__init__('${nameWithoutExtension.toLowerCase()}')
-${code}
+${codeWithoutVariables2}
 
 def main(args=None):
     rclpy.init(args=args)
-
     node = ${nameWithoutExtension.toUpperCase()}()
-${mainCodeIndented}
+${codeWithoutVariables}
 
     node.destroy_node()
     rclpy.shutdown()

@@ -8,7 +8,7 @@ import { definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
 import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables } from '../utilities/sanitizer-tools';
+import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables, removeOneIndentLevel } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
 import { msgList, MsgInfo } from '../shared/msg-list';
@@ -548,7 +548,11 @@ export class WorkspaceComponent implements OnDestroy {
         const mainInput = block.getInput('MAIN');
         const childBlock = mainInput?.connection?.targetBlock();
         const hasClient = hasValidChain(childBlock ?? null, "ros_send_request");
-      
+        const serviceType = block.getFieldValue('CLIENT_TYPE');
+        if (serviceType === ""){
+          this.alertService.showAlert('Error: El bloque "Create Client" necesita un servicio válido.');
+          return;
+        }
         if (!hasClient) {
           this.alertService.showAlert('Error: El bloque "Create Client" necesita al menos un "Send request" válido en su interior.');
           return;
@@ -567,7 +571,14 @@ export class WorkspaceComponent implements OnDestroy {
           }
           current = current.nextConnection?.targetBlock() ?? null;
         }
-      }      
+      }
+      if (block.type === 'ros_create_server') {
+        const serviceType = block.getFieldValue('SERVER_TYPE');
+        if (serviceType === "") {
+          this.alertService.showAlert('Error: El bloque "Create Client" necesita un servicio válido.');
+          return;
+        }
+      }
     }
 
     // 2. Continuar con lógica original
@@ -688,8 +699,10 @@ export class WorkspaceComponent implements OnDestroy {
     console.log('First line:', firstLine.trim());
     if (firstLine.indexOf('|') !== -1) {
       const parts = firstLine.split('|');
-      type = parts[0];
-      serverType = parts[1];
+      type = parts[0].trim();
+      serverType = parts[1].trim();
+      console.log('Type:', type);
+      console.log('Server type:', serverType);
     } else {
       type = firstLine.trim();
     }
@@ -1006,10 +1019,9 @@ export function linesBeforeComment(code: string): string {
 export function linesAfter(code: string): string {
   const marker = "#main-sendrequest";
   const index = code.indexOf(marker);
-  if (index === -1) {
-    return "";
-  }
-  return code.substring(index + marker.length).trimStart();
+  if (index === -1) return "";
+  // Extrae todo lo que sigue al marcador, sin alterar la indentación original.
+  return removeOneIndentLevel(code.substring(index + marker.length))
 }
 
 export function hasValidChain(block: Blockly.Block | null, childBlock: string): boolean {
@@ -1056,3 +1068,5 @@ export function hasAllFieldsConnected(block: Blockly.Block): boolean {
   // Verifica que todos los inputs tengan un bloque conectado
   return fieldInputs.every(input => input.connection?.targetBlock());
 }
+
+

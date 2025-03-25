@@ -282,7 +282,6 @@ export function separateHeaderFromMarker(code: string): { headerText: string; co
 }
 
 export function indentSmartPreserveStructure(code: string, baseLevel = 2): string {
-  console.log("llega" + code);
   const lines = code.split('\n').filter(line => line.trim() !== '');
   const result: string[] = [];
   const indent = (n: number) => TAB_SPACE.repeat(n);
@@ -292,12 +291,20 @@ export function indentSmartPreserveStructure(code: string, baseLevel = 2): strin
   for (const rawLine of lines) {
     const trimmed = rawLine.trim();
 
-    // Línea especial: definición de la función timer_callback.
-    if (trimmed === 'def timer_callback(self):') {
-      // Se indenta a baseLevel - 1 (por ejemplo, si está dentro de una clase)
+    // Detectar definiciones de funciones (def ...)
+    const defMatch = /^def\s+\w+\(.*\):$/.exec(trimmed);
+    if (defMatch) {
+      // Se indenta a baseLevel - 1 como si estuviera dentro de una clase
       result.push(indent(baseLevel - 1) + trimmed);
-      // Después, el cuerpo de la función se inicia en baseLevel
       currentIndent = baseLevel;
+      continue;
+    }
+
+    // Si se encuentra el marcador #main-sendrequest,
+    // reiniciamos el nivel de indentación para que el código siguiente quede al nivel del main.
+    if (trimmed === "#main-sendrequest") {
+      currentIndent = baseLevel;
+      result.push(indent(currentIndent) + trimmed);
       continue;
     }
 
@@ -319,6 +326,17 @@ export function indentSmartPreserveStructure(code: string, baseLevel = 2): strin
     result.push(indent(currentIndent) + trimmed);
   }
 
+  return result.join('\n');
+}
+export function removeOneIndentLevel(code: string): string {
+  const lines = code.split('\n');
+  const result = lines.map(line => {
+    // Si la línea comienza con 4 espacios, los quitamos
+    if (line.startsWith('    ')) {
+      return line.slice(4);
+    }
+    return line;
+  });
   return result.join('\n');
 }
 

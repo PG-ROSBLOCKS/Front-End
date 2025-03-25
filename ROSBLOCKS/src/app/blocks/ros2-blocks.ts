@@ -732,7 +732,7 @@ export function definirBloquesROS2() {
           return newValue; // Ensure the validator returns a value
         }), "CLIENT_TYPE")
         .appendField("Server")
-        .appendField(new Blockly.FieldTextInput("add_two_ints"), "SERVICE_NAME");
+        .appendField(new Blockly.FieldTextInput("MyServer"), "SERVICE_NAME");
       this.appendDummyInput()
         .appendField("Server wait time ")
         .appendField(new Blockly.FieldNumber(0.5, 0.1, 60, 0.1), "TIMER")

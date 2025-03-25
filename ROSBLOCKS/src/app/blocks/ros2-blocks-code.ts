@@ -99,7 +99,6 @@ function definirGeneradoresROS2() {
       mainBody; // sin indentSmartByLine
 
     code = indentSmartPreserveStructure(code, 2);
-    console.log(code);
     return code;
   };
 
@@ -269,29 +268,19 @@ function definirGeneradoresROS2() {
     const serviceName = block.getFieldValue('SERVER_NAME');
     const serviceType = block.getFieldValue('SERVER_TYPE');
     let callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK');
-    // Deletes extra lines
     callbackCode = removeIndentation(callbackCode);
+  
+    let code =
+      `server|${serviceType}\n` +
+      `${TAB_SPACE}${TAB_SPACE}self.service_ = self.create_service(${serviceType}, '${serviceName}', self.service_callback)\n\n` +
+      `${TAB_SPACE}def service_callback(self, request, response):\n` +
+      `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}${callbackCode}\n` +
+      `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}return response\n`;
 
-    // Usamos el nombre del servicio para crear la clase (puedes sanitizarlo según necesites)
-    const nodeName = serviceName;
-
-    let code = `server|${serviceType}\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}self.service_ = self.create_service(${serviceType}, '${serviceName}', self.service_callback)\n\n`;
-
-    code += `${TAB_SPACE}def service_callback(self, request, response):\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}try:\n`;
-    if (!callbackCode.trim()) {
-      code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}pass\n`;
-    } else {
-      // Three identation levels
-      code += pythonGenerator.prefixLines(callbackCode, `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}`);
-      code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}return response\n`;
-    }
-    code += `${TAB_SPACE}${TAB_SPACE}except Exception as e:\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().error("Error en el callback: {}".format(e))\n`;
-
+    code = indentSmartPreserveStructure(code, 2);
     return code;
   };
+  
 
   pythonGenerator.forBlock['ros2_publish_twist'] = function (block) {
     const msgClass = addImport('geometry_msgs.msg.Twist');
@@ -355,38 +344,28 @@ function definirGeneradoresROS2() {
     // 1) Search on srvList the object SrvInfo needed and extract the fields of request
     const srvInfo = srvList.find(srv => srv.name === clientType);
     const requestFields = srvInfo?.variables.request || [];
-    console.log(requestFields);
 
     clientType = clientType.replace('.srv', '');
     // 3) Generates class and construction
     // Start building the generated code; the first line is to identify the block type
     let code = `client|${clientType}\n`;
-
-    // The next line is written inside the constructor (1 level of indentation)
     code += `${TAB_SPACE}${TAB_SPACE}self.cli = self.create_client(${clientType}, '${serviceName}')\n`;
-
-    // The while is generated to wait for the service; the while line is at the same level as the previous one
     code += `${TAB_SPACE}${TAB_SPACE}while not self.cli.wait_for_service(timeout_sec=${timer}):\n`;
-    // Inside the while, an additional indentation is added
+    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}#STARTWHILE\n`;
     code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}self.get_logger().info('${messageBase}')\n`;
-
-    // After the while, the request is created, at the same level as the while
+    code += `${TAB_SPACE}${TAB_SPACE}${TAB_SPACE}#ENDWHILE\n`;
     code += `${TAB_SPACE}${TAB_SPACE}self.req = ${clientType}.Request()\n\n`;
-
-    // 4) Generate the "send_request" method with the request fields
     const paramList = requestFields.map(field => field.name).join(', ');
     code += `${TAB_SPACE}def send_request(self, ${paramList}):\n`;
-
     // 5) Assign each field in self.req.<field> = <field>
     requestFields.forEach(field => {
       code += `${TAB_SPACE}${TAB_SPACE}self.req.${field.name} = ${field.name}\n`;
     });
     // 6) Return asynchronous call
     code += `${TAB_SPACE}${TAB_SPACE}return self.cli.call_async(self.req)\n`;
-
     let main_code = pythonGenerator.statementToCode(block, 'MAIN');
-    main_code = removeCommonIndentation(main_code);
-    code += main_code;
+    code += main_code
+    code = indentSmartPreserveStructure(code, 2);
     return code;
   };
 
@@ -394,7 +373,7 @@ function definirGeneradoresROS2() {
     const myBlock = block as any;
     const clientType = myBlock.clientType || "UnknownSrv";
     const requestFields = myBlock.requestFields || [];
-  
+    let values: any[] = [];
     let assignments = "";
   
     for (const field of requestFields) {
@@ -405,11 +384,15 @@ function definirGeneradoresROS2() {
         generator.valueToCode(block, inputName, Order.NONE) || "None";
   
       assignments += `self.req.${field.name} = ${valueCode}\n`;
+      values.push(valueCode);
     }
   
     let code = `#main-sendrequest\n`;
     code += assignments;
-    code += `future = node.send_request(self.req)\n`;
+
+    let request =  `future = node.send_request(${values.join(', ')})\n`;
+    code += request;
+
     code += `rclpy.spin_until_future_complete(node, future)\n`;
     code += `response = future.result()\n`;
     return code;
@@ -600,12 +583,14 @@ function definirGeneradoresROS2() {
     let inc;
     if (argument0.match(/\d+/) && argument1.match(/\d+/) && increment.match(/\d+/)) {
       inc = parseInt(increment);
-      code = `for ${variable0} in range(${argument0}, ${argument1} + 1, ${inc}):\n${branch}`;
+      // Se elimina el "+ 1" para que el rango vaya de argument0 a argument1-1 según la semántica de range()
+      code = `for ${variable0} in range(${argument0}, ${argument1}, ${inc}):\n${branch}`;
     } else {
-      code = `for ${variable0} in range(${argument0}, ${argument1} + 1):\n${branch}`;
+      code = `for ${variable0} in range(${argument0}, ${argument1}):\n${branch}`;
     }
     return code;
   }
+  
 
   //override the foreach block in order to comment the start and the end of the foreach block
   pythonGenerator.forBlock['controls_forEach'] = function (block) {
