@@ -17,6 +17,8 @@ import { toolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
 import { initializeCommonMsgs } from '../blocks/ros2-msgs';
 import { principalBlocks } from './principal-blocks';
+import { paintMap, isValidMap } from '../maps/mapBuilder';
+import { map1, map2, map3 } from '../maps/maps';
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
@@ -26,6 +28,7 @@ export class WorkspaceComponent implements OnDestroy {
   @ViewChild('resizer') resizer!: ElementRef;
   @ViewChild('leftSection') leftSection!: ElementRef;
   @ViewChild('rightSection') rightSection!: ElementRef;
+  @ViewChild('matrixCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
 
   @HostListener('window:beforeunload', ['$event'])
   unloadNotification(event: BeforeUnloadEvent): void {
@@ -35,6 +38,7 @@ export class WorkspaceComponent implements OnDestroy {
 
   isResizing = false;
   private previousNames = new Map<number, string>();
+  private mapCodeService?: CodeService;
   maxTabs = 8;
   consolesOutput: Map<string, string> = new Map();
   consolesSessions: Map<string, string> = new Map();
@@ -49,6 +53,11 @@ export class WorkspaceComponent implements OnDestroy {
   selectedTabId: number | null = null;
   sanitizedVncUrl!: SafeResourceUrl;
   tabsPlayed: { tabId: number; blockName: string }[] = [];  // List to manage played tabs with the block name "ros2_create_subscriber"
+
+  matrix: number[][] = [];
+  matrixLoaded = false;
+  mapFullyLoaded = true;
+  currentMap: number = 1;
 
   constructor(
     private http: HttpClient,
@@ -236,18 +245,106 @@ export class WorkspaceComponent implements OnDestroy {
     this.selectedTabId = null;
   }
 
-  resetTurtleContainer(): void {
+  resetTurtleContainer(map?: number): void {
+    //When presing restart button
+    if (map) {
+      this.currentMap = map
+    }
+    this.mapFullyLoaded = false
     this.http.post(this.codeService.vncTurtlesimReset(), {}).subscribe({
       next: (response) => {
-        console.log("Turltesim restarted:", response);
+        if (this.currentMap == 1) {
+          this.mapFullyLoaded = true
+        }
+        else {
+          this.paint()
+        }
       },
       error: (error) => {
-        console.error("Error restarting Turtlesim:", error);
+        this.mapFullyLoaded = true
       }
     });
   }
 
+  paint(): void {
+    this.mapFullyLoaded  = false
+    let code: string = '';
+    switch(this.currentMap) { 
+      case 1:
+        code = ''
+        break;
+      case 2:
+        code = paintMap(map2);
+        break;
+      case 3:
+        code = paintMap(map3);
+        break;
+      case 4:
+        code = paintMap(this.matrix);; 
+        break;
+      default:
+        this.alertService.showAlert("Error loading map");
+        return
+    }
+    if (code) {
+      console.log(code);
+      
+      this.enviarCodigoMapa(code);
+    }
+  }
+
+  enviarCodigoMapa(code_to_send: string): void {
+    //Why count to 2?, because 2 turtles are painting the map, so this indicates when a turtle ends his job
+    let count = 2;
+    console.log('Sending code to map...');
+    const fileName = "turtleMap.py";
+    const type = "pub_sub";
+    const code = code_to_send;
+  
+    if (!this.mapCodeService) {
+      this.mapCodeService = new CodeService(this.http);
+    }
+    const codeService = this.mapCodeService;
+  
+    console.log({ fileName, code, type });
+    this.mapFullyLoaded = false
+    codeService.uploadCode(fileName, code, type)
+      .pipe(
+        switchMap(() => {
+          return codeService.executeCode(fileName);
+        }),
+        switchMap((response) => {
+          if (!response) return of(null);
+          console.log('Backend request:', response);
+          this.mapFullyLoaded  =false
+          const sessionId = response.session_id;
+          console.log('Session id:', sessionId);
+          return codeService.connectToWebSocket(sessionId);
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          if (!response) return;
+          console.log('Websocket message:', response.output);
+          count--
+          if (count == 0) {
+            console.log("map fully loaded");
+            this.mapFullyLoaded = true
+          }
+        },
+        error: (error) => {
+          console.error('Error:', error)
+          this.mapFullyLoaded = true
+        },
+        complete: () => {
+          console.log('Process ended')
+          this.mapFullyLoaded = true
+        }
+      });
+  }
+
   initializeBlockly(tabId: number): void {
+    
     const blocklyDivId = `blocklyDiv-${tabId}`;
     const blocklyDiv = document.getElementById(blocklyDivId);
     definirBloquesROS2();
@@ -746,7 +843,7 @@ export class WorkspaceComponent implements OnDestroy {
       if (!this.workspaces[tabId]) continue;
       this.stopTab(tabId);
     }
-    this.resetTurtleContainer();
+    this.resetTurtleContainer(this.currentMap);
   }
 
   cleanConsole() {
@@ -759,10 +856,7 @@ export class WorkspaceComponent implements OnDestroy {
   enviarCodigo(code_to_send: string, tabId: number) {
     console.log('Sending code...');
     const workspace = this.workspaces[tabId];
-    if (!workspace) {
-      console.error('Theres no workspace for the tab', tabId);
-      return;
-    }
+
     let code = '';
     let fileName = '';
     let type = '';
@@ -798,7 +892,6 @@ export class WorkspaceComponent implements OnDestroy {
       code = replaceSelfWithNodeInMain(create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType));
     }
     const codeService = this.consolesServices.get(tabId.toString());
-
     if (codeService === undefined) {
       console.error('Service not found for the tab', tabId);
       return;
@@ -895,17 +988,58 @@ export class WorkspaceComponent implements OnDestroy {
     }
   }
 
-  imageSrc: string | ArrayBuffer | null = null;
-
   onFileSelected(event: Event): void {
+    
     const target = event.target as HTMLInputElement;
     if (target.files && target.files[0]) {
       const file = target.files[0];
       const reader = new FileReader();
       reader.onload = () => {
-        this.imageSrc = reader.result;
+        const content = reader.result as string;
+        this.matrix = this.parseMatrix(content);
+        if (isValidMap(this.matrix)) {
+          this.matrixLoaded = true;
+          this.currentMap = 4
+          this.resetTurtleContainer()
+        }
+        else {
+          this.alertService.showAlert("File is not a map")
+          return
+        }
+        setTimeout(() => {
+          this.drawMatrixOnCanvas(this.canvasRef.nativeElement, this.matrix);
+        });
       };
-      reader.readAsDataURL(file);
+      reader.readAsText(file);
+    }
+  }
+
+  parseMatrix(content: string): number[][] {
+    return content.trim().split('\n').map(row =>
+      row.trim().split('').map(char => (char === '1' ? 1 : 0))
+    );
+  }
+
+  drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: number[][]): void {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const cellSize = 20;
+    const rows = matrix.length;
+    const cols = matrix[0].length;
+
+    canvas.width = cols * cellSize;
+    canvas.height = rows * cellSize;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        ctx.fillStyle = matrix[y][x] === 1 ? '#000' : '#4556ff';
+        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        ctx.strokeStyle = '#ccc';
+        ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+      }
     }
   }
 

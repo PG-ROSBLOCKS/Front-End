@@ -22,7 +22,10 @@ export class CodeService {
   }
 
   uploadCode(fileName: string, code: string, type: string): Observable<any> {
+
     const payload = { file_name: fileName, code: code, type: type };
+    console.log(payload);
+    
     return this.http.post(`${this.API_URL}/upload/`, payload, {
       headers: { 'Content-Type': 'application/json' },
     });
