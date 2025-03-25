@@ -15,23 +15,34 @@ export class AlertService {
 
   showAlert(message: string): Promise<boolean> {
     return new Promise((resolve) => {
-      // Creates fabric del componente AlertComponent
       const componentFactory = this.componentFactoryResolver.resolveComponentFactory(AlertComponent);
-      // Creates component
       this.alertComponentRef = componentFactory.create(this.injector);
-      // Asigns message
       this.alertComponentRef.instance.message = message;
-      // Suscribe to output to resolve the promise
+      this.alertComponentRef.instance.showCancel = false;
       this.alertComponentRef.instance.ok.subscribe((result: boolean) => {
         this.removeAlert();
         resolve(result);
       });
 
-      // Add the component to the view tree
       this.appRef.attachView(this.alertComponentRef.hostView);
-      // Get the DOM element of the component
       const domElem = (this.alertComponentRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
-      // Insert it into the body or another defined container
+      document.body.appendChild(domElem);
+    });
+  }
+
+  showConfirm(message: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const componentFactory = this.componentFactoryResolver.resolveComponentFactory(AlertComponent);
+      this.alertComponentRef = componentFactory.create(this.injector);
+      this.alertComponentRef.instance.message = message;
+      this.alertComponentRef.instance.showCancel = true;
+      this.alertComponentRef.instance.ok.subscribe((result: boolean) => {
+        this.removeAlert();
+        resolve(result);
+      });
+
+      this.appRef.attachView(this.alertComponentRef.hostView);
+      const domElem = (this.alertComponentRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
       document.body.appendChild(domElem);
     });
   }

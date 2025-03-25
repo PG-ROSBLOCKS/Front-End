@@ -136,7 +136,6 @@ function definirGeneradoresROS2() {
   pythonGenerator.forBlock['ros2_create_subscriber'] = function (block) {
     const topic = block.getFieldValue('TOPIC_NAME');
     const msgType = block.getFieldValue('MSG_TYPE');
-
     const msgClass = addImport(msgType);
 
     const callbackBlock = block.getInputTargetBlock('CALLBACK');
@@ -156,7 +155,6 @@ function definirGeneradoresROS2() {
     code += `${TAB_SPACE}${TAB_SPACE}self.subscription\n\n`;
 
     code += `${TAB_SPACE}def listener_callback(self, msg):\n`;
-
     if (!callbackCode.trim()) {
       code += `${TAB_SPACE}${TAB_SPACE}pass\n`;
     } else {
@@ -164,6 +162,7 @@ function definirGeneradoresROS2() {
     }
     return code;
   };
+
 
   pythonGenerator.forBlock['ros2_subscriber_msg_data'] = function (block) {
     const code = 'msg.data';
@@ -175,6 +174,9 @@ function definirGeneradoresROS2() {
     const code = `print("Tipo de dato recibido:", type(${varCode}))\n`;
     return code;
   };
+  
+  
+  
 
   // Code generator for the block "Publicar mensaje"
   pythonGenerator.forBlock['ros2_publish_message'] = function (block) {
@@ -221,13 +223,6 @@ function definirGeneradoresROS2() {
 
     const code = `${logLevel}(str(${message}))\n`;
     return code;
-  };
-
-  // Python generator for the turtlesim msg field block
-  pythonGenerator.forBlock['ros2_turtlesim_pose_field'] = function (block) {
-    const field = block.getFieldValue('FIELD');
-    const code = 'msg.' + field;
-    return [code, Order.ATOMIC];
   };
 
   // Python generator for the service message block
