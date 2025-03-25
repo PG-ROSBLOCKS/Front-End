@@ -842,40 +842,7 @@ export class WorkspaceComponent implements OnDestroy {
       this.deleteTab(tabId);
     }
   }
-  
-  /*
-  // Inicialmente la matriz está vacía y se actualizará al cargar el archivo
-  
 
-  // Tamaño de cada celda (píxel)
-  cellSize: number = 20;
-
-  @ViewChild('matrixCanvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
-
-  ngAfterViewInit(): void {
-    // Opcionalmente, podrías dibujar una matriz por defecto si quisieras
-    this.drawMatrix();
-  }
-
-  // Función que dibuja la matriz en el canvas
-  drawMatrix(): void {
-    const canvas = this.canvasRef.nativeElement;
-    const ctx = canvas.getContext('2d');
-    if (!ctx || this.matrix.length === 0) return;
-
-    // Ajusta el tamaño del canvas según las dimensiones de la matriz
-    canvas.width = this.matrix[0].length * this.cellSize;
-    canvas.height = this.matrix.length * this.cellSize;
-
-    // Recorre la matriz y dibuja cada celda: 1 se dibuja en negro, 0 en blanco
-    for (let i = 0; i < this.matrix.length; i++) {
-      for (let j = 0; j < this.matrix[i].length; j++) {
-        ctx.fillStyle = this.matrix[i][j] === 1 ? '#000' : '#FFF';
-        ctx.fillRect(j * this.cellSize, i * this.cellSize, this.cellSize, this.cellSize);
-      }
-    }
-  }
-*/
   onFileSelected(event: Event): void {
     
     const target = event.target as HTMLInputElement;
@@ -923,7 +890,7 @@ export class WorkspaceComponent implements OnDestroy {
 
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
-        ctx.fillStyle = matrix[y][x] === 1 ? '#000' : '#fff';
+        ctx.fillStyle = matrix[y][x] === 1 ? '#000' : '#4556ff';
         ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
         ctx.strokeStyle = '#ccc';
         ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
