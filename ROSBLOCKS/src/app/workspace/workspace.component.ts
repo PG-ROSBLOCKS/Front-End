@@ -444,33 +444,33 @@ export class WorkspaceComponent implements OnDestroy {
   deleteTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (this.workspaces[tabId]) {
-      // Verificar si este tab fue ejecutado anteriormente
+      // Check if this tab was previously executed
       const wasPlayed = this.tabsPlayed.some(entry => entry.tabId === tabId);
       
-      // Si fue ejecutado, necesitamos asegurarnos de que se limpien los recursos en el backend
+      // If it was executed, we need to clean up backend resources
       if (wasPlayed) {
-        console.log(`Tab ${tabId} fue ejecutado previamente, limpiando recursos asociados en el backend`);
+        console.log(`Tab ${tabId} was previously executed, cleaning up associated resources in backend`);
         this.stopTab(tabId);
         
-        // Obtener todos los bloques de la workspace
+        // Get all blocks from workspace
         
         const blocks = this.workspaces[tabId].getAllBlocks();
         
-        // Simular la eliminación de cada bloque principal para que se ejecute la lógica de limpieza
+        // Simulate deletion of each principal block to execute cleanup logic
         blocks.forEach(block => {
           if (principalBlocks.includes(block.type)) {
-            console.log(`Procesando eliminación de bloque ${block.type} en tab ${tabId}`);
+            console.log(`Processing deletion of block ${block.type} in tab ${tabId}`);
             
-            // Construir un XML simulado para el bloque
+            // Build simulated XML for the block
             const blockXml = Blockly.Xml.blockToDom(block);
             const xmlString = Blockly.Xml.domToText(blockXml);
             
-            // Usar la lógica existente de eliminación de bloques
+            // Use existing block deletion logic
             this.handleBlockDeletion(tabId, block.type, xmlString);
           }
         });
         
-        // Filtrar este tabId de la lista de tabsPlayed
+        // Remove this tab from the played tabs list
         this.tabsPlayed = this.tabsPlayed.filter(entry => entry.tabId !== tabId);
       }
       
@@ -496,9 +496,9 @@ export class WorkspaceComponent implements OnDestroy {
     this.saveToLocalStorage();
   }
 
-  // Nuevo método auxiliar para manejar la eliminación de bloques
+  // Helper method to handle block deletion operations
   handleBlockDeletion(tabId: number, blockType: string, xmlString: string): void {
-    // Lógica común para eliminar servicios y nodos
+    // Common logic for deleting services and nodes
     const commonDeletion = () => {
       this.stopTab(tabId);
       this.consolesSessions.delete(tabId.toString());
@@ -506,22 +506,25 @@ export class WorkspaceComponent implements OnDestroy {
         ?.deleteFile(this.tabs.find(t => t.id === tabId)?.name || '');
     };
 
-    // Manejar según el tipo de bloque
+    // Handle based on block type
     switch (blockType) {
       case 'ros2_create_subscriber':
       case 'ros2_minimal_publisher':
       case 'ros2_create_publisher':
       case 'ros2_publish_message':
       case 'ros_create_client':
+        // For publisher/subscriber/client blocks - common deletion pattern
         commonDeletion();
         break;
       case 'ros_create_server':
+        // For server blocks - specific handling
         const tabName = this.tabs.find(t => t.id === tabId)?.name || '';
         this.stopTab(tabId);
         this.consolesSessions.delete(tabId.toString());
         this.consolesServices.get(tabId.toString())?.deleteFile(tabName);
         break;
       case 'ros2_message_block':
+        // For message interface blocks - extract name and delete from backend
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlString, "text/xml");
         const messageName = xmlDoc.querySelector('field[name="MESSAGE_NAME"]')?.textContent || '';
@@ -535,6 +538,7 @@ export class WorkspaceComponent implements OnDestroy {
         }
         break;
       case 'ros2_service_block':
+        // For service interface blocks - extract name and delete from backend
         const serviceParser = new DOMParser();
         const serviceXmlDoc = serviceParser.parseFromString(xmlString, "text/xml");
         const serviceName = serviceXmlDoc.querySelector('field[name="SERVICE_NAME"]')?.textContent || '';
