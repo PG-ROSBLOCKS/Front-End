@@ -69,13 +69,12 @@
     transition: background-color 0.3s ease, transform 0.3s ease;
   }
   
-  .btnConfirm {
+  .btnConfirm, .btnCancel {
     background-color: #e8ce00;
     color: white;
   }
-  
-  .btnConfirm:hover {
+
+  .btnConfirm:hover, .btnCancel:hover {
     background-color: #f7da01;
     transform: scale(1.05);
   }
-  
