@@ -49,7 +49,7 @@ app-header {
   background-color: #253942;
   overflow-x: scroll;
   min-width: 100px;
-  z-index: 10;
+  z-index: 10000;
 }
 
 .topLeft {
@@ -334,7 +334,7 @@ input::selection {
 #createImg {
   position: fixed;
   width: 200px;
-  top: 85px;
+  top: 100px;
   left: 255px;
 }
 #cursor {
@@ -495,4 +495,19 @@ canvas {
   width: 30%;
   height: 30%;
   filter: hue-rotate(45deg);
+}
+
+.duplicate {
+  position: fixed;
+    margin: 10px 45px;
+    background: #015C66;
+    height: 25px;
+    font-size: small;
+    width: 100px;
+    padding: 5px;
+    border-radius: 0 0 30px 30px;
+}
+
+.duplicate:hover {
+  background: #007481;
 }
