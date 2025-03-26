@@ -11,12 +11,14 @@
                                 [ngStyle]="{
                                 'z-index': tab.id === selectedTabId ? 999 : i + 1
                                 }"
-                                (click)="selectTab(tab.id)">
+                                (click)="selectTab(tab.id)"
+                                (contextmenu)="onRightClickTab($event,tab.id)">
                                 <input type="text" [(ngModel)]="tab.name" (focus)="storePreviousName(tab)" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
                                     <button class="deleteButton" (click)="confirmDeleteTab(tab.id)">✖</button>
                                     <button class="playButton" (click)="playTab(tab.id, false)">
                                         {{ tab.isPlaying ? '◼' : '▶' }}
                                     </button>
+                                    <div *ngIf="tab.id === selectedTabId && tab.id === tabRightClick" (click)="duplicate(tab.name, tab.id)" class="duplicate">Duplicate</div>
                             </li>
                             <li class="addTabButton" (click)="addTab()">
                                 <span>+</span>
@@ -97,9 +99,6 @@
             <div class="resetTurtleDiv">
                 <button (click)="resetTurtleContainer()">Restart</button>
             </div>
-            <!-- test area -->
-            <textarea readonly [(ngModel)]="testingCodeBackend" placeholder="Código generado por ROSBlocks" class="testArea"></textarea>
-            <!-- end test area -->
             <div class="console">
                 <p id=console_title>Console</p>
                 <br>
@@ -111,6 +110,6 @@
 </div>
 <app-confirm
     *ngIf="candidateTabToDelete !== null"
-    [message]="'¿Eliminar el nodo \'' + candidateTabName + '\'? Esta acción no se puede deshacer'"
+    [message]="'Delete node \'' + candidateTabName + '\'?'"
     (confirm)="handleDeleteConfirmation($event)">
 </app-confirm>

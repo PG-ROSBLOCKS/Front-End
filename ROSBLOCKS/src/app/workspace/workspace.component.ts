@@ -60,6 +60,8 @@ export class WorkspaceComponent implements OnDestroy {
   currentMap: number = 1;
   tabsPlayed: { tabId: number; blockName: string }[] = [];  // List to manage played tabs with the block name "ros2_create_subscriber"
 
+  tabRightClick: number | null = null;
+
   constructor(
     private http: HttpClient,
     private codeService: CodeService,
@@ -77,7 +79,7 @@ export class WorkspaceComponent implements OnDestroy {
 
   reloadTurtlesim(): void {
     const url = this.codeService.vncTurtlesim();
-    console.log(url);
+    //console.log(url);
 
 
     if (url) {
@@ -99,6 +101,61 @@ export class WorkspaceComponent implements OnDestroy {
 
   showAlert(message: string, type: 'success' | 'error') {
     this.alertService.showAlert(message);
+  }
+
+  onRightClickTab(event: MouseEvent, id:number): void {
+    this.selectTab(id)
+    event.preventDefault();
+    if(this.selectedTabId != this.tabRightClick) {
+      this.tabRightClick = this.selectedTabId
+    }
+    else {
+      this.tabRightClick = null;
+    }
+  }
+
+  async duplicate(name: string, id: number): Promise<void> {
+    const tempTabs = [...this.tabs];
+  
+    const originalWorkspace = this.workspaces[id];
+    let originalXml: Element | null = null;
+    if (originalWorkspace) {
+      originalXml = Blockly.Xml.workspaceToDom(originalWorkspace);
+    }
+  
+    await this.addTab();
+  
+    const newTabs = this.tabs.filter(tab => !tempTabs.some(t => t.id === tab.id));
+    if (newTabs.length === 0) {
+      console.error("No se pudo crear una nueva pestaña para duplicar.");
+      return;
+    }
+    const newTab = newTabs[0];
+  
+    await this.changeTabName(newTab.id, name + '_copy');
+  
+    setTimeout(() => {
+      const newWorkspace = this.workspaces[newTab.id];
+      if (originalXml && newWorkspace) {
+        Blockly.Xml.domToWorkspace(originalXml, newWorkspace);
+      } else {
+        console.error("No se pudo duplicar el workspace: ", { originalXml, newWorkspace });
+      }
+    }, 50);
+  }
+  
+
+  // Escucha el click izquierdo en todo el documento
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    this.tabRightClick = null;
+  }
+  
+  // Escucha el click derecho en todo el documento
+  @HostListener('document:contextmenu', ['$event'])
+  onDocumentContextMenu(event: MouseEvent): void {
+    //This line prevents opening console on navigator
+    //event.preventDefault();
   }
 
   saveToFile() {
@@ -293,7 +350,6 @@ export class WorkspaceComponent implements OnDestroy {
         return
     }
     if (code) {
-      console.log(code);
       
       this.enviarCodigoMapa(code);
     }
@@ -302,7 +358,6 @@ export class WorkspaceComponent implements OnDestroy {
   enviarCodigoMapa(code_to_send: string): void {
     //Why count to 2?, because 2 turtles are painting the map, so this indicates when a turtle ends his job
     let count = 2;
-    console.log('Sending code to map...');
     const fileName = "turtleMap.py";
     const type = "pub_sub";
     const code = code_to_send;
@@ -312,7 +367,6 @@ export class WorkspaceComponent implements OnDestroy {
     }
     const codeService = this.mapCodeService;
   
-    console.log({ fileName, code, type });
     this.mapFullyLoaded = false
     codeService.uploadCode(fileName, code, type)
       .pipe(
@@ -321,20 +375,16 @@ export class WorkspaceComponent implements OnDestroy {
         }),
         switchMap((response) => {
           if (!response) return of(null);
-          console.log('Backend request:', response);
           this.mapFullyLoaded  =false
           const sessionId = response.session_id;
-          console.log('Session id:', sessionId);
           return codeService.connectToWebSocket(sessionId);
         })
       )
       .subscribe({
         next: (response) => {
           if (!response) return;
-          console.log('Websocket message:', response.output);
           count--
           if (count == 0) {
-            console.log("map fully loaded");
             this.mapFullyLoaded = true
           }
         },
@@ -343,7 +393,6 @@ export class WorkspaceComponent implements OnDestroy {
           this.mapFullyLoaded = true
         },
         complete: () => {
-          console.log('Process ended')
           this.mapFullyLoaded = true
         }
       });
@@ -466,6 +515,11 @@ export class WorkspaceComponent implements OnDestroy {
   async changeTabName(tabId: number, newName: string) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (!tab) return;
+    if (tab.isPlaying) {
+      this.showAlert("Canonot rename while node is playing","error");
+      return;
+    }
+
     const previousName = this.previousNames.get(tabId) || tab.name;
     let sanitizedNewName = sanitizePythonFilename(newName).replace(/\.py$/, "");
     if (!sanitizedNewName) {
@@ -567,7 +621,7 @@ export class WorkspaceComponent implements OnDestroy {
     if (tab) {
       tab.isPlaying = false;
       const session_id = this.consolesSessions.get(tabId.toString());
-      console.log('Session ID stop:', session_id);
+      //console.log('Session ID stop:', session_id);
       if (session_id) {
         this.consolesServices.get(tabId.toString())?.killExecution(session_id);
       }
@@ -584,7 +638,7 @@ export class WorkspaceComponent implements OnDestroy {
       
       // If it was executed, we need to clean up backend resources
       if (wasPlayed) {
-        console.log(`Tab ${tabId} was previously executed, cleaning up associated resources in backend`);
+        //console.log(`Tab ${tabId} was previously executed, cleaning up associated resources in backend`);
         this.stopTab(tabId);
         
         // Get all blocks from workspace
@@ -594,7 +648,7 @@ export class WorkspaceComponent implements OnDestroy {
         // Simulate deletion of each principal block to execute cleanup logic
         blocks.forEach(block => {
           if (principalBlocks.includes(block.type)) {
-            console.log(`Processing deletion of block ${block.type} in tab ${tabId}`);
+            //console.log(`Processing deletion of block ${block.type} in tab ${tabId}`);
             
             // Build simulated XML for the block
             const blockXml = Blockly.Xml.blockToDom(block);
