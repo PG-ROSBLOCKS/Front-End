@@ -94,3 +94,32 @@ ${codeWithoutVariables}
 if __name__ == '__main__':
     main()`;
 }
+
+export function create_map(code: string, name: string): string {
+    const nameWithoutExtension = name.replace(/\.py$/, '');
+    const TAB_SPACE = '    ';
+    return `# Archivo ${nameWithoutExtension}.py generado por ROSBlocks
+${getImports()}
+import ast
+
+class ${nameWithoutExtension.toUpperCase()}(Node):
+
+    def __init__(self):
+        super().__init__('${nameWithoutExtension.toLowerCase()}')
+${code}
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    node = ${nameWithoutExtension.toUpperCase()}()
+    try:
+        node.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()`;
+}
