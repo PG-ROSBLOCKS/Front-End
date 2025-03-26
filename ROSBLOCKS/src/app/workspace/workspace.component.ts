@@ -19,7 +19,7 @@ import { paintMap, isValidMap } from '../maps/mapBuilder';
 import { map1, map2, map3 } from '../maps/maps';
 import { principalBlocks } from './principal-blocks';
 import { initializeCommonMsgs } from '../blocks/ros2-msgs';
-9
+
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
@@ -34,7 +34,7 @@ export class WorkspaceComponent implements OnDestroy {
   @HostListener('window:beforeunload', ['$event'])
   unloadNotification(event: BeforeUnloadEvent): void {
     event.preventDefault();
-    event.returnValue = '¿Estás seguro de que quieres salir?';
+    event.returnValue = 'Are you sure you want to leave?';
   }
 
   isResizing = false;
@@ -220,14 +220,12 @@ export class WorkspaceComponent implements OnDestroy {
       }
       this.setToZero();
 
-
       this.tabs = tabsData;
       setTimeout(() => {
         tabsData.forEach((tab: any) => {
           this.selectTab(tab.id);
         });
       }, 100);
-
 
       tabsData.forEach((tab: any) => {
         if (localStorage.getItem(`consoleService_${tab.id}`)) {
@@ -238,8 +236,6 @@ export class WorkspaceComponent implements OnDestroy {
       this.showAlert('Error loading data into cache.', 'error');
     }
   }
-
-
 
   setToZero(): void {
     this.consolesOutput = new Map();
@@ -275,68 +271,6 @@ export class WorkspaceComponent implements OnDestroy {
       }
     });
   }
-
-  // END TEST AREA
-  /**
-   * Función global que recorre todas las workspaces (todas las tabs) y elimina
-   * aquellos bloques de cliente cuyo campo SERVER_REF coincida con el SERVER_NAME pasado.
-   */
-  /*globalServerBlockDeleted(serverName: string): void {
-    Object.keys(this.workspaces).forEach((tabKey) => {
-      const workspace = this.workspaces[+tabKey];
-      const allBlocks = workspace.getAllBlocks();
-      console.log(`Revisando tab ${tabKey} para clientes asociados a ${serverName}:`, allBlocks);
-      allBlocks.forEach((block: any) => {
-        if (block.type && block.type === 'ros_create_client') {
-          const clientServerRef = block.getFieldValue('SERVICE_NAME');
-          if (clientServerRef === serverName) {
-            console.log(`Eliminando bloque de cliente ${block.id} en tab ${tabKey} asociado al servicio ${serverName}`);
-            const blockToRemove = workspace.getBlockById(block.id);
-            if (blockToRemove) {
-              blockToRemove.dispose(true);
-            }
-            
-            // Aquí podrías agregar la solicitud al backend para eliminar el nodo cliente en setup.py
-          }
-        }
-      });
-    });
-  }
-
-  
-   * Registra el listener de eliminación de bloques de servidor para una workspace específica.
-   * Cuando se elimina un bloque de servidor, se extrae el SERVER_NAME y se invoca la función
-   * global para eliminar bloques de cliente asociados en TODAS las tabs.
-   
-  registerServerDeleteListenerForWorkspace(tabId: number): void {
-    const workspace = this.workspaces[tabId];
-    workspace.addChangeListener(async (event) => {
-      if (event.type === Blockly.Events.BLOCK_DELETE && event instanceof Blockly.Events.BlockDelete) {
-        if (event.oldXml) {
-          const xmlString = Blockly.Xml.domToText(event.oldXml);
-          // Verificar si se eliminó un bloque de servidor
-          if (xmlString.includes('ros_create_server')) {
-            console.log(`Bloque de servidor eliminado en tab ${tabId}`);
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-            const serverNameField = xmlDoc.querySelector('field[name="SERVER_NAME"]');
-            const serverName = serverNameField ? serverNameField.textContent : null;
-            console.log('XML:', xmlString);
-            if (!serverName) {
-              console.error('No se pudo obtener el SERVER_NAME del bloque de servidor eliminado.');
-              return;
-            }
-            console.log(`SERVER_NAME extraído: ${serverName}`);
-            // Solicitud al backend para eliminar el nodo servidor en setup.py
-
-            // Recorrer TODAS las tabs para eliminar los bloques de cliente asociados
-            this.globalServerBlockDeleted(serverName);
-          }
-        }
-      }
-      this.codeService.setNoBlocks(workspace.getAllBlocks().length === 0);
-    });
-  }*/
 
   paint(): void {
     this.mapFullyLoaded  = false
@@ -562,7 +496,7 @@ export class WorkspaceComponent implements OnDestroy {
         const childBlock = mainInput?.connection?.targetBlock();
         const hasPublisher = hasValidChain(childBlock ?? null, "ros2_publish_message");
         if (!hasPublisher) {
-          this.alertService.showAlert('Error: El bloque "Create Publisher" necesita al menos un "Publish Message" en su interior.');
+          this.alertService.showAlert('Error: Block "Create Publisher" needs at least one "Publish Message" inside.');
           return;
         }
       }
@@ -572,11 +506,11 @@ export class WorkspaceComponent implements OnDestroy {
         const hasClient = hasValidChain(childBlock ?? null, "ros_send_request");
         const serviceType = block.getFieldValue('CLIENT_TYPE');
         if (serviceType === ""){
-          this.alertService.showAlert('Error: El bloque "Create Client" necesita un servicio válido.');
+          this.alertService.showAlert('Error: "Create Client" block requires a valid service.');
           return;
         }
         if (!hasClient) {
-          this.alertService.showAlert('Error: El bloque "Create Client" necesita al menos un "Send request" válido en su interior.');
+          this.alertService.showAlert('Error: "Create Client" block requires at least one valid "Send request" inside it.');
           return;
         }
       
@@ -586,7 +520,7 @@ export class WorkspaceComponent implements OnDestroy {
           if (current.type === 'ros_send_request') {
             const allFieldsConnected = hasAllFieldsConnected(current);
             if (!allFieldsConnected) {
-              this.alertService.showAlert('Error: El bloque "Send request" tiene campos incompletos.');
+              this.alertService.showAlert('Error: Block "Send request" has incomplete fields.');
               return;
             }
             break; // ya lo encontramos y validamos
@@ -597,7 +531,7 @@ export class WorkspaceComponent implements OnDestroy {
       if (block.type === 'ros_create_server') {
         const serviceType = block.getFieldValue('SERVER_TYPE');
         if (serviceType === "") {
-          this.alertService.showAlert('Error: El bloque "Create Client" necesita un servicio válido.');
+          this.alertService.showAlert('Error: Block "Create Client" needs a valid service.');
           return;
         }
       }
@@ -860,7 +794,7 @@ export class WorkspaceComponent implements OnDestroy {
           switchMap(() => {
             if (type === "srv") {
               console.log("The file is a service (.srv), stopping execution after uploadCode.");
-              const confirmationMessage = `Servicio ${fileName} creado correctamente.`;
+              const confirmationMessage = `Servicio ${fileName} created successfully.`;
               this.consolesOutput.set(tabId.toString(),
                 (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
               if (this.selectedTabId === tabId) {
@@ -872,7 +806,7 @@ export class WorkspaceComponent implements OnDestroy {
               return of(null);
             } else if (type === "msg") {
               console.log("The file is a menssage (.msg), stopping execution after uploadCode.");
-              const confirmationMessage = `Mensaje ${fileName} creado correctamente.`;
+              const confirmationMessage = `Mensaje ${fileName} created successfully.`;
               this.consolesOutput.set(tabId.toString(),
                 (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
               if (this.selectedTabId === tabId) {
@@ -1023,7 +957,6 @@ export class WorkspaceComponent implements OnDestroy {
     };
   }
 
-
   updateSrvVariablesCategory(): void {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
       ? { ...toolbox }
@@ -1126,8 +1059,6 @@ export class WorkspaceComponent implements OnDestroy {
     }
   }
 
-
-
   updateSrvList(): void {
     this.codeService.checkSrvFiles().subscribe(response => {
       if (response.exists) {
@@ -1145,6 +1076,7 @@ export class WorkspaceComponent implements OnDestroy {
       srvList.length = 0;
     });
   }
+
   updateMsgList(): void {
     this.codeService.checkMsgFiles().subscribe(response => {
       if (response.exists) {
@@ -1162,8 +1094,6 @@ export class WorkspaceComponent implements OnDestroy {
     });
   }
 
-
-
   registerGenericDeletionListeners(tabId: number): void {
     const ws = this.workspaces[tabId];
     const commonDeletion = () => {
@@ -1174,18 +1104,18 @@ export class WorkspaceComponent implements OnDestroy {
     };
 
     const deletionHandlers = [
-      { types: ['ros2_create_subscriber'], alertMsg: 'Acabas de eliminar un bloque de suscriptor, por ende la sesión terminará', callback: commonDeletion, needConfirmation: false, requirePlayedCheck: true },
-      { types: ['ros2_minimal_publisher'], alertMsg: 'Acabas de eliminar un bloque de publicador, por ende la sesión terminará', callback: commonDeletion, needConfirmation: false, requirePlayedCheck: true },
-      { types: ['ros2_create_publisher'], alertMsg: 'Acabas de eliminar un bloque de publicador, por ende la sesión terminará', callback: commonDeletion, needConfirmation: false, requirePlayedCheck: true },
-      { types: ['ros2_publish_message'], alertMsg: 'Acabas de eliminar un bloque de publicador, por ende la sesión terminará', callback: commonDeletion, needConfirmation: false, requirePlayedCheck: true },
-      { types: ['ros_create_client'], alertMsg: 'Acabas de eliminar un bloque de cliente, por ende la sesión terminará', callback: commonDeletion, needConfirmation: false, requirePlayedCheck: true },
-      { types: ['ros_create_server'], alertMsg: 'Acabas de eliminar un bloque de servidor, por ende la sesión terminará', callback: () => {
+      { types: ['ros2_create_subscriber'], alertMsg: 'You have just deleted a subscriber block, therefore the session will end.', callback: commonDeletion, needConfirmation: false, requirePlayedCheck: true },
+      { types: ['ros2_minimal_publisher'], alertMsg: 'You have just deleted a publisher block, therefore the session will end.', callback: commonDeletion, needConfirmation: false, requirePlayedCheck: true },
+      { types: ['ros2_create_publisher'], alertMsg: 'You have just deleted a publisher block, therefore the session will end.', callback: commonDeletion, needConfirmation: false, requirePlayedCheck: true },
+      { types: ['ros2_publish_message'], alertMsg: 'You have just deleted a publisher block, therefore the session will end.', callback: commonDeletion, needConfirmation: false, requirePlayedCheck: true },
+      { types: ['ros_create_client'], alertMsg: 'You have just deleted a client block, therefore the session will end.', callback: commonDeletion, needConfirmation: false, requirePlayedCheck: true },
+      { types: ['ros_create_server'], alertMsg: 'You have just removed a server block, therefore the session will end.', callback: () => {
             const tabName = this.tabs.find(t => t.id === tabId)?.name || '';
             this.stopTab(tabId);
             this.consolesSessions.delete(tabId.toString());
             this.consolesServices.get(tabId.toString())?.deleteFile(tabName);
         }, needConfirmation: false, requirePlayedCheck: true },
-      { types: ['ros2_message_block'], alertMsg: '¿Estás seguro de que deseas eliminar este mensaje? Esta acción no se puede deshacer.', callback: (xml?: string) => {
+      { types: ['ros2_message_block'], alertMsg: 'Are you sure you want to delete this message? This action cannot be undone.', callback: (xml?: string) => {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xml || '', "text/xml");
             const messageName = xmlDoc.querySelector('field[name="MESSAGE_NAME"]')?.textContent || '';
@@ -1198,46 +1128,46 @@ export class WorkspaceComponent implements OnDestroy {
         }, needConfirmation: true, requirePlayedCheck: false },
       { 
         types: ['ros2_service_block'], 
-        alertMsg: '¿Estás seguro de que deseas eliminar este servicio? Esta acción eliminará en cascada todos los bloques asociados a sus variables.', 
+        alertMsg: 'Are you sure you want to delete this service? This action will cascade all blocks associated with its variables.', 
         callback: (xml?: string) => {
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(xml || '', "text/xml");
           const serviceName = xmlDoc.querySelector('field[name="SERVICE_NAME"]')?.textContent || '';
-          console.log('Intentando eliminar servicio:', serviceName);
+          console.log('Trying to remove service:', serviceName);
           this.stopTab(tabId);
           
-          // Se busca la información completa del servicio en srvList
+          // Complete service information is searched in srvList
           const serviceInfo = srvList.find(s =>
             s.name === serviceName ||
             s.name === serviceName + '.srv' ||
             (s.name && s.name.replace('.srv', '') === serviceName)
           );
           
-          // Si se obtuvo la info, se eliminan en cascada los bloques asociados
+          // If the information was obtained, the associated blocks are deleted in cascade.
           if (serviceInfo && serviceInfo.variables) {
             this.cascadeDeleteServiceVariables(serviceName, serviceInfo.variables);
           } else {
-            // Si no se encontró la info, se puede llamar a una función alternativa
-            // que intente eliminar bloques basándose solo en el nombre
+            // If the information was not found, an alternative function can be called.
+            // that attempts to remove blocks based only on the name
             this.globalServiceBlockDeleted(serviceName);
           }
           
-          // Luego se procede a eliminar el servicio en el backend
+          // Then proceed to delete the service in the backend
           this.codeService.deleteInterfaceFile('srv', serviceName)
             .subscribe({
               next: (response) => {
                 console.log("Successfully deleted (service):", response);
-                console.log('srvList antes de eliminar:', JSON.stringify(srvList));
+                console.log('srvList before deleting:', JSON.stringify(srvList));
                 const index = srvList.findIndex(s =>
                   s.name === serviceName ||
                   s.name === serviceName + '.srv' ||
                   (s.name && s.name.replace('.srv', '') === serviceName)
                 );
-                console.log('Índice encontrado:', index);
+                console.log('Index found:', index);
                 if (index !== -1) {
                   srvList.splice(index, 1);
-                  console.log('srvList después de eliminar:', JSON.stringify(srvList));
-                  // Actualizar el toolbox inmediatamente
+                  console.log('srvList after deleting:', JSON.stringify(srvList));
+                  // Update the toolbox immediately
                   setTimeout(() => {
                     this.updateSrvVariablesCategory();
                     if (this.workspaces[tabId]) {
@@ -1245,12 +1175,12 @@ export class WorkspaceComponent implements OnDestroy {
                     }
                   }, 100);
                 } else {
-                  console.warn('No se encontró el servicio en srvList:', serviceName);
+                  console.warn('Service not found in srvList:', serviceName);
                   this.updateSrvList();
                 }
               },
               error: (error) => {
-                console.error("Error al eliminar la interfaz (servicio):", error);
+                console.error("Error deleting interface (service):", error);
                 this.updateSrvList();
               }
             });
@@ -1301,32 +1231,32 @@ export class WorkspaceComponent implements OnDestroy {
     });
   }
 
-  // Agregar esta nueva función para manejar la eliminación en cascada de bloques asociados a un servicio
+  // Add this new feature to handle cascading deletion of blocks associated with a service
   globalServiceBlockDeleted(serviceName: string): void {
-    console.log(`Buscando bloques dependientes del servicio eliminado: ${serviceName}`);
+    console.log(`Searching for blocks dependent on the deleted service: ${serviceName}`);
     
-    // Nombre del servicio sin extensión para comparaciones más flexibles
+    // Service name without extension for more flexible comparisons
     const normalizedServiceName = serviceName.replace(/\.srv$/, "");
     
-    // Recorrer todas las pestañas/workspaces
+    // Cycle through all tabs/workspaces
     Object.keys(this.workspaces).forEach((tabKey) => {
       const workspace = this.workspaces[+tabKey];
       const allBlocks = workspace.getAllBlocks();
       
-      console.log(`Revisando tab ${tabKey} para bloques asociados al servicio ${normalizedServiceName}:`, allBlocks.length);
+      console.log(`Reviewing tab ${tabKey} for blocks associated with the service ${normalizedServiceName}:`, allBlocks.length);
       
-      // Identificar todos los bloques que necesitan ser eliminados
+      // Identify all blocks that need to be removed
       const blocksToRemove: any[] = [];
       
       allBlocks.forEach((block: any) => {
         try {
-          // 1. Variables del servicio (request/response)
+          // 1. Service variables (request/response)
           if (block.type === 'srv_variable') {
-            // Verificar si el bloque pertenece al servicio a través de sus campos
+            // Check if the block belongs to the service through its fields
             const variableName = block.getFieldValue('VAR_NAME');
-            const variableSection = block.getFieldValue('VAR_SECTION'); // 'request' o 'response'
+            const variableSection = block.getFieldValue('VAR_SECTION'); // 'request' or 'response'
             
-            // Buscar si esta variable pertenece al servicio que se está eliminando
+            // Find if this variable belongs to the service being removed
             const serviceInfo = srvList.find(s => 
               (s.name === normalizedServiceName || s.name === normalizedServiceName + '.srv' || s.name.replace('.srv', '') === normalizedServiceName)
             );
@@ -1336,22 +1266,22 @@ export class WorkspaceComponent implements OnDestroy {
                                  (variableSection === 'response' && serviceInfo.variables?.response?.some(v => v.name === variableName));
               
               if (isInService) {
-                console.log(`Encontrado bloque de variable ${variableName} (${variableSection}) del servicio ${normalizedServiceName}`);
+                console.log(`Variable block found ${variableName} (${variableSection}) on service ${normalizedServiceName}`);
                 blocksToRemove.push(block);
               }
             }
           }
           
-          // 2. Bloques de asignación de respuesta
+          // 2. Response assignment blocks
           else if (block.type === 'srv_response_set_field') {
-            // Para srv_response_set_field, necesitamos verificar el contexto o algún campo específico
+            // For srv_response_set_field, we need to check the context or some specific field
             const fieldName = block.getFieldValue('FIELD_NAME');
             
             // Estos bloques suelen estar conectados a un bloque de cliente del servicio
             // o en un contexto de uso del servicio
             let isRelatedToService = false;
             
-            // Buscar en las conexiones del bloque
+            // Search in block connections
             if (block.parentBlock_ && block.parentBlock_.type === 'ros_create_client') {
               const clientServiceName = block.parentBlock_.getFieldValue('SERVICE_NAME');
               if (clientServiceName === normalizedServiceName) {
@@ -1359,7 +1289,7 @@ export class WorkspaceComponent implements OnDestroy {
               }
             }
             
-            // También revisar si el campo corresponde a una variable del servicio
+            // Also check if the field corresponds to a service variable
             const serviceInfo = srvList.find(s => 
               (s.name === normalizedServiceName || s.name === normalizedServiceName + '.srv' || s.name.replace('.srv', '') === normalizedServiceName)
             );
@@ -1369,31 +1299,31 @@ export class WorkspaceComponent implements OnDestroy {
             }
             
             if (isRelatedToService) {
-              console.log(`Encontrado bloque de asignación de respuesta para campo ${fieldName} del servicio ${normalizedServiceName}`);
+              console.log(`Found response assignment block for field ${fieldName} of service ${normalizedServiceName}`);
               blocksToRemove.push(block);
             }
           }
           
-          // 3. Bloques de cliente que utilizan el servicio
+          // 3. Client blocks that use the service
           else if (block.type === 'ros_create_client') {
             const clientServiceName = block.getFieldValue('SERVICE_NAME');
             if (clientServiceName === normalizedServiceName) {
-              console.log(`Encontrado bloque cliente usando servicio ${normalizedServiceName}`);
+              console.log(`Client block found using service ${normalizedServiceName}`);
               blocksToRemove.push(block);
             }
           }
         } catch (e) {
-          console.error(`Error al procesar bloque ${block.type}:`, e);
+          console.error(`Error processing block ${block.type}:`, e);
         }
       });
       
-      // Eliminar todos los bloques identificados, con sus dependientes
+      // Delete all identified blocks, with their dependents
       blocksToRemove.forEach(block => {
         try {
-          console.log(`Eliminando bloque ${block.id} de tipo ${block.type} en tab ${tabKey}`);
+          console.log(`Deleting block ${block.id} of type ${block.type} on tab ${tabKey}`);
           block.dispose(true); // true para eliminar bloques conectados
         } catch (e) {
-          console.error("Error al eliminar bloque:", e);
+          console.error("Error deleting block:", e);
         }
       });
     });
@@ -1401,45 +1331,45 @@ export class WorkspaceComponent implements OnDestroy {
 
   cascadeDeleteServiceVariables(serviceName: string, serviceVariables: { request?: any[]; response?: any[]; }): void {
     const normalizedServiceName = serviceName.replace(/\.srv$/, "");
-    // Extraer nombres específicos de variables definidas en el servicio
+    // Extract specific names from variables defined in the service
     const requestNames = serviceVariables?.request ? serviceVariables.request.map(v => v.name) : [];
     const responseNames = serviceVariables?.response ? serviceVariables.response.map(v => v.name) : [];
-    console.log(`Eliminando en cascada variables para el servicio ${normalizedServiceName}`);
+    console.log(`Cascading Variable Elimination for Service ${normalizedServiceName}`);
     console.log("Request variables:", requestNames, "Response variables:", responseNames);
     
-    // Recorrer todas las workspaces
+    // Browse all workspaces
     Object.keys(this.workspaces).forEach((tabKey) => {
       const workspace = this.workspaces[+tabKey];
       workspace.getAllBlocks().forEach((block: any) => {
         try {
-          // Caso 1: Bloques de variables (tipo "srv_variable")
+          // Caso 1: Variable blocks (tipo "srv_variable")
           if (block.type === 'srv_variable') {
             const varName = block.getFieldValue('VAR_NAME');
-            const varSection = block.getFieldValue('VAR_SECTION');  // "request" o "response"
+            const varSection = block.getFieldValue('VAR_SECTION');  // "request" or "response"
             if ((varSection === 'request' && requestNames.includes(varName)) ||
                 (varSection === 'response' && responseNames.includes(varName))) {
-              console.log(`Eliminando bloque srv_variable ${block.id} (${varName}, ${varSection}) en tab ${tabKey}`);
+              console.log(`Deleting srv_variable block ${block.id} (${varName}, ${varSection}) on tab ${tabKey}`);
               block.dispose(true);
             }
           }
-          // Caso 2: Bloques para asignar campo de respuesta (tipo "srv_response_set_field")
+          // Caso 2: Blocks to assign response field (type "srv_response_set_field")
           else if (block.type === 'srv_response_set_field') {
             const fieldName = block.getFieldValue('FIELD_NAME');
             if (responseNames.includes(fieldName)) {
-              console.log(`Eliminando bloque srv_response_set_field ${block.id} (campo: ${fieldName}) en tab ${tabKey}`);
+              console.log(`Removing srv_response_set_field block ${block.id} (field: ${fieldName}) on tab ${tabKey}`);
               block.dispose(true);
             }
           }
-          // Caso 3 (opcional): Bloques de cliente que utilicen este servicio
+          // Caso 3 (opcional): Client blocks that use this service
           else if (block.type === 'ros_create_client') {
             const clientServiceName = block.getFieldValue('SERVICE_NAME');
             if (clientServiceName === normalizedServiceName) {
-              console.log(`Eliminando bloque ros_create_client ${block.id} usando servicio ${normalizedServiceName} en tab ${tabKey}`);
+              console.log(`Removing ros_create_client block${block.id} using service ${normalizedServiceName} on tab ${tabKey}`);
               block.dispose(true);
             }
           }
         } catch (e) {
-          console.error(`Error al procesar bloque ${block.type} en tab ${tabKey}:`, e);
+          console.error(`Error processing block ${block.type} on tab ${tabKey}:`, e);
         }
       });
     });
@@ -1458,7 +1388,7 @@ export function linesAfter(code: string): string {
   const marker = "#main-sendrequest";
   const index = code.indexOf(marker);
   if (index === -1) return "";
-  // Extrae todo lo que sigue al marcador, sin alterar la indentación original.
+  // Extracts everything following the marker, without altering the original indentation.
   return removeOneIndentLevel(code.substring(index + marker.length))
 }
 
@@ -1466,21 +1396,21 @@ export function hasValidChain(block: Blockly.Block | null, childBlock: string): 
   if (!block) return false;
 
   if (block.type === childBlock) {
-    // Validar que tiene al menos un campo conectado (extendido)
+    // Validate that you have at least one field connected (extended)
     for (const input of block.inputList) {
       if (
         input.name?.startsWith('FIELD_') &&
         input.connection &&
         input.connection.targetBlock()
       ) {
-        return true; // Al menos un campo del mensaje está conectado
+        return true; // At least one field of the message is connected
       }
     }
 
-    return false; // Tiene el bloque, pero no está extendido
+    return false; // Has the block, but it is not extended
   }
 
-  // Revisa inputs recursivamente
+  // Check inputs recursively
   for (const input of block.inputList) {
     const child = input.connection?.targetBlock();
     if (hasValidChain(child ?? null, childBlock)) {
@@ -1488,7 +1418,7 @@ export function hasValidChain(block: Blockly.Block | null, childBlock: string): 
     }
   }
 
-  // También revisa el siguiente bloque conectado en cadena
+  // Also check out the next block connected in chain
   const next = block.nextConnection?.targetBlock();
   if (hasValidChain(next ?? null, childBlock)) {
     return true;
@@ -1503,7 +1433,7 @@ export function hasAllFieldsConnected(block: Blockly.Block): boolean {
   const fieldInputs = block.inputList.filter(input => input.name?.startsWith("FIELD_"));
   if (fieldInputs.length === 0) return false;
 
-  // Verifica que todos los inputs tengan un bloque conectado
+  // Verify that all inputs have a block connected
   return fieldInputs.every(input => input.connection?.targetBlock());
 }
 
