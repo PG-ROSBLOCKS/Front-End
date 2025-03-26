@@ -151,6 +151,11 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   saveToLocalStorage() {
+    //Turns off the node if selected
+    if (this.selectedTabId) {
+      this.stopTab(this.selectedTabId);
+    }
+    
     try {
       const tabsData = this.tabs.map(tab => {
         const workspaceXml = this.workspaces[tab.id]
