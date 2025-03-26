@@ -791,6 +791,37 @@ export class WorkspaceComponent implements OnDestroy {
     }
   }
 
+  seeTopics(): void {
+    if (!this.selectedTabId) {
+      console.error("No tab selected");
+      return;
+    }
+  
+    const tabId = this.selectedTabId.toString();
+    const consoleService = this.consolesServices.get(tabId);
+    
+    if (!consoleService) {
+      console.error("Console service not found for tab", tabId);
+      return;
+    }
+  
+    consoleService.seeTopics().subscribe({
+      next: (topics: string[]) => {
+        const topicsOutput = topics.join('\n');
+        const currentOutput = this.consolesOutput.get(tabId) || '';
+        
+        this.consolesOutput.set(tabId, `${currentOutput}Available topics:\n${topicsOutput}\n\n`);
+        this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId) || '';
+      },
+      error: (err) => {
+        console.error("Error fetching topics:", err);
+        const currentOutput = this.consolesOutput.get(tabId) || '';
+        this.consolesOutput.set(tabId, `${currentOutput}Error: ${err.message}\n`);
+        this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId) || '';
+      }
+    });
+  }
+
   enviarCodigo(code_to_send: string, tabId: number) {
     console.log('Sending code...');
     const workspace = this.workspaces[tabId];

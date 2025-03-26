@@ -367,9 +367,28 @@ input::selection {
   font-size: 16px;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease;
+  margin-right: 5px; /* Añade espacio a la derecha */
+  display: inline-block; /* Permite que los botones se alineen en línea */
 }
 
-.btnClean:hover {
+.btnTopics {
+  position: relative;
+  top: -32px;
+  left: 5px; /* Misma posición que btnClean */
+  background-color: #015C66;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 15px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  display: inline-block; /* Permite que los botones se alineen */
+  margin-left: 0; /* Elimina cualquier margen izquierdo */
+}
+
+.btnClean:hover,
+.btnTopics:hover {
   background-color: #006b77;
   transform: scale(1.02);
 }

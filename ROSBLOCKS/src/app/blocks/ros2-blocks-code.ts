@@ -11,15 +11,26 @@ export type ImportsDictionary = {
   [key: string]: Set<string>;
 };
 
+// Common ROS 2 packages
+const STANDARD_ROS_PACKAGES = new Set([
+  'std_msgs',
+  'geometry_msgs',
+  'nav_msgs',
+  'sensor_msgs',
+  'turtlesim'
+]);
+
 export const importsDictMsgs: ImportsDictionary = {
   'std_msgs': new Set(),
   'geometry_msgs': new Set(),
   'nav_msgs': new Set(),
-  'turtlesim': new Set()
+  'turtlesim': new Set(),
+  'custom_msgs': new Set() 
 };
 
 const importsDictSrvs: ImportsDictionary = {
-  'turtlesim': new Set()
+  'turtlesim': new Set(),
+  'custom_srvs': new Set() 
 };
 
 function addImport(msgType: string): string {
@@ -28,41 +39,56 @@ function addImport(msgType: string): string {
 
   if (msgParts.length === 2) {
     const [packageName, msgName] = msgParts;
-    if (importsDictMsgs[packageName]) {
-      importsDictMsgs[packageName].add(msgName);
+    if (STANDARD_ROS_PACKAGES.has(packageName)) {
+      if (importsDictMsgs[packageName]) {
+        importsDictMsgs[packageName].add(msgName);
+      }
+      return msgName;
     }
-    return msgName;
+    importsDictMsgs['custom_msgs'].add(msgType); 
+    return msgType;
   } else if (srvParts.length === 2) {
     const [packageName, srvName] = srvParts;
-    if (importsDictSrvs[packageName]) {
-      importsDictSrvs[packageName].add(srvName);
+    if (STANDARD_ROS_PACKAGES.has(packageName)) {
+      if (importsDictSrvs[packageName]) {
+        importsDictSrvs[packageName].add(srvName);
+      }
+      return srvName;
     }
-    return srvName;
+    importsDictSrvs['custom_srvs'].add(msgType); 
+    return msgType;
   }
   else if (msgType === 'time') {
     importsDictMsgs['time'] = new Set(['time']);
     return msgType;
   }
-
-  return msgType;
+  else {
+    // Without prefix, it's a custom message
+    importsDictMsgs['custom_msgs'].add(msgType);
+    return msgType;
+  }
 }
 
 function getImports(): string {
   let importCode = `import rclpy\nfrom rclpy.node import Node\n`;
-
   for (const [pkg, msgs] of Object.entries(importsDictMsgs)) {
     if (msgs.size > 0) {
       if (pkg === 'time') {
         importCode += `import time\n`;
+      } else if (pkg === 'custom_msgs') {
+        importCode += `from sample_interfaces.msg import ${Array.from(msgs).join(', ')}\n`;
       } else {
         importCode += `from ${pkg}.msg import ${Array.from(msgs).join(', ')}\n`;
       }
     }
   }
-
   for (const [pkg, srvs] of Object.entries(importsDictSrvs)) {
     if (srvs.size > 0) {
-      importCode += `from ${pkg}.srv import ${Array.from(srvs).join(', ')}\n`;
+      if (pkg === 'custom_srvs') {
+        importCode += `from sample_interfaces.srv import ${Array.from(srvs).join(', ')}\n`;
+      } else {
+        importCode += `from ${pkg}.srv import ${Array.from(srvs).join(', ')}\n`;
+      }
     }
   }
 
@@ -96,7 +122,7 @@ function definirGeneradoresROS2() {
     let code =
       `pub_sub\n` +
       `${TAB_SPACE}${TAB_SPACE}self.publisher_ = self.create_publisher(${msgClass}, '${topicName}', 10)\n` +
-      mainBody; // sin indentSmartByLine
+      mainBody; 
 
     code = indentSmartPreserveStructure(code, 2);
     return code;
@@ -162,6 +188,7 @@ function definirGeneradoresROS2() {
     } else {
       code += pythonGenerator.prefixLines(callbackCode, TAB_SPACE.repeat(2));
     }
+    console.log(code);
     return code;
   };
 
