@@ -69,8 +69,6 @@ export class WorkspaceComponent implements OnDestroy {
 
   ) { }
 
-  ) { }
-
   ngOnInit(): void {
     this.reloadTurtlesim();
     this.loadFromLocalStorage();
@@ -106,7 +104,6 @@ export class WorkspaceComponent implements OnDestroy {
   saveToFile() {
     try {
       const tabsData = this.tabs.map(tab => {
-        const workspaceXml = this.workspaces[tab.id]
         const workspaceXml = this.workspaces[tab.id]
           ? Blockly.Xml.workspaceToDom(this.workspaces[tab.id]).outerHTML
           : '';
@@ -156,7 +153,6 @@ export class WorkspaceComponent implements OnDestroy {
   saveToLocalStorage() {
     try {
       const tabsData = this.tabs.map(tab => {
-        const workspaceXml = this.workspaces[tab.id]
         const workspaceXml = this.workspaces[tab.id]
           ? Blockly.Xml.workspaceToDom(this.workspaces[tab.id]).outerHTML
           : '';
@@ -550,11 +546,11 @@ export class WorkspaceComponent implements OnDestroy {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (!tab) return;
 
-    const workspace = this.workspaces[tabId];
-    if (!workspace) return;
+    const ws = this.workspaces[tabId];
+    if (!ws) return;
 
     // 1. Validar bloques antes de ejecutar
-    const topBlocks = workspace.getTopBlocks(true);
+    const topBlocks = ws.getTopBlocks(true);
     for (const block of topBlocks) {
       if (block.type === 'ros2_create_publisher') {
         const mainInput = block.getInput('MAIN');
@@ -604,7 +600,7 @@ export class WorkspaceComponent implements OnDestroy {
 
     // 2. Continuar con lógica original
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
-      this.textCode.set(tabId.toString(), pythonGenerator.workspaceToCode(workspace));
+      this.textCode.set(tabId.toString(), pythonGenerator.workspaceToCode(ws));
     }
 
     this.updateSrvList();

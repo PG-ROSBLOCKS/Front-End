@@ -159,9 +159,7 @@ function definirGeneradoresROS2() {
 
     if (!callbackCode.trim()) {
       code += `${TAB_SPACE}${TAB_SPACE}pass\n`;
-      code += `${TAB_SPACE}${TAB_SPACE}pass\n`;
     } else {
-      code += pythonGenerator.prefixLines(callbackCode, TAB_SPACE.repeat(2));
       code += pythonGenerator.prefixLines(callbackCode, TAB_SPACE.repeat(2));
     }
     return code;
@@ -174,8 +172,6 @@ function definirGeneradoresROS2() {
   };
 
   pythonGenerator.forBlock['ros2_print_msg_type'] = function (block) {
-    const varCode = pythonGenerator.valueToCode(block, 'VAR_EXPR', Order.NONE) || 'msg';
-    const code = `print("Tipo de dato recibido:", type(${varCode}))\n`;
     const varCode = pythonGenerator.valueToCode(block, 'VAR_EXPR', Order.NONE) || 'msg';
     const code = `print("Tipo de dato recibido:", type(${varCode}))\n`;
     return code;
