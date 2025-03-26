@@ -38,7 +38,7 @@
                         placeholder="Search"
                         (input)="onSearch($event)"
                     />
-                    <img id="createImg" class="noSelect" src="../../assets/CreaNuevoNodo.png">
+                    <img id="createImg" class="noSelect" *ngIf="!selectedTabId" src="../../assets/CreaNuevoNodo.png">
                     <div *ngFor="let tab of tabs" 
                         [hidden]="tab.id !== selectedTabId" 
                         [attr.id]="'blocklyDiv-' + tab.id" 
@@ -51,32 +51,36 @@
         </div>
         <div #rightSection class="rightSection">
             <div class="maps">
-                <button class="sampleMap">
+                <button class="sampleMap" (click)="resetTurtleContainer(1)">
                     <p>1</p>
                     <div class="mapInsight">
-                        <img src="https://i.pinimg.com/474x/6b/12/58/6b1258ef83f85684be67d2b28b25617c.jpg">
+                        <img src="../../assets/maps/map1.png">
                     </div>
                 </button>
-                <button class="sampleMap">
+                <button class="sampleMap"(click)="resetTurtleContainer(2)">
                     <p>2</p>
                     <div class="mapInsight">
-                        <img src="https://i.pinimg.com/474x/6b/12/58/6b1258ef83f85684be67d2b28b25617c.jpg">
+                        <img src="../../assets/maps/map2.png">
                     </div>
                 </button>
-                <button class="sampleMap">
+                <button class="sampleMap"(click)="resetTurtleContainer(3)">
                     <p>3</p>
                     <div class="mapInsight">
-                        <img src="https://i.pinimg.com/474x/6b/12/58/6b1258ef83f85684be67d2b28b25617c.jpg">
+                        <img src="../../assets/maps/map3.png">
                     </div>
                 </button>
-                <button (click)="fileInput.click()" class="sampleMap addMap"
-                    [ngClass]="{'addedMap': imageSrc}">
+                <!-- matrix-image.component.html -->
+                <button (click)="fileInput.click()" class="sampleMap addMap" [ngClass]="{'addedMap': matrixLoaded}">
                     <p>+</p>
-                    <div *ngIf="imageSrc" class="mapInsight">
-                        <img [src]="imageSrc" alt="Imagen cargada">
+                    <div *ngIf="matrixLoaded" class="mapInsight">
+                      <canvas #matrixCanvas></canvas>
                     </div>
-                </button>
-                <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none;">
+                  </button>
+                  
+                  <input type="file" #fileInput (change)="onFileSelected($event)" accept=".txt" style="display: none;">
+                  
+  
+                <!--<canvas #matrixCanvas></canvas>-->
             </div>
             <div class="barTurtle">
                 <div class="centerReload">
@@ -85,6 +89,9 @@
             </div>
             <div class="turtlesim">
                 <iframe #iframeElement [src]="sanitizedVncUrl" _ngcontent-ng-c809167999="" src="sanitizedVncUrl" title="VNC"></iframe>
+                <div class="turtleSimCover" *ngIf="!mapFullyLoaded">
+                    <img src="../../assets/loading.gif">
+                </div>
             </div>
             <div class="bottomBarTurtle"></div>
             <div class="resetTurtleDiv">
@@ -95,7 +102,7 @@
                 <br>
                 <app-console-output [output]="getConsoleLines()" [autoScrollEnabled]="autoScrollEnabled"></app-console-output>           
             </div>
-            <button (click)="cleanConsole()" class="btnClean">Clean console</button>
+            <button (click)="cleanConsole()" class="btnClean">Clear console</button>
         </div>
     </div>
 </div>
