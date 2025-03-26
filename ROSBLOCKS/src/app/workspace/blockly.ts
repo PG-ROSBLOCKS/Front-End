@@ -108,6 +108,8 @@ export let toolbox = {
         name: 'Text',
         contents: [
           { kind: "block", type: "text" },
+          { kind: "block", type: "text_char_to_ascii"},
+          { kind: "block", type: "text_ascii_to_char"},
           { kind: "block", type: "text_join" },
           { kind: "block", type: "text_append" },
           { kind: "block", type: "text_length" },

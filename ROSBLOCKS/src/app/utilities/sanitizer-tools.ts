@@ -431,3 +431,19 @@ export function removeCommonIndentation(code: string) {
     return newLines.join('\n');
   }
   
+  export function linesAfter(code: string): string {
+    const marker = "#main-sendrequest";
+    const index = code.indexOf(marker);
+    if (index === -1) return "";
+    // Extracts everything following the marker, without altering the original indentation.
+    return removeOneIndentLevel(code.substring(index + marker.length))
+  }
+
+  export function linesBeforeComment(code: string): string {
+    const marker = "#main-sendrequest";
+    const index = code.indexOf(marker);
+    if (index === -1) {
+      return code.trimEnd();
+    }
+    return code.substring(0, index).trimEnd();
+  }

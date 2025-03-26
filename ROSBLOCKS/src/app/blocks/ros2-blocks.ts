@@ -1087,4 +1087,32 @@ export function definirBloquesROS2() {
       this.setHelpUrl("");
     }
   };
+  // BLOCKS FOR COMMON TYPES
+  Blockly.Blocks['text_char_to_ascii'] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField("ASCII of")
+        .appendField(new Blockly.FieldTextInput("a", this.validateChar), "CHAR");
+      this.setOutput(true, "Number");
+      this.setColour(160);
+      this.setTooltip("Returns the ASCII code of a single character");
+      this.setHelpUrl("");
+    },
+  
+    validateChar: function (text: string): string {
+      return text.length === 1 ? text : text.charAt(0); // Enforces only 1 character
+    }
+  };  
+  Blockly.Blocks['text_ascii_to_char'] = {
+    init: function () {
+      this.appendValueInput("ASCII_CODE")
+        .appendField("Char from ASCII code");
+  
+      this.setOutput(true, "String");
+      this.setColour(160);
+      this.setTooltip("Converts an ASCII number to a character.");
+      this.setHelpUrl("");
+    }
+  };
+  
 }

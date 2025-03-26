@@ -8,7 +8,7 @@ import { definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
 import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables, removeOneIndentLevel } from '../utilities/sanitizer-tools';
+import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, linesAfter, linesBeforeComment, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables, removeOneIndentLevel } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
 import { msgList, MsgInfo } from '../shared/msg-list';
@@ -1459,22 +1459,6 @@ export class WorkspaceComponent implements OnDestroy {
       });
     });
   }
-}
-export function linesBeforeComment(code: string): string {
-  const marker = "#main-sendrequest";
-  const index = code.indexOf(marker);
-  if (index === -1) {
-    return code.trimEnd();
-  }
-  return code.substring(0, index).trimEnd();
-}
-
-export function linesAfter(code: string): string {
-  const marker = "#main-sendrequest";
-  const index = code.indexOf(marker);
-  if (index === -1) return "";
-  // Extracts everything following the marker, without altering the original indentation.
-  return removeOneIndentLevel(code.substring(index + marker.length))
 }
 
 export function hasValidChain(block: Blockly.Block | null, childBlock: string): boolean {

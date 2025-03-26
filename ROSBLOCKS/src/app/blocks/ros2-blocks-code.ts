@@ -34,9 +34,10 @@ const importsDictSrvs: ImportsDictionary = {
 };
 
 function addImport(msgType: string): string {
+  clearImports();
   const msgParts = msgType.split('.msg.');
   const srvParts = msgType.split('.srv.');
-
+  console.log("Msg type: ", msgType);
   if (msgParts.length === 2) {
     const [packageName, msgName] = msgParts;
     if (STANDARD_ROS_PACKAGES.has(packageName)) {
@@ -45,7 +46,6 @@ function addImport(msgType: string): string {
       }
       return msgName;
     }
-    importsDictMsgs['custom_msgs'].add(msgType); 
     return msgType;
   } else if (srvParts.length === 2) {
     const [packageName, srvName] = srvParts;
@@ -54,8 +54,7 @@ function addImport(msgType: string): string {
         importsDictSrvs[packageName].add(srvName);
       }
       return srvName;
-    }
-    importsDictSrvs['custom_srvs'].add(msgType); 
+    } 
     return msgType;
   }
   else if (msgType === 'time') {
@@ -210,9 +209,8 @@ function definirGeneradoresROS2() {
   // Code generator for the block "Publicar mensaje"
   pythonGenerator.forBlock['ros2_publish_message'] = function (block) {
     const msgType: string = block.getFieldValue('MSG_TYPE');
-    const msgClass = addImport(msgType);
 
-    let code = `${TAB_SPACE}${TAB_SPACE}msg = ${msgClass}()\n`;
+    let code = `${TAB_SPACE}${TAB_SPACE}msg = ${msgType}()\n`;
 
     // Recorre la lista de inputs con block.inputList o conoces sus nombres
     for (const input of block.inputList) {
@@ -626,12 +624,18 @@ function definirGeneradoresROS2() {
     return `for ${variable0} in ${argument0}:\n${branch}`;
   }
 
-
-
+  // BLOCKS FOR COMMON TYPES
+  pythonGenerator.forBlock['text_char_to_ascii'] = function (block) {
+    const char = block.getFieldValue('CHAR') || 'a';
+    const code = `ord('${char}')`;
+    return [code, Order.ATOMIC];
+  };
+  pythonGenerator.forBlock['text_ascii_to_char'] = function (block) {
+    const value = pythonGenerator.valueToCode(block, 'ASCII_CODE', Order.NONE) || '0';
+    const code = `chr(${value})`;
+    return [code, Order.FUNCTION_CALL];
+  };
+  
 
 }
 
-/**
-* Removes the minimum common indentation from all lines,
-* preserving the difference between them (internal nesting).
-*/
