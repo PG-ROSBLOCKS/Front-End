@@ -63,13 +63,13 @@ export class HeaderComponent {
 
   async export() {
     if (this.noTabs == true || this.noBlocks == true) {
-      const result = await this.alertService.showAlert("El proyecto está vacío. Agrega nodos y/o bloques antes de exportar")
-    }
-    else {
+      const result = await this.alertService.showAlert("The project is empty. Add nodes and/or blocks before exporting");
+        } else {
       if (this.workspaceChanged == false) {
         this.service.exportProject();
-      } else
-          await this.alertService.showAlert("Realizaste un cambio en el nodo, primero debes ejecutar los cambios antes de exportar")
+      } else {
+        await this.alertService.showAlert("You made a change to the node, you must execute the changes first before exporting");
+      }
+        }
     }
   }
-}

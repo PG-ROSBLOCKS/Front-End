@@ -180,7 +180,7 @@ export class WorkspaceComponent implements OnDestroy {
       const blob = new Blob([this.localStorageAsJSON()], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'proyect.rosblocks';
+      a.download = 'project.rosblocks';
       a.click();
       URL.revokeObjectURL(a.href);
     } catch (error) {
