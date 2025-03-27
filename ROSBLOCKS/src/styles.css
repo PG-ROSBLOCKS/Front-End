@@ -175,10 +175,9 @@
 }
 
 .blocklyTreeRow {
-  border-left: none !important;
   text-align: center;
   margin: 5px 15px;
-  padding: 10px 0;
+  padding: 10px 0 !important;
   border-radius: 5px;
   background-color: #39515c;
   box-shadow: 0px 5px 10px 0px #00000040 inset;
