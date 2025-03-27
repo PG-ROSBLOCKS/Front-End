@@ -72,6 +72,7 @@ export let toolbox = {
         name: 'Variables',
         contents: [
           { kind: 'block', type: 'ros2_subscriber_msg_data' },
+          { kind: 'block', type: 'ros2_named_message' },
           { kind: 'block', type: 'srv_response_set_field' },
         ],
       }]
@@ -129,7 +130,6 @@ export let toolbox = {
           contents: [
             { kind: "block", type: "variables_get" },
             { kind: "block", type: "variables_set" },
-            { kind: 'block', type: 'ros2_named_message' }
           ],
         },
         {

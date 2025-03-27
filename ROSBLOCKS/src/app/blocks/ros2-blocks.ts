@@ -671,7 +671,7 @@ Blockly.Blocks['srv_response_set_field'] = {
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
     this.setColour(230);
-    this.setTooltip("Assigns a value to a response object field in the callback.");
+    this.setTooltip("Assigns a value to a custom field defined in the custom services (.srv).");
     this.setHelpUrl("");
   }
 };
