@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
 import { definirBloquesROS2 } from '../blocks/ros2-blocks';
-import { definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
+import { clearImports, definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
 import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
@@ -549,6 +549,7 @@ export class WorkspaceComponent implements OnDestroy {
     // 1. Validar bloques antes de ejecutar
     const topBlocks = ws.getTopBlocks(true);
     for (const block of topBlocks) {
+      clearImports();
       if (block.type === 'ros2_create_publisher') {
         const mainInput = block.getInput('MAIN');
         const childBlock = mainInput?.connection?.targetBlock();
