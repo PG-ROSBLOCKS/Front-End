@@ -13,7 +13,7 @@ import { create_client, create_publisher, create_server } from '../blocks/code-g
 import { srvList, SrvInfo } from '../shared/srv-list';
 import { msgList, MsgInfo } from '../shared/msg-list';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { toolbox } from "./blockly";
+import { toolbox, updateDynamicCategoryInToolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
 import { paintMap, isValidMap } from '../maps/mapBuilder';
 import { map1, map2, map3 } from '../maps/maps';
@@ -425,6 +425,7 @@ export class WorkspaceComponent implements OnDestroy {
         text_manipulation_blocks: { colourPrimary: '#E91E63' }
       }
     });
+    
     this.workspaces[tabId] = Blockly.inject(blocklyDiv, {
       toolbox: toolbox,
       trashcan: true,
@@ -446,7 +447,7 @@ export class WorkspaceComponent implements OnDestroy {
       rtl: false,
       horizontalLayout: false,
       renderer: 'zelos',
-      theme: customTheme
+      theme: customTheme,
     });
 
     this.workspaces[tabId].addChangeListener((event) => {
@@ -1046,11 +1047,11 @@ export class WorkspaceComponent implements OnDestroy {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
       ? { ...toolbox }
       : { kind: 'categoryToolbox', contents: [] };
-
+  
     const srvVariablesCategory = {
       kind: 'category',
       type: 'category',
-      name: 'Variables de Servicio',
+      name: 'Service Variables',
       contents: srvList.map((service: SrvInfo) => {
         const requestBlocks = service.variables?.request?.map((variable: any) =>
           this.createSrvVariableBlock(variable, "request")
@@ -1062,7 +1063,7 @@ export class WorkspaceComponent implements OnDestroy {
           kind: 'block',
           type: 'srv_response_set_field',
           fields: {
-            FIELD_NAME: "campo"
+            FIELD_NAME: "field"
           }
         };
         return {
@@ -1070,32 +1071,27 @@ export class WorkspaceComponent implements OnDestroy {
           type: 'category',
           name: service.name ? service.name.replace(/\.srv$/, "") : "",
           contents: [
-            { kind: 'label', text: "Solicitud:" },
+            { kind: 'label', text: "Request:" },
             ...requestBlocks,
-            { kind: 'label', text: "Respuesta:" },
+            { kind: 'label', text: "Response:" },
             ...responseBlocks,
-            { kind: 'label', text: "Asignar campo de respuesta:" },
+            // Remove the label "Assign response field:" and leave only the block
             responseAssignBlock
           ]
         };
       })
     };
+    updateDynamicCategoryInToolbox(toolboxObj, 'ROS2 Blocks', 'Variables',  'Service Variables', srvVariablesCategory);
 
-    const contents = toolboxObj.contents;
-    const existingIdx = contents.findIndex((cat: any) => cat.name === "Variables de Servicio");
-    if (existingIdx !== -1) {
-      contents[existingIdx] = srvVariablesCategory;
-    } else {
-      contents.push(srvVariablesCategory);
-    }
-
+    // Update the toolbox of the current workspace (if active)
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.workspaces[this.selectedTabId].updateToolbox({
         kind: 'categoryToolbox',
-        contents: contents
+        contents: toolboxObj.contents
       });
     }
   }
+  
   updateMsgVariablesCategory(): void {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
       ? { ...toolbox }
@@ -1104,7 +1100,7 @@ export class WorkspaceComponent implements OnDestroy {
     const msgVariablesCategory = {
       kind: 'category',
       type: 'category',
-      name: 'Variables de Mensaje',
+      name: 'Message Variables',
       contents: msgList.map((message: MsgInfo) => {
         const fieldBlocks = message.fields?.map((variable: any) =>
           this.createMsgVariableBlock(variable)
@@ -1116,30 +1112,25 @@ export class WorkspaceComponent implements OnDestroy {
           name: (() => {
             const parts = message.name.split('.');
             if (parts.length === 3 && parts[1] === 'msg') {
-              return parts[2]; // Ej: 'Twist'
+              return parts[2]; // E.g., 'Twist'
             }
-            return message.name; // Ej: 'mensaje3'
+            return message.name; // E.g., 'message3'
           })(),
           contents: [
-            { kind: 'label', text: "Campos del mensaje:" },
+            { kind: 'label', text: "Message fields:" },
             ...fieldBlocks
           ]
         };
       })
     };
 
-    const contents = toolboxObj.contents;
-    const existingIdx = contents.findIndex((c: any) => c.name === 'Variables de Mensaje');
-    if (existingIdx !== -1) {
-      contents[existingIdx] = msgVariablesCategory;
-    } else {
-      contents.push(msgVariablesCategory);
-    }
-
+    updateDynamicCategoryInToolbox(toolboxObj, 'ROS2 Blocks', 'Variables', 'Message Variables', msgVariablesCategory);
+    
+    // Update the toolbox of the current workspace (if active)
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.workspaces[this.selectedTabId].updateToolbox({
         kind: 'categoryToolbox',
-        contents: contents
+        contents: toolboxObj.contents
       });
     }
   }

@@ -190,7 +190,7 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_subscriber_msg_data'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("Subscriber Response");
+        .appendField("Topic Message Data");
       // This block returns a value (output), so we use setOutput(true)
       this.setOutput(true, "String");
       this.setColour(160);
@@ -240,10 +240,10 @@ export function definirBloquesROS2() {
   // Block to publish a message
   Blockly.Blocks['ros2_publish_message'] = {
     init: function () {
-      // Un input "dummy" solo para mostrar la etiqueta de tipo seleccionado
+      // A "dummy" input just to display the selected type label
       this.appendDummyInput("TITLE")
         .appendField('Publish type:')
-        .appendField(new Blockly.FieldLabelSerializable('Sin tipo'), 'MSG_TYPE');
+        .appendField(new Blockly.FieldLabelSerializable('No type'), 'MSG_TYPE');
 
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
@@ -251,55 +251,58 @@ export function definirBloquesROS2() {
       this.setTooltip('Publishes a message to a ROS 2 topic.');
       this.setHelpUrl('');
 
-      // Variables internas
+      // Internal variables
       this.messageType = '';
       this.messageFields = [];
       this.fieldValues = {};
 
-      //agregamos advertencia cuando el bloque no es dinámico (no acepta drag and drop de otros bloques)
+      // Add warning when the block is not dynamic (does not accept drag and drop of other blocks)
       this.setOnChange((event: any) => {
+        // Si el workspace no existe o el usuario está arrastrando un bloque, no hacemos nada
         if (!this.workspace || this.workspace.isDragging()) return;
-
-        // Bloque no dinámico = sin messageType válido
+      
+        let warningMessage = null;  // Variable para almacenar el mensaje final
+      
+        // 1. Verificar si el bloque es dinámico (si tiene messageType)
         const isDynamic = !!this.messageType;
-
         if (!isDynamic) {
-          // Mostrar advertencia
-          this.setWarningText("Este bloque debe estar dentro de un 'Create Publisher'.");
-
-          // Si tiene inputs, los eliminamos
-          const hasDynamicInputs = this.inputList.some((input: { name: string; }) => input.name?.startsWith("FIELD_"));
+          // Caso no dinámico => mostrar advertencia
+          warningMessage = "This block must be inside a 'Create Publisher'.";
+      
+          // Si tiene inputs dinámicos, los limpiamos
+          const hasDynamicInputs = this.inputList.some(
+            (            input: { name: string; }) => input.name?.startsWith("FIELD_")
+          );
           if (hasDynamicInputs) {
             this.messageFields = [];
-            this.updateShape_(); // Limpiar ranuras de entrada
+            this.updateShape_(); // Quita los inputs del bloque
           }
-
         } else {
-          // Dinámico, todo bien
-          this.setWarningText(null);
+          // 2. Si es dinámico, verificar si hay campos obligatorios sin conectar
+          const hasUnconnectedFields = this.inputList.some((input: { name: string; connection: { targetBlock: () => any; }; }) =>
+            input.name?.startsWith("FIELD_") &&
+            !input.connection?.targetBlock()
+          );
+      
+          if (hasUnconnectedFields) {
+            warningMessage = 'You must complete all required fields before executing.';
+          }
         }
-        // ✅ Verificamos si hay al menos un hueco sin bloque conectado
-        const hasUnconnectedFields = this.inputList.some((input: { name: string; connection: { targetBlock: () => any; }; }) =>
-          input.name?.startsWith("FIELD_") &&
-          !input.connection?.targetBlock()
-        );
-
-        if (hasUnconnectedFields) {
-          this.setWarningText('Debe completar todos los campos requeridos antes de ejecutar.');
-        } else {
-          this.setWarningText(null);
-        }
+      
+        // 3. Finalmente, establecer (o limpiar) el warning solo UNA vez
+        this.setWarningText(warningMessage);
       });
+      
 
     },
 
-    /** Llamado por el bloque padre (ej. create_publisher) para asignar el tipo */
+    /** Called by the parent block (e.g., create_publisher) to assign the type */
     updateFromParent: function (messageType: string) {
       const alreadyConnected = this.inputList.some((input: { name: string; connection: { targetBlock: () => any; }; }) =>
         input.name?.startsWith("FIELD_") && input.connection?.targetBlock()
       );
 
-      // Solo regenerar si no hay campos conectados
+      // Only regenerate if there are no connected fields
       if (this.messageType !== messageType && !alreadyConnected) {
         this.messageType = messageType;
 
@@ -315,12 +318,12 @@ export function definirBloquesROS2() {
     }
     ,
 
-    /** Reconstruye los inputs según la lista de messageFields */
+    /** Rebuilds the inputs according to the messageFields list */
     updateShape_: function () {
-      // Guardar los valores actuales
+      // Save current values
       this.saveFieldValues();
 
-      // Eliminar todos los inputs excepto TITLE
+      // Remove all inputs except TITLE
       const oldInputs = [...this.inputList];
       for (const input of oldInputs) {
         if (input.name !== "TITLE") {
@@ -328,74 +331,51 @@ export function definirBloquesROS2() {
         }
       }
 
-      // Añadir dinámicamente los campos
+      // Dynamically add fields
       this.addFieldsRecursively(this.messageFields, "");
     },
 
     /**
-     * Método recursivo para anidar campos
-     * Si el campo es otro mensaje, sube un nivel de recursión
-     * Si no, crea un ValueInput con .setCheck(...) apropiado
+     * Recursive method to nest fields
+     * If the field is another message, go up one level of recursion
+     * Otherwise, create a ValueInput with .setCheck(...) as appropriate
      */
     addFieldsRecursively: function (fields: any, parentPath: any) {
       for (const field of fields) {
         const fullName = parentPath ? `${parentPath}.${field.name}` : field.name;
         const inputName = `FIELD_${fullName}`;
 
-        // Determina si es un tipo de mensaje anidado
+        // Determine if it is a nested message type
         const isNested = msgList.some(msg => msg.name === field.type || msg.name === `${field.type}.msg`);
 
         if (isNested) {
-          // Recursión para subcampos
+          // Recursion for subfields
           const nested = msgList.find(m => m.name === field.type || m.name === `${field.type}.msg`);
           if (nested && nested.fields) {
             this.addFieldsRecursively(nested.fields, fullName);
           }
         } else {
-          // Crear la "ranura" (hueco) para conectar un bloque
+          // Create the "slot" (hole) to connect a block
           const valueInput = this.appendValueInput(inputName)
             .appendField(fullName + ":");
 
-          // Opcional: cargar un valor guardado (si no usas shadow blocks)
-          // NOTA: Este "valor" no se mostrará directamente si es un ValueInput,
-          //       porque la "edición" vendrá del bloque conectado.
+          // Optionally: load a saved value (if not using shadow blocks)
+          // NOTE: This "value" will not be displayed directly if it is a ValueInput,
+          //       because the "editing" will come from the connected block.
           const saved = this.fieldValues[fullName] || "";
 
-          // Ajusta .setCheck(...) según el tipo
+          // Adjust .setCheck(...) according to the type
           if (field.type === "string") {
             valueInput.setCheck("String");
-
-            // // (Ejemplo) Si quieres un shadow block de texto por defecto:
-            // const shadowBlock = Blockly.utils.xml.createElement('shadow');
-            // shadowBlock.setAttribute('type', 'text');
-            // const fieldNode = Blockly.utils.xml.createElement('field');
-            // fieldNode.setAttribute('name', 'TEXT'); // para block "text"
-            // fieldNode.textContent = saved; // valor por defecto
-            // shadowBlock.appendChild(fieldNode);
-            // valueInput.connection.setShadowDom(shadowBlock);
 
           } else if (["int64", "int32", "float64", "float32"].includes(field.type)) {
             valueInput.setCheck("Number");
 
-            // // (Ejemplo) Shadow block numérico:
-            // const shadowNumber = Blockly.utils.xml.createElement('shadow');
-            // shadowNumber.setAttribute('type', 'math_number');
-            // const fieldNum = Blockly.utils.xml.createElement('field');
-            // fieldNum.setAttribute('name', 'NUM');
-            // fieldNum.textContent = saved || "0";
-            // shadowNumber.appendChild(fieldNum);
-            // valueInput.connection.setShadowDom(shadowNumber);
-
           } else if (field.type === "bool") {
             valueInput.setCheck("Boolean");
 
-            // // (Ejemplo) Shadow block boolean:
-            // const shadowBool = Blockly.utils.xml.createElement('shadow');
-            // shadowBool.setAttribute('type', 'logic_boolean');
-            // valueInput.connection.setShadowDom(shadowBool);
-
           } else {
-            // Tipo desconocido => permitir cualquier bloque
+            // Unknown type => allow any block
             valueInput.setCheck(null);
           }
         }
@@ -403,9 +383,9 @@ export function definirBloquesROS2() {
     },
 
     /**
-     * Guarda los valores de los inputs
-     * (Solo sirve si estás usando .appendField() con FieldTextInput, etc.)
-     * En caso de ValueInput, normalmente recuperas el valor en tu generador de código con `valueToCode`.
+     * Save the values of the inputs
+     * (Only useful if you are using .appendField() with FieldTextInput, etc.)
+     * In the case of ValueInput, you normally retrieve the value in your code generator with `valueToCode`.
      */
     saveFieldValues: function () {
       for (const input of this.inputList) {
@@ -420,7 +400,7 @@ export function definirBloquesROS2() {
     },
 
     /**
-     * Mutations para serializar messageType, messageFields y fieldValues
+     * Mutations to serialize messageType, messageFields, and fieldValues
      */
     mutationToDom: function () {
       const container = document.createElement('mutation');
@@ -445,7 +425,7 @@ export function definirBloquesROS2() {
         this.fieldValues = {};
       }
 
-      // Actualiza etiqueta si existe
+      // Update label if it exists
       const label = this.getField('MSG_TYPE_LABEL');
       if (label) {
         label.setValue(
@@ -457,12 +437,11 @@ export function definirBloquesROS2() {
     }
   };
 
-
   // Block to create timer
   Blockly.Blocks['ros2_timer'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField('Timer each')
+        .appendField('Timer every')
         .appendField(new Blockly.FieldNumber(1, 0.1, Infinity, 0.1), 'INTERVAL')
         .appendField('seconds');
       this.appendStatementInput('CALLBACK')
@@ -470,11 +449,11 @@ export function definirBloquesROS2() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(120);
-      this.setTooltip('Creates a timer that executes periodically a callback.');
+      this.setTooltip('Creates a timer that periodically executes a callback.');
       this.setHelpUrl('');
       this.setInputsInline(false);
 
-      this.messageType = ''; // para guardar el tipo de mensaje que viene del padre
+      this.messageType = ''; // to store the message type coming from the parent
 
       this.setOnChange((event: { type: EventType; blockId: any; element: string; name: string; }) => {
         if (!this.workspace || this.workspace.isDragging()) return;
@@ -482,13 +461,13 @@ export function definirBloquesROS2() {
         if (event.type === Blockly.Events.BLOCK_CHANGE && event.blockId === this.id) {
           if (event.element === 'field' && event.name === 'MSG_TYPE') {
             this.messageType = this.getFieldValue('MSG_TYPE');
-            this.updateChildren_(); // aquí sí directo
+            this.updateChildren_(); // directly update here
           }
         } else if (event.type === Blockly.Events.BLOCK_MOVE) {
-          // Delay para evitar conflictos durante el drag-and-drop
+          // Delay to avoid conflicts during drag-and-drop
           setTimeout(() => {
             this.updateChildren_();
-          }, 10); // puede ajustarse
+          }, 10); // can be adjusted
         }
       });
 
@@ -496,7 +475,7 @@ export function definirBloquesROS2() {
 
     updateFromParent: function (messageType: any) {
       this.messageType = messageType;
-      // Cuando me avise mi padre, se lo paso a mis hijos
+      // When notified by the parent, pass it to the children
       this.updateChildren_();
     },
 
@@ -509,7 +488,7 @@ export function definirBloquesROS2() {
         if (childBlock.type === 'ros2_publish_message') {
           childBlock.updateFromParent(this.messageType);
         }
-        // Siguiente en la cadena
+        // Next in the chain
         if (childBlock.nextConnection) {
           childBlock = childBlock.nextConnection.targetBlock();
         } else {
@@ -518,7 +497,6 @@ export function definirBloquesROS2() {
       }
     }
   };
-
 
   // Log ROS 2
   Blockly.Blocks['ros2_log'] = {
@@ -563,7 +541,7 @@ export function definirBloquesROS2() {
     init: function () {
       this.appendDummyInput()
         .appendField("Service")
-        .appendField(new Blockly.FieldTextInput("MiServicio"), "SERVICE_NAME");
+        .appendField(new Blockly.FieldTextInput("MyService"), "SERVICE_NAME");
       this.appendStatementInput("REQUEST_MESSAGES") // Just accepts message blocks
         .setCheck("ros2_named_message")
         .appendField("Request");
@@ -775,19 +753,6 @@ export function definirBloquesROS2() {
     }
   };
 
-  Blockly.Blocks['ros2_service_available'] = {
-    init: function () {
-      this.appendDummyInput()
-        .appendField("Service available (timeout:")
-        .appendField(new Blockly.FieldNumber(1.0, 0.1, 60, 0.1), "TIMEOUT")
-        .appendField("seg)");
-      this.setOutput(true, "Boolean");
-      this.setColour(210);
-      this.setTooltip("Returns True if the service is available before the timeout, False otherwise.");
-      this.setHelpUrl("");
-    }
-  };
-
   Blockly.Blocks["ros_send_request"] = {
     init: function () {
       this.appendDummyInput("TITLE")
@@ -802,39 +767,39 @@ export function definirBloquesROS2() {
       this.clientType = "";       // Will be updated with “updateFromParent”
       this.requestFields = [];    // List of request fields
       this.fieldValues = {};      // *** Object to store the entered values
-
       this.setOnChange((event: any) => {
         if (!this.workspace || this.workspace.isDragging()) return;
 
         const parent = this.getSurroundParent();
         if (!parent || parent.type !== 'ros_create_client') return;
 
+        let warningMessage = null;  // Variable to store the warning message
+
         const mainInput = parent.getInput('MAIN');
         const firstBlock = mainInput?.connection?.targetBlock();
         const isFirst = firstBlock && firstBlock.id === this.id;
 
         if (!isFirst) {
+          // If it's not the first block, reset clientType and clear inputs
           if (this.clientType !== '') {
-            this.clientType = '';
-            this.requestFields = [];
-            this.updateShape_();
+        this.clientType = '';
+        this.requestFields = [];
+        this.updateShape_();
           }
-
-          this.setWarningText('Este bloque solo puede estar en la primera posición del cliente.');
-          return; // salimos aquí, no tiene sentido seguir validando campos
-        }
-
-        // ✅ Verificamos si hay al menos un hueco sin bloque conectado
-        const hasUnconnectedFields = this.inputList.some((input: { name: string; connection: { targetBlock: () => any; }; }) =>
-          input.name?.startsWith("FIELD_") &&
-          !input.connection?.targetBlock()
-        );
-
-        if (hasUnconnectedFields) {
-          this.setWarningText('Debe completar todos los campos requeridos antes de ejecutar.');
+          warningMessage = 'This block can only be in the first position of the client.';
         } else {
-          this.setWarningText(null);
+          // Check if there is at least one unconnected slot
+          const hasUnconnectedFields = this.inputList.some((input: { name: string; connection: { targetBlock: () => any; }; }) =>
+        input.name?.startsWith("FIELD_") &&
+        !input.connection?.targetBlock()
+          );
+          if (hasUnconnectedFields) {
+        warningMessage = 'You must complete all required fields before executing.';
+          }
         }
+
+        // Set (or clear) the warning only once
+        this.setWarningText(warningMessage);
       });
 
 
