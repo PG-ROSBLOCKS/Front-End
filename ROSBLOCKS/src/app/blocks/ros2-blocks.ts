@@ -1115,4 +1115,31 @@ export function definirBloquesROS2() {
     }
   };
   
+  Blockly.Blocks['float_number'] = {
+    init: function() {
+      this.appendDummyInput()
+          .appendField(new Blockly.FieldTextInput("0.0", this.validateFloat), "NUM");
+      this.setOutput(true, "Number");
+      this.setColour(230);
+      this.setTooltip("Número flotante explícito con precisión de hasta float64 (17 cifras significativas)");
+      this.setHelpUrl("");
+    },
+  
+    // Validate only explicit floats (requires decimal point or scientific notation)
+    validateFloat: function(text: string) {
+      // We only accept numbers with a decimal point or scientific notation
+      const floatRegex = /^-?\d+\.\d+([eE][-+]?\d+)?$/;
+      if (!floatRegex.test(text)) return null;
+  
+      const num = parseFloat(text);
+      if (!isFinite(num)) return null;
+  
+      // Limit to float64 precision (17 significant digits)
+      const matchResult = num.toExponential().replace('.', '').match(/\d+(?=e)/);
+      const significantDigits = matchResult ? matchResult[0].length : 0;
+      if (significantDigits > 17) return null;
+  
+      return text; // valid, it is preserved as is
+    }
+  };
 }

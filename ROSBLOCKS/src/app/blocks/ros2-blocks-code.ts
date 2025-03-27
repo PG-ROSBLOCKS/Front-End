@@ -636,6 +636,11 @@ function definirGeneradoresROS2() {
     return [code, Order.FUNCTION_CALL];
   };
   
+  pythonGenerator.forBlock['float_number'] = function(block) {
+  const code = block.getFieldValue('NUM');
 
+  // Ya está validado como float con punto decimal y precisión adecuada
+  return [code, Order.ATOMIC];
+};
 }
 
