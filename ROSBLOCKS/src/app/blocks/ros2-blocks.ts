@@ -787,6 +787,12 @@ function validateDescendants(block: { type: string; data: string; unplug: () => 
   if (block.type === "srv_variable") {
     const blockService = block.data || "";
     const blockServiceNormalized = blockService.replace(/\.srv$/, "");
+    // Si no hay servicio seleccionado, desconecta el bloque sin alerta
+    if (selectedServiceNormalized === "") {
+      block.unplug();
+      return;
+    }
+
     if (blockService && blockServiceNormalized !== selectedServiceNormalized) {
       alert(
         "El bloque de variable de servicio (" +
