@@ -215,6 +215,14 @@
   background-image: linear-gradient(to right, rgba(128, 128, 128, 0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(128, 128, 128, 0.2) 1px, transparent 1px);
 }
 
+.blocklyTreeIconClosed {
+  background-position: -32px -17px;
+}
+
+.blocklyTreeIconOpen {
+  background-position: -16px -17px;
+}
+
 .no-select {
   -webkit-user-select: none; /* Chrome, Safari, Opera */
   -moz-user-select: none;    /* Firefox */
