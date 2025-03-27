@@ -19,6 +19,7 @@ import { paintMap, isValidMap } from '../maps/mapBuilder';
 import { map1, map2, map3 } from '../maps/maps';
 import { principalBlocks } from './principal-blocks';
 import { initializeCommonMsgs } from '../blocks/ros2-msgs';
+import { blockColors } from '../blocks/color-palette';
 
 @Component({
   selector: 'app-workspace',
@@ -413,16 +414,16 @@ export class WorkspaceComponent implements OnDestroy {
       name: 'customTheme',
       base: Blockly.Themes.Classic,
       blockStyles: {
-        logic_blocks: { colourPrimary: '#A55A83' },
-        loop_blocks: { colourPrimary: '#3A8439' },
-        math_blocks: { colourPrimary: '#3D65A8' },
-        text_blocks: { colourPrimary: '#6835BB' },
-        conditional_blocks: { colourPrimary: '#569BBD' },
-        cycle_blocks: { colourPrimary: '#897099' },
-        operations_blocks: { colourPrimary: '#B28E34' },
-        variable_blocks: { colourPrimary: '#B46564' },
-        procedure_blocks: { colourPrimary: '#3E7E7E' },
-        text_manipulation_blocks: { colourPrimary: '#E91E63' }
+        logic_blocks: { colourPrimary: blockColors.Conditionals }, //Conditionals
+        loop_blocks: { colourPrimary: blockColors.Cycles }, //Cycles
+        math_blocks: { colourPrimary: blockColors.Operations }, //Operations
+        variable_blocks: { colourPrimary: blockColors.Variables }, //Variables
+        procedure_blocks: { colourPrimary: blockColors.Functions },//Functions
+        text_blocks: { colourPrimary: blockColors.Text }, //Text
+        conditional_blocks: { colourPrimary: blockColors.Conditionals },
+        cycle_blocks: { colourPrimary: blockColors.Cycles },
+        operations_blocks: { colourPrimary: blockColors.Cycles },
+        text_manipulation_blocks: { colourPrimary: blockColors.Functions }
       }
     });
     

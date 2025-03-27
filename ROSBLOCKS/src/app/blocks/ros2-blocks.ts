@@ -3,6 +3,7 @@ import { srvList } from '../shared/srv-list';
 import { msgList, MsgVariable } from '../shared/msg-list';
 import { EventType } from 'blockly/core/events/type';
 import { common_msgs, common_msgs_for_custom } from './ros2-msgs';
+import { blockColors } from './color-palette';
 
 const TAB_SPACE = '    '; // Tab space
 let srv_list = [];
@@ -43,7 +44,7 @@ export function definirBloquesROS2() {
       this.appendStatementInput('MAIN')
         .setCheck(null)
         .appendField('On publish');
-      this.setColour(160);
+      this.setColour(blockColors.Topics);
 
       this.messageType = '';
 
@@ -168,7 +169,7 @@ export function definirBloquesROS2() {
         .appendField("Callback");
 
       this.setNextStatement(true, null);
-      this.setColour(160);
+      this.setColour(blockColors.Topics);
       this.setTooltip("Creates a ROS2 subscriber node with a callback to process incoming messages.");
       this.setHelpUrl("");
 
@@ -206,7 +207,7 @@ export function definirBloquesROS2() {
         .appendField("Print type of");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(160);
+      this.setColour(blockColors.Topics);
       this.setTooltip("Prints the type of the selected variable or expression.");
       this.setHelpUrl("");
     }
@@ -247,7 +248,7 @@ export function definirBloquesROS2() {
 
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(160);
+      this.setColour(blockColors.Topics);
       this.setTooltip('Publishes a message to a ROS 2 topic.');
       this.setHelpUrl('');
 
@@ -448,7 +449,7 @@ export function definirBloquesROS2() {
         .appendField('Execute');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(120);
+      this.setColour(blockColors.Nodes);
       this.setTooltip('Creates a timer that periodically executes a callback.');
       this.setHelpUrl('');
       this.setInputsInline(false);
@@ -515,7 +516,7 @@ export function definirBloquesROS2() {
         .appendField("Message");
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
-      this.setColour(230);
+      this.setColour(blockColors.Nodes);
       this.setTooltip("Registers a menssage in the ROS2 log with the selected level.");
       this.setHelpUrl("");
     }
@@ -531,7 +532,7 @@ export function definirBloquesROS2() {
         .appendField(new Blockly.FieldTextInput("parameter"), "MESSAGE_NAME");
       this.setPreviousStatement(true, "ros2_named_message");
       this.setNextStatement(true, "ros2_named_message");
-      this.setColour(160);
+      this.setColour(blockColors.Variables);
       this.setTooltip("Defines a parameter for the .msg service");
       this.setHelpUrl("");
     }
@@ -550,7 +551,7 @@ export function definirBloquesROS2() {
       this.appendStatementInput("RESPONSE_MESSAGES") // Just accepts message blocks
         .setCheck("ros2_named_message")
         .appendField("Response");
-      this.setColour(230);
+      this.setColour(blockColors.Services);
       this.setTooltip("Defines a custom service in ROS with parameters.");
       this.setHelpUrl("");
     }
@@ -563,7 +564,7 @@ export function definirBloquesROS2() {
       this.appendStatementInput("MESSAGE_FIELDS")
         .setCheck("ros2_named_message")
         .appendField("Message fields");
-      this.setColour(230);
+      this.setColour(blockColors.Messages);
       this.setTooltip("Defines a custom messagefor ROS2.");
       this.setHelpUrl("");
     }
@@ -592,7 +593,7 @@ export function definirBloquesROS2() {
       this.appendStatementInput("CALLBACK")
         .setCheck("Callback")
         .appendField("Response");
-      this.setColour(230);
+      this.setColour(blockColors.Services);
       this.setTooltip("Block to create a server in ROS2");
       this.setHelpUrl("");
 
@@ -682,7 +683,7 @@ Blockly.Blocks['ros2_publish_twist'] = {
       .appendField("Angular Velocity:");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(300);
+    this.setColour(blockColors.Turtlesim);
     this.setTooltip("Publishes a Twist message with user-defined linear and angular velocities and logs the message.");
     this.setHelpUrl("");
   }
@@ -723,7 +724,7 @@ Blockly.Blocks["ros_create_client"] = {
     this.appendStatementInput("MAIN")
       .setCheck(null)
       .appendField("Process request");
-    this.setColour(230);
+    this.setColour(blockColors.Clients);
     this.setTooltip("Block to create an asynchronous client in ROS2");
     this.setHelpUrl("");
 
@@ -809,7 +810,7 @@ Blockly.Blocks["ros_send_request"] = {
     // Block type “statement” or “void”
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(230);
+    this.setColour(blockColors.Clients);
     this.setTooltip("Send the request and wait for the response.");
     this.setHelpUrl("");
     // Internal variables:
@@ -978,7 +979,7 @@ Blockly.Blocks['ros2_turtle_set_pose'] = {
       .appendField("Theta:");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(300);
+    this.setColour(blockColors.Turtlesim);
     this.setTooltip("Positions the turtle at a specific position and orientation.");
     this.setHelpUrl("");
   }
@@ -992,7 +993,7 @@ Blockly.Blocks['ros2_sleep'] = {
       .appendField("seconds");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(160);
+    this.setColour(blockColors.Cycles);
     this.setTooltip("Pauses execution for a specified number of seconds.");
     this.setHelpUrl("");
   }
@@ -1005,7 +1006,7 @@ Blockly.Blocks['ros2_kill_turtle'] = {
       .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(300);
+    this.setColour(blockColors.Turtlesim);
     this.setTooltip("Send a request to kill a specified turtle.");
     this.setHelpUrl("");
   }
@@ -1032,7 +1033,7 @@ Blockly.Blocks['ros2_spawn_turtle'] = {
 
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(300);
+    this.setColour(blockColors.Turtlesim);
     this.setTooltip("Creates a new turtle in turtlesim with name, position, and orientation.");
     this.setHelpUrl("");
   }
@@ -1068,7 +1069,7 @@ Blockly.Blocks['ros2_turtle_set_pen'] = {
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(300);
+    this.setColour(blockColors.Turtlesim);
     this.setTooltip("Changes the color, width, and state of the turtle's pen in turtlesim.");
     this.setHelpUrl("");
   }
@@ -1082,7 +1083,7 @@ Blockly.Blocks['ros2_turtlesim_publisher'] = {
       .appendField('Execute');
     this.setPreviousStatement(false, null);
     this.setNextStatement(false, null);
-    this.setColour(300);
+    this.setColour(blockColors.Turtlesim);
     this.setTooltip('Creates a timer that periodically executes a callback.');
     this.setHelpUrl('');
   }
@@ -1100,7 +1101,7 @@ Blockly.Blocks['ros2_turtle_rotate'] = {
       .appendField("Grados:");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(300);
+    this.setColour(blockColors.Turtlesim);
     this.setTooltip("Rotates the turtle by a specified number of degrees.");
     this.setHelpUrl("");
   }
@@ -1112,7 +1113,7 @@ Blockly.Blocks['text_char_to_ascii'] = {
       .appendField("ASCII of")
       .appendField(new Blockly.FieldTextInput("a", this.validateChar), "CHAR");
     this.setOutput(true, "Number");
-    this.setColour(160);
+    this.setColour(blockColors.Text);
     this.setTooltip("Returns the ASCII code of a single character");
     this.setHelpUrl("");
   },
@@ -1127,7 +1128,7 @@ Blockly.Blocks['text_ascii_to_char'] = {
       .appendField("Char from ASCII code");
 
     this.setOutput(true, "String");
-    this.setColour(160);
+    this.setColour(blockColors.Text);
     this.setTooltip("Converts an ASCII number to a character.");
     this.setHelpUrl("");
   }

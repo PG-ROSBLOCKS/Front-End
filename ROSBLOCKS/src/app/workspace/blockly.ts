@@ -1,3 +1,5 @@
+import { blockColors } from "../blocks/color-palette";
+
 export let toolbox = {
   kind: 'categoryToolbox',
   contents: [
@@ -8,7 +10,7 @@ export let toolbox = {
         {
           kind: 'category',
           name: 'Turtlesim',
-          colour: '#A55A83',
+          colour: blockColors.Turtlesim,
           contents: [
             { kind: "block", type: "ros2_turtlesim_publisher" },
             { kind: "block", type: "ros2_publish_twist" },
@@ -22,7 +24,7 @@ export let toolbox = {
         {
         kind: 'category',
         name: 'Nodes',
-        colour: '#3A8439',
+        colour: blockColors.Nodes,
         contents: [
           { kind: 'block', type: 'ros2_timer' },
           { kind: 'block', type: 'ros2_log' },
@@ -31,7 +33,7 @@ export let toolbox = {
       {
         kind: 'category',
         name: 'Topics',
-        colour: '#3D65A8',
+        colour: blockColors.Topics,
         contents: [
           { kind: 'block', type: 'ros2_create_publisher' },
           { kind: 'block', type: 'ros2_create_subscriber' },
@@ -42,17 +44,16 @@ export let toolbox = {
       {
         kind: 'category',
         name: 'Services',
-        colour: '#6835BB',
+        colour: blockColors.Services,
         contents: [
           { kind: 'block', type: 'ros2_service_block' },
-          { kind: 'block', type: 'ros2_named_message' },
           { kind: 'block', type: 'ros_create_server' },
         ],
       },
       {
         kind: 'category',
         name: 'Clients',
-        colour: '#569BBD',
+        colour: blockColors.Clients,
         contents: [
           { kind: 'block', type: 'ros_create_client' },
           { kind: 'block', type: 'ros_send_request' },
@@ -61,10 +62,9 @@ export let toolbox = {
       {
         kind: 'category',
         name: 'Messages',
-        colour: '#897099',
+        colour: blockColors.Messages,
         contents: [
           { kind: 'block', type: 'ros2_message_block' },
-          { kind: 'block', type: 'ros2_named_message' }
         ],
       },
       {
@@ -83,7 +83,7 @@ export let toolbox = {
         {
           kind: 'category',
           name: 'Conditionals',
-          colour: '#B28E34',
+          colour: blockColors.Conditionals,
           contents: [
             { kind: 'block', type: 'controls_if' },
             { kind: 'block', type: 'controls_ifelse' },
@@ -97,7 +97,7 @@ export let toolbox = {
         {
           kind: 'category',
           name: 'Cycles',
-          colour: '#B46564',
+          colour: '#3E7E7E',
           contents: [
             { kind: "block", type: "controls_repeat" },
             { kind: "block", type: "controls_repeat_ext" },
@@ -110,7 +110,7 @@ export let toolbox = {
         {
           kind: 'category',
           name: 'Operations',
-          colour: '#3E7E7E',
+          colour: '#569BBD',
           contents: [
             { kind: "block", type: "math_number" },
             { kind: "block", type: "float_number" },
@@ -125,16 +125,17 @@ export let toolbox = {
         {
           kind: 'category',
           name: 'Variables',
-          colour: '#A85D7B',
+          colour: '#3D65A8',
           contents: [
             { kind: "block", type: "variables_get" },
             { kind: "block", type: "variables_set" },
+            { kind: 'block', type: 'ros2_named_message' }
           ],
         },
         {
           kind: 'category',
           name: 'Functions',
-          colour: '#457F7A',
+          colour: '#897099',
           contents: [
             { kind: "block", type: "procedures_defnoreturn" },
             { kind: "block", type: "procedures_defreturn" },
@@ -146,7 +147,7 @@ export let toolbox = {
         {
           kind: 'category',
           name: 'Text',
-          colour: '#66A4C0',
+          colour: '#6835BB',
           contents: [
             { kind: "block", type: "text" },
             { kind: "block", type: "text_char_to_ascii" },
