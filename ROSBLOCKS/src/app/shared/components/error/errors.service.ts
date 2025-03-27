@@ -1,7 +1,7 @@
 import { Injectable, ComponentFactoryResolver, ApplicationRef, Injector, EmbeddedViewRef, ComponentRef } from '@angular/core';
-import { AlertComponent } from './alert.component';
+import { ErrorsComponent } from './errors.component';
 
-interface AlertQueueItem {
+interface ErrorsQueueItem {
   message: string;
   showCancel: boolean;
   resolve: (result: boolean) => void;
@@ -10,9 +10,9 @@ interface AlertQueueItem {
 @Injectable({
   providedIn: 'root'
 })
-export class AlertService {
-  private alertComponentRef: ComponentRef<AlertComponent> | null = null;
-  private queue: AlertQueueItem[] = [];
+export class ErrorsService {
+  private alertComponentRef: ComponentRef<ErrorsComponent> | null = null;
+  private queue: ErrorsQueueItem[] = [];
   private isShowing = false;
 
   constructor(
@@ -21,7 +21,7 @@ export class AlertService {
     private injector: Injector
   ) {}
 
-  showAlert(message: string): Promise<boolean> {
+  showErrors(message: string): Promise<boolean> {
     return new Promise((resolve) => {
       this.queue.push({ message, showCancel: false, resolve });
       this.processQueue();
@@ -43,12 +43,12 @@ export class AlertService {
     const { message, showCancel, resolve } = this.queue.shift()!;
     this.isShowing = true;
 
-    const componentFactory = this.componentFactoryResolver.resolveComponentFactory(AlertComponent);
+    const componentFactory = this.componentFactoryResolver.resolveComponentFactory(ErrorsComponent);
     this.alertComponentRef = componentFactory.create(this.injector);
     this.alertComponentRef.instance.message = message;
     this.alertComponentRef.instance.showCancel = showCancel;
     this.alertComponentRef.instance.ok.subscribe((result: boolean) => {
-      this.removeAlert();
+      this.removeErrors();
       resolve(result);
       this.isShowing = false;
       // Pequeño retardo para dar tiempo a actualizar la vista
@@ -60,7 +60,7 @@ export class AlertService {
     document.body.appendChild(domElem);
   }
 
-  private removeAlert() {
+  private removeErrors() {
     if (this.alertComponentRef) {
       this.appRef.detachView(this.alertComponentRef.hostView);
       this.alertComponentRef.destroy();

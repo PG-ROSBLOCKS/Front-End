@@ -11,58 +11,82 @@ export type ImportsDictionary = {
   [key: string]: Set<string>;
 };
 
+// Common ROS 2 packages
+const STANDARD_ROS_PACKAGES = new Set([
+  'std_msgs',
+  'geometry_msgs',
+  'nav_msgs',
+  'sensor_msgs',
+  'turtlesim'
+]);
+
 export const importsDictMsgs: ImportsDictionary = {
   'std_msgs': new Set(),
   'geometry_msgs': new Set(),
   'nav_msgs': new Set(),
-  'turtlesim': new Set()
+  'turtlesim': new Set(),
+  'custom_msgs': new Set() 
 };
 
 const importsDictSrvs: ImportsDictionary = {
-  'turtlesim': new Set()
+  'turtlesim': new Set(),
+  'custom_srvs': new Set() 
 };
 
 function addImport(msgType: string): string {
   const msgParts = msgType.split('.msg.');
   const srvParts = msgType.split('.srv.');
-
+  console.log("Msg type: ", msgType);
   if (msgParts.length === 2) {
     const [packageName, msgName] = msgParts;
-    if (importsDictMsgs[packageName]) {
-      importsDictMsgs[packageName].add(msgName);
+    if (STANDARD_ROS_PACKAGES.has(packageName)) {
+      if (importsDictMsgs[packageName]) {
+        importsDictMsgs[packageName].add(msgName);
+      }
+      return msgName;
     }
-    return msgName;
+    return msgType;
   } else if (srvParts.length === 2) {
     const [packageName, srvName] = srvParts;
-    if (importsDictSrvs[packageName]) {
-      importsDictSrvs[packageName].add(srvName);
-    }
-    return srvName;
+    if (STANDARD_ROS_PACKAGES.has(packageName)) {
+      if (importsDictSrvs[packageName]) {
+        importsDictSrvs[packageName].add(srvName);
+      }
+      return srvName;
+    } 
+    return msgType;
   }
   else if (msgType === 'time') {
     importsDictMsgs['time'] = new Set(['time']);
     return msgType;
   }
-
-  return msgType;
+  else {
+    // Without prefix, it's a custom message
+    importsDictMsgs['custom_msgs'].add(msgType);
+    return msgType;
+  }
 }
 
 function getImports(): string {
   let importCode = `import rclpy\nfrom rclpy.node import Node\n`;
-
   for (const [pkg, msgs] of Object.entries(importsDictMsgs)) {
     if (msgs.size > 0) {
       if (pkg === 'time') {
         importCode += `import time\n`;
+      } else if (pkg === 'custom_msgs') {
+        importCode += `from sample_interfaces.msg import ${Array.from(msgs).join(', ')}\n`;
       } else {
         importCode += `from ${pkg}.msg import ${Array.from(msgs).join(', ')}\n`;
       }
     }
   }
-
   for (const [pkg, srvs] of Object.entries(importsDictSrvs)) {
     if (srvs.size > 0) {
-      importCode += `from ${pkg}.srv import ${Array.from(srvs).join(', ')}\n`;
+      if (pkg === 'custom_srvs') {
+        importCode += `from sample_interfaces.srv import ${Array.from(srvs).join(', ')}\n`;
+      } else {
+        importCode += `from ${pkg}.srv import ${Array.from(srvs).join(', ')}\n`;
+      }
     }
   }
 
@@ -96,7 +120,7 @@ function definirGeneradoresROS2() {
     let code =
       `pub_sub\n` +
       `${TAB_SPACE}${TAB_SPACE}self.publisher_ = self.create_publisher(${msgClass}, '${topicName}', 10)\n` +
-      mainBody; // sin indentSmartByLine
+      mainBody; 
 
     code = indentSmartPreserveStructure(code, 2);
     return code;
@@ -162,6 +186,7 @@ function definirGeneradoresROS2() {
     } else {
       code += pythonGenerator.prefixLines(callbackCode, TAB_SPACE.repeat(2));
     }
+    console.log(code);
     return code;
   };
 
@@ -183,9 +208,8 @@ function definirGeneradoresROS2() {
   // Code generator for the block "Publicar mensaje"
   pythonGenerator.forBlock['ros2_publish_message'] = function (block) {
     const msgType: string = block.getFieldValue('MSG_TYPE');
-    const msgClass = addImport(msgType);
 
-    let code = `${TAB_SPACE}${TAB_SPACE}msg = ${msgClass}()\n`;
+    let code = `${TAB_SPACE}${TAB_SPACE}msg = ${msgType}()\n`;
 
     // Recorre la lista de inputs con block.inputList o conoces sus nombres
     for (const input of block.inputList) {
@@ -360,9 +384,15 @@ function definirGeneradoresROS2() {
     });
     // 6) Return asynchronous call
     code += `${TAB_SPACE}${TAB_SPACE}return self.cli.call_async(self.req)\n`;
+    code += `#main-sendrequest\n`;
+    console.log(code);
+    console.log("---------------------------------")
     let main_code = pythonGenerator.statementToCode(block, 'MAIN');
+    console.log(main_code);
+    console.log("---------------------------------")
     code += main_code
     code = indentSmartPreserveStructure(code, 2);
+    console.log(code);
     return code;
   };
 
@@ -384,7 +414,7 @@ function definirGeneradoresROS2() {
       values.push(valueCode);
     }
   
-    let code = `#main-sendrequest\n`;
+    let code = "";
     code += assignments;
 
     let request =  `future = node.send_request(${values.join(', ')})\n`;
@@ -599,12 +629,23 @@ function definirGeneradoresROS2() {
     return `for ${variable0} in ${argument0}:\n${branch}`;
   }
 
+  // BLOCKS FOR COMMON TYPES
+  pythonGenerator.forBlock['text_char_to_ascii'] = function (block) {
+    const char = block.getFieldValue('CHAR') || 'a';
+    const code = `ord('${char}')`;
+    return [code, Order.ATOMIC];
+  };
+  pythonGenerator.forBlock['text_ascii_to_char'] = function (block) {
+    const value = pythonGenerator.valueToCode(block, 'ASCII_CODE', Order.NONE) || '0';
+    const code = `chr(${value})`;
+    return [code, Order.FUNCTION_CALL];
+  };
+  
+  pythonGenerator.forBlock['float_number'] = function(block) {
+  const code = block.getFieldValue('NUM');
 
-
-
+  // Ya está validado como float con punto decimal y precisión adecuada
+  return [code, Order.ATOMIC];
+};
 }
 
-/**
-* Removes the minimum common indentation from all lines,
-* preserving the difference between them (internal nesting).
-*/

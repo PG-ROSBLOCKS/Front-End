@@ -1,0 +1,9 @@
+<div class="overlay">
+  <div class="confirmDialog">
+    <p>{{ message }}</p>
+    <div class="buttons">
+      <button class="btn btnConfirm" (click)="Done()">OK</button>
+      <button *ngIf="showCancel" class="btn btnCancel" (click)="Cancel()">Cancel</button>
+    </div>
+  </div>
+</div>

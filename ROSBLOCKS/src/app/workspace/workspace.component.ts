@@ -3,22 +3,25 @@ import { Component, AfterViewInit, OnInit, OnDestroy, ElementRef, ViewChild, Hos
 import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
-import { definirBloquesROS2 } from '../blocks/ros2-blocks';
-import { definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
+import { definirBloquesROS2, setMessageService } from '../blocks/ros2-blocks';
+import { clearImports, definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
 import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables, removeOneIndentLevel } from '../utilities/sanitizer-tools';
+import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, linesAfter, linesBeforeComment, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables, removeOneIndentLevel } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
 import { msgList, MsgInfo } from '../shared/msg-list';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { toolbox } from "./blockly";
+import { toolbox, updateDynamicCategoryInToolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
 import { paintMap, isValidMap } from '../maps/mapBuilder';
 import { map1, map2, map3 } from '../maps/maps';
 import { principalBlocks } from './principal-blocks';
 import { initializeCommonMsgs } from '../blocks/ros2-msgs';
+import { blockColors } from '../blocks/color-palette';
+import { MessageService } from '../shared/message.service';
+import { ErrorsService } from '../shared/components/error/errors.service';
 
 @Component({
   selector: 'app-workspace',
@@ -67,20 +70,30 @@ export class WorkspaceComponent implements OnDestroy {
     private codeService: CodeService,
     private alertService: AlertService,
     private successService: SuccessService,
-    private sanitizer: DomSanitizer
-
+    private errorsService: ErrorsService,
+    private sanitizer: DomSanitizer,
+    private messageService: MessageService
   ) { }
 
   ngOnInit(): void {
     this.reloadTurtlesim();
     this.loadFromLocalStorage();
     initializeCommonMsgs();
+    setMessageService(this.messageService);
+    this.blockErrorMessages();
+  }
+
+  blockErrorMessages(): void{
+    this.messageService.message$.subscribe((msg) => {
+      if (msg.type === 'SERVICE_MISMATCH') {
+        const { expected } = msg.payload;
+        this.errorsService.showErrors(expected)
+      }
+    });
   }
 
   reloadTurtlesim(): void {
     const url = this.codeService.vncTurtlesim();
-    //console.log(url);
-
 
     if (url) {
       this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
@@ -180,7 +193,7 @@ export class WorkspaceComponent implements OnDestroy {
       const blob = new Blob([this.localStorageAsJSON()], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'proyect.rosblocks';
+      a.download = 'project.rosblocks';
       a.click();
       URL.revokeObjectURL(a.href);
     } catch (error) {
@@ -413,18 +426,19 @@ export class WorkspaceComponent implements OnDestroy {
       name: 'customTheme',
       base: Blockly.Themes.Classic,
       blockStyles: {
-        logic_blocks: { colourPrimary: '#A55A83' },
-        loop_blocks: { colourPrimary: '#3A8439' },
-        math_blocks: { colourPrimary: '#3D65A8' },
-        text_blocks: { colourPrimary: '#6835BB' },
-        conditional_blocks: { colourPrimary: '#569BBD' },
-        cycle_blocks: { colourPrimary: '#897099' },
-        operations_blocks: { colourPrimary: '#B28E34' },
-        variable_blocks: { colourPrimary: '#B46564' },
-        procedure_blocks: { colourPrimary: '#3E7E7E' },
-        text_manipulation_blocks: { colourPrimary: '#E91E63' }
+        logic_blocks: { colourPrimary: blockColors.Conditionals }, //Conditionals
+        loop_blocks: { colourPrimary: blockColors.Cycles }, //Cycles
+        math_blocks: { colourPrimary: blockColors.Operations }, //Operations
+        variable_blocks: { colourPrimary: blockColors.Variables }, //Variables
+        procedure_blocks: { colourPrimary: blockColors.Functions },//Functions
+        text_blocks: { colourPrimary: blockColors.Text }, //Text
+        conditional_blocks: { colourPrimary: blockColors.Conditionals },
+        cycle_blocks: { colourPrimary: blockColors.Cycles },
+        operations_blocks: { colourPrimary: blockColors.Cycles },
+        text_manipulation_blocks: { colourPrimary: blockColors.Functions }
       }
     });
+    
     this.workspaces[tabId] = Blockly.inject(blocklyDiv, {
       toolbox: toolbox,
       trashcan: true,
@@ -446,11 +460,13 @@ export class WorkspaceComponent implements OnDestroy {
       rtl: false,
       horizontalLayout: false,
       renderer: 'zelos',
-      theme: customTheme
+      theme: customTheme,
     });
 
     this.workspaces[tabId].addChangeListener((event) => {
-      this.saveToLocalStorage();
+      if (event.type != 'viewport_change' && event.type != 'selected'  && event.type != 'click') {
+        this.saveToLocalStorage();
+      }
     });
     this.registerGenericDeletionListeners(tabId);
 
@@ -545,6 +561,7 @@ export class WorkspaceComponent implements OnDestroy {
     // 1. Validar bloques antes de ejecutar
     const topBlocks = ws.getTopBlocks(true);
     for (const block of topBlocks) {
+      clearImports();
       if (block.type === 'ros2_create_publisher') {
         const mainInput = block.getInput('MAIN');
         const childBlock = mainInput?.connection?.targetBlock();
@@ -791,6 +808,37 @@ export class WorkspaceComponent implements OnDestroy {
     }
   }
 
+  seeTopics(): void {
+    if (!this.selectedTabId) {
+      console.error("No tab selected");
+      return;
+    }
+  
+    const tabId = this.selectedTabId.toString();
+    const consoleService = this.consolesServices.get(tabId);
+    
+    if (!consoleService) {
+      console.error("Console service not found for tab", tabId);
+      return;
+    }
+  
+    consoleService.seeTopics().subscribe({
+      next: (topics: string[]) => {
+        const topicsOutput = topics.join('\n');
+        const currentOutput = this.consolesOutput.get(tabId) || '';
+        
+        this.consolesOutput.set(tabId, `${currentOutput}Available topics:\n${topicsOutput}\n\n`);
+        this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId) || '';
+      },
+      error: (err) => {
+        console.error("Error fetching topics:", err);
+        const currentOutput = this.consolesOutput.get(tabId) || '';
+        this.consolesOutput.set(tabId, `${currentOutput}Error: ${err.message}\n`);
+        this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId) || '';
+      }
+    });
+  }
+
   enviarCodigo(code_to_send: string, tabId: number) {
     console.log('Sending code...');
     const workspace = this.workspaces[tabId];
@@ -1015,11 +1063,11 @@ export class WorkspaceComponent implements OnDestroy {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
       ? { ...toolbox }
       : { kind: 'categoryToolbox', contents: [] };
-
+  
     const srvVariablesCategory = {
       kind: 'category',
       type: 'category',
-      name: 'Variables de Servicio',
+      name: 'Service Variables',
       contents: srvList.map((service: SrvInfo) => {
         const requestBlocks = service.variables?.request?.map((variable: any) =>
           this.createSrvVariableBlock(variable, "request")
@@ -1027,44 +1075,36 @@ export class WorkspaceComponent implements OnDestroy {
         const responseBlocks = service.variables?.response?.map((variable: any) =>
           this.createSrvVariableBlock(variable, "response")
         ) || [];
-        const responseAssignBlock = {
-          kind: 'block',
-          type: 'srv_response_set_field',
-          fields: {
-            FIELD_NAME: "campo"
-          }
-        };
         return {
           kind: 'category',
           type: 'category',
           name: service.name ? service.name.replace(/\.srv$/, "") : "",
           contents: [
-            { kind: 'label', text: "Solicitud:" },
-            ...requestBlocks,
-            { kind: 'label', text: "Respuesta:" },
-            ...responseBlocks,
-            { kind: 'label', text: "Asignar campo de respuesta:" },
-            responseAssignBlock
+            { kind: 'label', text: "Request:" },
+            ...requestBlocks.map(block => {
+              block.data = service.name; 
+              return block;
+            }),
+            { kind: 'label', text: "Response:" },
+            ...responseBlocks.map(block => {
+              block.data = service.name;
+              return block;
+            })
           ]
         };
       })
     };
+    updateDynamicCategoryInToolbox(toolboxObj, 'ROS2 Blocks', 'Variables',  'Service Variables', srvVariablesCategory);
 
-    const contents = toolboxObj.contents;
-    const existingIdx = contents.findIndex((cat: any) => cat.name === "Variables de Servicio");
-    if (existingIdx !== -1) {
-      contents[existingIdx] = srvVariablesCategory;
-    } else {
-      contents.push(srvVariablesCategory);
-    }
-
+    // Update the toolbox of the current workspace (if active)
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.workspaces[this.selectedTabId].updateToolbox({
         kind: 'categoryToolbox',
-        contents: contents
+        contents: toolboxObj.contents
       });
     }
   }
+  
   updateMsgVariablesCategory(): void {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
       ? { ...toolbox }
@@ -1073,7 +1113,7 @@ export class WorkspaceComponent implements OnDestroy {
     const msgVariablesCategory = {
       kind: 'category',
       type: 'category',
-      name: 'Variables de Mensaje',
+      name: 'Message Variables',
       contents: msgList.map((message: MsgInfo) => {
         const fieldBlocks = message.fields?.map((variable: any) =>
           this.createMsgVariableBlock(variable)
@@ -1085,30 +1125,25 @@ export class WorkspaceComponent implements OnDestroy {
           name: (() => {
             const parts = message.name.split('.');
             if (parts.length === 3 && parts[1] === 'msg') {
-              return parts[2]; // Ej: 'Twist'
+              return parts[2]; // E.g., 'Twist'
             }
-            return message.name; // Ej: 'mensaje3'
+            return message.name; // E.g., 'message3'
           })(),
           contents: [
-            { kind: 'label', text: "Campos del mensaje:" },
+            { kind: 'label', text: "Message fields:" },
             ...fieldBlocks
           ]
         };
       })
     };
 
-    const contents = toolboxObj.contents;
-    const existingIdx = contents.findIndex((c: any) => c.name === 'Variables de Mensaje');
-    if (existingIdx !== -1) {
-      contents[existingIdx] = msgVariablesCategory;
-    } else {
-      contents.push(msgVariablesCategory);
-    }
-
+    updateDynamicCategoryInToolbox(toolboxObj, 'ROS2 Blocks', 'Variables', 'Message Variables', msgVariablesCategory);
+    
+    // Update the toolbox of the current workspace (if active)
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.workspaces[this.selectedTabId].updateToolbox({
         kind: 'categoryToolbox',
-        contents: contents
+        contents: toolboxObj.contents
       });
     }
   }
@@ -1428,22 +1463,6 @@ export class WorkspaceComponent implements OnDestroy {
       });
     });
   }
-}
-export function linesBeforeComment(code: string): string {
-  const marker = "#main-sendrequest";
-  const index = code.indexOf(marker);
-  if (index === -1) {
-    return code.trimEnd();
-  }
-  return code.substring(0, index).trimEnd();
-}
-
-export function linesAfter(code: string): string {
-  const marker = "#main-sendrequest";
-  const index = code.indexOf(marker);
-  if (index === -1) return "";
-  // Extracts everything following the marker, without altering the original indentation.
-  return removeOneIndentLevel(code.substring(index + marker.length))
 }
 
 export function hasValidChain(block: Blockly.Block | null, childBlock: string): boolean {
