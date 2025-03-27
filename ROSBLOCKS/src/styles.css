@@ -168,8 +168,9 @@
 
 /* Blockly */
 .blocklyToolboxDiv {
-  padding-top: 30px;
+  margin-top: 30px;
   width: 250px;
+  height: calc(100% - 56.69px) !important;
   background-color: #253942;
   color: #FFF;
 }
