@@ -451,7 +451,9 @@ export class WorkspaceComponent implements OnDestroy {
     });
 
     this.workspaces[tabId].addChangeListener((event) => {
-      this.saveToLocalStorage();
+      if (event.type != 'viewport_change' && event.type != 'selected'  && event.type != 'click') {
+        this.saveToLocalStorage();
+      }
     });
     this.registerGenericDeletionListeners(tabId);
 
