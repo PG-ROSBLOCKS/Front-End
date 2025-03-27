@@ -1072,10 +1072,15 @@ export class WorkspaceComponent implements OnDestroy {
           name: service.name ? service.name.replace(/\.srv$/, "") : "",
           contents: [
             { kind: 'label', text: "Request:" },
-            ...requestBlocks,
+            ...requestBlocks.map(block => {
+              block.data = service.name; 
+              return block;
+            }),
             { kind: 'label', text: "Response:" },
-            ...responseBlocks,
-            // Remove the label "Assign response field:" and leave only the block
+            ...responseBlocks.map(block => {
+              block.data = service.name;
+              return block;
+            }),
             responseAssignBlock
           ]
         };
