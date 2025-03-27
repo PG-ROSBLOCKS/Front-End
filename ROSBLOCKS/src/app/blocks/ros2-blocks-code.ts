@@ -34,7 +34,6 @@ const importsDictSrvs: ImportsDictionary = {
 };
 
 function addImport(msgType: string): string {
-  clearImports();
   const msgParts = msgType.split('.msg.');
   const srvParts = msgType.split('.srv.');
   console.log("Msg type: ", msgType);
