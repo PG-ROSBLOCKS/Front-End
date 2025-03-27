@@ -38,8 +38,8 @@
   }
   
   .confirmDialog {
-    background-color: #ceb918;
-    border: 4px solid #ffe200;
+    background-color: #bc2727;
+  border: 4px solid #ff0000;
     color: white;
     padding: 15px;
     border-radius: 10px;
@@ -69,12 +69,12 @@
     transition: background-color 0.3s ease, transform 0.3s ease;
   }
   
-  .btnConfirm, .btnCancel {
-    background-color: #e8ce00;
+  .btnConfirm {
+    background-color: #eb0e0e;
     color: white;
   }
-
-  .btnConfirm:hover, .btnCancel:hover {
-    background-color: #f7da01;
+  
+  .btnConfirm:hover{
+    background-color: #ff1818;
     transform: scale(1.05);
   }

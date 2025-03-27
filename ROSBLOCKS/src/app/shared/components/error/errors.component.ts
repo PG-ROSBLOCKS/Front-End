@@ -1,12 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
-  selector: 'app-alert',
-  templateUrl: './alert.component.html',
-  styleUrls: ['./alert.component.css']
+  selector: 'errors-alert',
+  templateUrl: './errors.component.html',
+  styleUrls: ['./errors.component.css']
 })
-export class AlertComponent {
-  @Input() message: string = 'Alerta';
+export class ErrorsComponent {
+  @Input() message: string = 'Errors';
   @Input() showCancel: boolean = false;
   @Output() ok = new EventEmitter<boolean>();
   

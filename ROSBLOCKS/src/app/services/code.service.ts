@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { WebSocketSubject, webSocket } from 'rxjs/webSocket';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, map } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -90,7 +90,7 @@ export class CodeService {
     this.http.get(`${this.API_URL}/export/`, { responseType: 'blob' }).subscribe(response => {
       const blob = new Blob([response], { type: 'application/gzip' });
 
-      // Crear download link with default name
+      // Create download link with default name
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
       link.download = 'ros2_ws.tar.gz'; // default name
@@ -99,7 +99,7 @@ export class CodeService {
       document.body.removeChild(link);
 
     }, error => {
-      console.error('Error deleting proyect:', error);
+      console.error('Error deleting project:', error);
     });
   }
 
@@ -110,7 +110,14 @@ export class CodeService {
     );
   }
 
-  //Funtion to delete a .srv or a .msg of the proyect
+  checkMsgFiles(): Observable<{ exists: boolean, files: string[] }> {
+    return this.http.get<{ exists: boolean, files: string[] }>(`${this.API_URL}/msgfiles`)
+      .pipe(
+      tap(response => console.log('checkMsgFiles returns:', response))
+    );
+  }
+
+  //Funtion to delete a .srv or a .msg of the project
   deleteInterfaceFile(fileType: 'srv' | 'msg', fileName: string): Observable<any> {
     console.log('El endpoint es:', `${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);
     return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
@@ -122,5 +129,18 @@ export class CodeService {
 
   vncTurtlesimReset(): string {
     return `${this.API_URL}/reset/`;
+  }
+
+  seeTopics(): Observable<string[]> {
+    interface ViewTopicsResponse {
+      message: string;
+      output: string;
+    }
+    console.log('El endpoint es:', `${this.API_URL}/ros_commands/view_topics`);
+    return this.http.get<ViewTopicsResponse>(`${this.API_URL}/ros_commands/view_topics`).pipe(
+      map((response: ViewTopicsResponse): string[] => {
+      return response.output.trim().split('\n').filter((topic: string) => topic.trim() !== '');
+      })
+    );
   }
 }
