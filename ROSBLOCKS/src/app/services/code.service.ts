@@ -99,7 +99,7 @@ export class CodeService {
       document.body.removeChild(link);
 
     }, error => {
-      console.error('Error deleting proyect:', error);
+      console.error('Error deleting project:', error);
     });
   }
 
@@ -117,7 +117,7 @@ export class CodeService {
     );
   }
 
-  //Funtion to delete a .srv or a .msg of the proyect
+  //Funtion to delete a .srv or a .msg of the project
   deleteInterfaceFile(fileType: 'srv' | 'msg', fileName: string): Observable<any> {
     console.log('El endpoint es:', `${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);
     return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
