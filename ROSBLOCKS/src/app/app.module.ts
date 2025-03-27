@@ -6,7 +6,6 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { WorkspaceComponent } from './workspace/workspace.component';
 import { HeaderComponent } from './shared/components/header/header.component';
-import { ErrorComponent } from './shared/components/error/error.component';
 import { RosblocksHelpComponent } from './rosblocks-help/rosblocks-help.component';
 import { SafePipe } from './safe.pipe';
 import { HttpClientModule } from '@angular/common/http';
@@ -21,7 +20,6 @@ import { SuccessComponent } from './shared/components/success/success.component'
     AppComponent,
     WorkspaceComponent,
     HeaderComponent,
-    ErrorComponent,
     RosblocksHelpComponent,
     SafePipe,
     ConfirmComponent,

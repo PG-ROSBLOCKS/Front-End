@@ -21,7 +21,7 @@ import { principalBlocks } from './principal-blocks';
 import { initializeCommonMsgs } from '../blocks/ros2-msgs';
 import { blockColors } from '../blocks/color-palette';
 import { MessageService } from '../shared/message.service';
-import { ErrorsService } from '../shared/components/errors/errors.service';
+import { ErrorsService } from '../shared/components/error/errors.service';
 
 @Component({
   selector: 'app-workspace',
@@ -80,21 +80,20 @@ export class WorkspaceComponent implements OnDestroy {
     this.loadFromLocalStorage();
     initializeCommonMsgs();
     setMessageService(this.messageService);
+    this.blockErrorMessages();
+  }
 
-    // Escuchar eventos
+  blockErrorMessages(): void{
     this.messageService.message$.subscribe((msg) => {
       if (msg.type === 'SERVICE_MISMATCH') {
         const { expected } = msg.payload;
         this.errorsService.showErrors(expected)
-        // También puedes seleccionar el bloque, resaltar, o mostrar tooltip
       }
     });
   }
 
   reloadTurtlesim(): void {
     const url = this.codeService.vncTurtlesim();
-    //console.log(url);
-
 
     if (url) {
       this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
