@@ -385,9 +385,15 @@ function definirGeneradoresROS2() {
     });
     // 6) Return asynchronous call
     code += `${TAB_SPACE}${TAB_SPACE}return self.cli.call_async(self.req)\n`;
+    code += `#main-sendrequest\n`;
+    console.log(code);
+    console.log("---------------------------------")
     let main_code = pythonGenerator.statementToCode(block, 'MAIN');
+    console.log(main_code);
+    console.log("---------------------------------")
     code += main_code
     code = indentSmartPreserveStructure(code, 2);
+    console.log(code);
     return code;
   };
 
@@ -409,7 +415,7 @@ function definirGeneradoresROS2() {
       values.push(valueCode);
     }
   
-    let code = `#main-sendrequest\n`;
+    let code = "";
     code += assignments;
 
     let request =  `future = node.send_request(${values.join(', ')})\n`;

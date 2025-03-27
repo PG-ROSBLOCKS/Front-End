@@ -43,8 +43,8 @@ export function definirBloquesROS2() {
       this.appendStatementInput('MAIN')
         .setCheck(null)
         .appendField('On publish');
-
       this.setColour(160);
+
       this.messageType = '';
 
       this.setOnChange((event: { type: EventType; blockId: any; element: string; name: string; }) => {
@@ -726,6 +726,7 @@ Blockly.Blocks["ros_create_client"] = {
     this.setColour(230);
     this.setTooltip("Block to create an asynchronous client in ROS2");
     this.setHelpUrl("");
+
     // Internally we save the serviceType and the serviceName
     this.clientType = "";
     this.serviceName = this.getFieldValue("SERVICE_NAME");
@@ -767,58 +768,39 @@ Blockly.Blocks["ros_create_client"] = {
     const serviceName = xmlElement.getAttribute('serviceName') || "";
     this.setFieldValue(serviceName, "SERVICE_NAME");
   },
+
+     // Esta función recorre recursivamente un bloque y sus sub-bloques
+    traverseAndUpdate_: function (block: { type: string; updateFromParent: (arg0: any) => void; inputList: { connection: { targetBlock: () => any; }; }[]; nextConnection: { targetBlock: () => any; }; }, messageType: any) {
+      if (!block) return;
+
+      // Si el bloque 
+      if ( block.type === 'ros_send_request') {
+        block.updateFromParent(messageType);
+      }
+
+      // Recorremos todos los inputs del bloque (tanto statement como value)
+      block.inputList.forEach((input: { connection: { targetBlock: () => any; }; }) => {
+        const target = input.connection && input.connection.targetBlock();
+        if (target) {
+          this.traverseAndUpdate_(target, messageType);
+        }
+      });
+
+      // Y luego continuamos con el siguiente bloque en la cadena
+      const next = block.nextConnection && block.nextConnection.targetBlock();
+      if (next) {
+        this.traverseAndUpdate_(next, messageType);
+      }
+    },
   // Notify child blocks that the clientType has changed
   updateChildren_: function () {
     const mainInput = this.getInput("MAIN");
     if (mainInput && mainInput.connection && mainInput.connection.targetBlock()) {
       const childBlock = mainInput.connection.targetBlock();
-      // If the child is “ros_send_request” (or whatever)
-      if (childBlock && childBlock.type === "ros_send_request") {
-        childBlock.updateFromParent(this.clientType);
-      }
+      this.traverseAndUpdate_(childBlock, this.clientType);
     }
   }
 };
-
-function validateDescendants(block: { type: string; data: string; unplug: () => void; inputList: any[]; nextConnection: { targetBlock: () => any; }; }, selectedServiceNormalized: string) {
-  if (!block) return;
-
-  // Validar si el bloque es del tipo "srv_variable"
-  if (block.type === "srv_variable") {
-    const blockService = block.data || "";
-    const blockServiceNormalized = blockService.replace(/\.srv$/, "");
-    // Si no hay servicio seleccionado, desconecta el bloque sin alerta
-    if (selectedServiceNormalized === "") {
-      block.unplug();
-      return;
-    }
-
-    if (blockService && blockServiceNormalized !== selectedServiceNormalized) {
-      alert(
-        "El bloque de variable de servicio (" +
-        blockServiceNormalized +
-        ") no coincide con el servicio seleccionado (" +
-        selectedServiceNormalized +
-        ")"
-      );
-      block.unplug();
-      // Opcional: Puedes retornar aquí si deseas detener la validación en esta rama
-      // return;
-    }
-  }
-
-  // Recorrer todas las conexiones de entrada (inputs)
-  block.inputList.forEach((input) => {
-    if (input.connection && input.connection.targetBlock()) {
-      validateDescendants(input.connection.targetBlock(), selectedServiceNormalized);
-    }
-  });
-
-  // Además, verificar la conexión "next" (para bloques conectados en secuencia)
-  if (block.nextConnection && block.nextConnection.targetBlock()) {
-    validateDescendants(block.nextConnection.targetBlock(), selectedServiceNormalized);
-  }
-}
 
 Blockly.Blocks["ros_send_request"] = {
   init: function () {
@@ -836,41 +818,45 @@ Blockly.Blocks["ros_send_request"] = {
     this.fieldValues = {};      // *** Object to store the entered values
     this.setOnChange((event: any) => {
       if (!this.workspace || this.workspace.isDragging()) return;
-
-      const parent = this.getSurroundParent();
-      if (!parent || parent.type !== 'ros_create_client') return;
-
-      let warningMessage = null;  // Variable to store the warning message
-
-      const mainInput = parent.getInput('MAIN');
-      const firstBlock = mainInput?.connection?.targetBlock();
-      const isFirst = firstBlock && firstBlock.id === this.id;
-
-      if (!isFirst) {
-        // If it's not the first block, reset clientType and clear inputs
-        if (this.clientType !== '') {
-          this.clientType = '';
-          this.requestFields = [];
-          this.updateShape_();
-        }
-        warningMessage = 'This block can only be in the first position of the client.';
-      } else {
-        // Check if there is at least one unconnected slot
-        const hasUnconnectedFields = this.inputList.some((input: { name: string; connection: { targetBlock: () => any; }; }) =>
-          input.name?.startsWith("FIELD_") &&
-          !input.connection?.targetBlock()
+    
+      const parent = this.getParent(); // Obtener el bloque padre
+      if (!parent) {
+        // Si no se encontró un bloque 'ros_create_client' en la cadena de padres,
+        // mostramos la advertencia
+        this.setWarningText("This block must be inside a 'Create Client'.");
+        return;
+      }
+    
+      let warningMessage = null; // Variable para almacenar el mensaje final
+      const isDynamic = !!this.clientType; // Determina si el bloque ya está configurado dinámicamente
+    
+      if (!isDynamic) {
+        warningMessage = "This block must be inside a 'Create Client'.";
+        // Si tiene inputs dinámicos, los limpiamos
+        const hasDynamicInputs = this.inputList.some(
+          (input: { name: string; }) => input.name?.startsWith("FIELD_")
         );
+        if (hasDynamicInputs) {
+          this.messageFields = [];
+          this.updateShape_(); // Quita los inputs del bloque
+        }
+      } else {
+        // Verificar si hay campos obligatorios sin conectar
+        const hasUnconnectedFields = this.inputList.some(
+          (input: { name: string; connection: { targetBlock: () => any; }; }) =>
+            input.name?.startsWith("FIELD_") &&
+            !input.connection?.targetBlock()
+        );
+        
         if (hasUnconnectedFields) {
           warningMessage = 'You must complete all required fields before executing.';
         }
       }
-
-      // Set (or clear) the warning only once
+    
+      // Finalmente, establecer (o limpiar) el warning
       this.setWarningText(warningMessage);
     });
-
-
-  },
+  },    
   // Mutation
   mutationToDom: function () {
     const container = document.createElement('mutation');
@@ -1174,4 +1160,38 @@ Blockly.Blocks['float_number'] = {
     return text; // valid, it is preserved as is
   }
 };
+
+function validateDescendants(block: { type: string; data: string; unplug: () => void; inputList: any[]; nextConnection: { targetBlock: () => any; }; }, selectedServiceNormalized: string) {
+  if (!block) return;
+
+  // Validar si el bloque es del tipo "srv_variable"
+  if (block.type === "srv_variable") {
+    const blockService = block.data || "";
+    const blockServiceNormalized = blockService.replace(/\.srv$/, "");
+    if (blockService && blockServiceNormalized !== selectedServiceNormalized) {
+      alert(
+        "El bloque de variable de servicio (" +
+        blockServiceNormalized +
+        ") no coincide con el servicio seleccionado (" +
+        selectedServiceNormalized +
+        ")"
+      );
+      block.unplug();
+      // Opcional: Puedes retornar aquí si deseas detener la validación en esta rama
+      // return;
+    }
+  }
+
+  // Recorrer todas las conexiones de entrada (inputs)
+  block.inputList.forEach((input) => {
+    if (input.connection && input.connection.targetBlock()) {
+      validateDescendants(input.connection.targetBlock(), selectedServiceNormalized);
+    }
+  });
+
+  // Además, verificar la conexión "next" (para bloques conectados en secuencia)
+  if (block.nextConnection && block.nextConnection.targetBlock()) {
+    validateDescendants(block.nextConnection.targetBlock(), selectedServiceNormalized);
+  }
+}
 
