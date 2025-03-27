@@ -1063,13 +1063,6 @@ export class WorkspaceComponent implements OnDestroy {
         const responseBlocks = service.variables?.response?.map((variable: any) =>
           this.createSrvVariableBlock(variable, "response")
         ) || [];
-        const responseAssignBlock = {
-          kind: 'block',
-          type: 'srv_response_set_field',
-          fields: {
-            FIELD_NAME: "field"
-          }
-        };
         return {
           kind: 'category',
           type: 'category',
@@ -1084,8 +1077,7 @@ export class WorkspaceComponent implements OnDestroy {
             ...responseBlocks.map(block => {
               block.data = service.name;
               return block;
-            }),
-            responseAssignBlock
+            })
           ]
         };
       })
