@@ -3,6 +3,14 @@ import { srvList } from '../shared/srv-list';
 import { msgList, MsgVariable } from '../shared/msg-list';
 import { EventType } from 'blockly/core/events/type';
 import { common_msgs, common_msgs_for_custom } from './ros2-msgs';
+import type { MessageService } from '../shared/message.service'; // asegúrate del path correcto
+
+let messageServiceInstance: MessageService | null = null;
+
+export function setMessageService(service: MessageService) {
+  messageServiceInstance = service;
+}
+
 
 const TAB_SPACE = '    '; // Tab space
 let srv_list = [];
@@ -1169,13 +1177,18 @@ function validateDescendants(block: { type: string; data: string; unplug: () => 
     const blockService = block.data || "";
     const blockServiceNormalized = blockService.replace(/\.srv$/, "");
     if (blockService && blockServiceNormalized !== selectedServiceNormalized) {
-      alert(
-        "El bloque de variable de servicio (" +
-        blockServiceNormalized +
-        ") no coincide con el servicio seleccionado (" +
-        selectedServiceNormalized +
-        ")"
-      );
+      messageServiceInstance?.sendMessage({
+        type: 'SERVICE_MISMATCH',
+        payload: {
+          expected: 
+          "El bloque de variable de servicio (" +
+          blockServiceNormalized +
+          ") no coincide con el servicio seleccionado (" +
+          selectedServiceNormalized +
+          ")"
+        }
+      });
+
       block.unplug();
       // Opcional: Puedes retornar aquí si deseas detener la validación en esta rama
       // return;

@@ -3,7 +3,7 @@ import { Component, AfterViewInit, OnInit, OnDestroy, ElementRef, ViewChild, Hos
 import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
-import { definirBloquesROS2 } from '../blocks/ros2-blocks';
+import { definirBloquesROS2, setMessageService } from '../blocks/ros2-blocks';
 import { clearImports, definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
 import { Subscription, of } from 'rxjs';
@@ -20,6 +20,8 @@ import { map1, map2, map3 } from '../maps/maps';
 import { principalBlocks } from './principal-blocks';
 import { initializeCommonMsgs } from '../blocks/ros2-msgs';
 import { blockColors } from '../blocks/color-palette';
+import { MessageService } from '../shared/message.service';
+import { ErrorsService } from '../shared/components/errors/errors.service';
 
 @Component({
   selector: 'app-workspace',
@@ -68,14 +70,25 @@ export class WorkspaceComponent implements OnDestroy {
     private codeService: CodeService,
     private alertService: AlertService,
     private successService: SuccessService,
-    private sanitizer: DomSanitizer
-
+    private errorsService: ErrorsService,
+    private sanitizer: DomSanitizer,
+    private messageService: MessageService
   ) { }
 
   ngOnInit(): void {
     this.reloadTurtlesim();
     this.loadFromLocalStorage();
     initializeCommonMsgs();
+    setMessageService(this.messageService);
+
+    // Escuchar eventos
+    this.messageService.message$.subscribe((msg) => {
+      if (msg.type === 'SERVICE_MISMATCH') {
+        const { expected } = msg.payload;
+        this.errorsService.showErrors(expected)
+        // También puedes seleccionar el bloque, resaltar, o mostrar tooltip
+      }
+    });
   }
 
   reloadTurtlesim(): void {
