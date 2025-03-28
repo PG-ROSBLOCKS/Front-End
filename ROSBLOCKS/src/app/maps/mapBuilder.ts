@@ -70,6 +70,75 @@ export function paintMap(matrix: any[][]): string {
 
         self.draw_matrix()
         self.kill_turtle()
+        self.monitor_alive_turtles()
+
+    def monitor_alive_turtles(self):
+        poses = {}
+        subs = {}
+        avisados = set()
+
+        def make_callback(turtle):
+            def callback(msg):
+                poses[turtle] = (msg.x, msg.y, msg.theta)
+            return callback
+
+        self.get_logger().info('Monitoreando posiciones de tortugas (1s)...')
+
+        last_print_time = time.time()
+        last_subs_print_time = time.time()
+        subs_print_interval = 5
+
+        while rclpy.ok():
+            topics = self.get_topic_names_and_types()
+            turtles_alive = set()
+
+            for name, _ in topics:
+                parts = name.strip('/').split('/')
+                if len(parts) >= 2 and parts[1] == 'pose':
+                    turtle_name = parts[0]
+                    topic_name = f'/{turtle_name}/pose'
+                    publishers = self.get_publishers_info_by_topic(topic_name)
+                    if publishers:  # Solo contar si tiene publishers activos
+                        turtles_alive.add(turtle_name)
+
+            # Crear suscripciones nuevas
+            for turtle in turtles_alive:
+                if turtle not in subs:
+                    topic = f'/{turtle}/pose'
+                    subs[turtle] = self.create_subscription(Pose, topic, make_callback(turtle), 10)
+                    self.get_logger().info(f'Suscripción creada para: {turtle}')
+
+            # Desuscribir tortugas que ya no existen
+            turtles_to_remove = [t for t in subs if t not in turtles_alive]
+            for turtle in turtles_to_remove:
+                self.destroy_subscription(subs[turtle])
+                del subs[turtle]
+                if turtle in poses:
+                    del poses[turtle]
+                self.get_logger().info(f'Suscripción eliminada para: {turtle}')
+                if turtle in avisados:
+                    avisados.remove(turtle)
+
+            rclpy.spin_once(self, timeout_sec=0.1)
+
+            # Imprimir posiciones cada segundo
+            current_time = time.time()
+            if current_time - last_print_time >= 1.0:
+                for turtle in sorted(subs.keys()):
+                    if turtle in poses:
+                        x, y, theta = poses[turtle]
+                        self.get_logger().info(f'{turtle} -> x: {x:.2f}, y: {y:.2f}, θ: {theta:.2f}')
+                    elif turtle not in avisados:
+                        self.get_logger().warn(f'No se pudo obtener posición de {turtle} (aún)')
+                        avisados.add(turtle)
+                last_print_time = current_time
+
+            # Imprimir suscripciones activas
+            if current_time - last_subs_print_time >= subs_print_interval:
+                self.get_logger().info(f'Suscripciones activas: {sorted(list(subs.keys()))}')
+                last_subs_print_time = current_time
+
+
 
     def spawn_turtle(self):
         cli_spawn = self.create_client(Spawn, '/spawn')
@@ -162,8 +231,6 @@ export function paintMap(matrix: any[][]): string {
                     self.set_pen(0, 0, 0, pen_size, 1)
                 else:
                     i += 1
-
-        self.get_logger().info('¡Matriz dibujada de forma optimizada y sin bordes externos!')
 
 `
     const pythonCode = create_map(codeBody, 'paint_map');

@@ -101,6 +101,9 @@ export function create_map(code: string, name: string): string {
     return `# Archivo ${nameWithoutExtension}.py generado por ROSBlocks
 ${getImports()}
 import ast
+import time
+from turtlesim.msg import Pose
+from threading import Event
 
 class ${nameWithoutExtension.toUpperCase()}(Node):
 

@@ -369,6 +369,8 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   enviarCodigoMapa(code_to_send: string): void {
+    console.log(code_to_send);
+    
     //Why count to 2?, because 2 turtles are painting the map, so this indicates when a turtle ends his job
     let count = 2;
     const fileName = "turtleMap.py";
@@ -395,6 +397,8 @@ export class WorkspaceComponent implements OnDestroy {
       )
       .subscribe({
         next: (response) => {
+          //console.log(response.output);
+          
           if (!response) return;
           count--
           if (count == 0) {
