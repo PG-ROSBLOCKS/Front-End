@@ -55,6 +55,9 @@ export function paintMap(matrix: any[][]): string {
     getImports()
 
     const codeBody = `
+        self.matrix = []
+        self.history = {} 
+
     def run(self):
         self.declare_parameter('matrix_str', '${MatrixToString(matrix)}')
         self.turtle_name = '${turtle}'
@@ -70,19 +73,25 @@ export function paintMap(matrix: any[][]): string {
 
         self.draw_matrix()
         self.kill_turtle()
+        self.get_logger().info('Dibujo terminado. Iniciando monitoreo...')
         self.monitor_alive_turtles()
 
     def monitor_alive_turtles(self):
         poses = {}
         subs = {}
         avisados = set()
+        visitados = {}  # Últimas posiciones válidas (fuera de celdas marcadas)
 
-        def make_callback(turtle):
-            def callback(msg):
-                poses[turtle] = (msg.x, msg.y, msg.theta)
-            return callback
+        x0, y0 = 0.0, 10.6
+        xf, yf = 11.0, 0.0
+        size = len(self.matrix)
+        cell_w = (xf - x0) / size
+        cell_h = (y0 - yf) / size
 
-        self.get_logger().info('Monitoreando posiciones de tortugas (1s)...')
+        x_centro = 5.5
+        y_centro = 5.5
+
+        self.get_logger().info('Monitoreando posiciones de tortugas...')
 
         last_print_time = time.time()
         last_subs_print_time = time.time()
@@ -98,47 +107,72 @@ export function paintMap(matrix: any[][]): string {
                     turtle_name = parts[0]
                     topic_name = f'/{turtle_name}/pose'
                     publishers = self.get_publishers_info_by_topic(topic_name)
-                    if publishers:  # Solo contar si tiene publishers activos
+                    if publishers:
                         turtles_alive.add(turtle_name)
 
-            # Crear suscripciones nuevas
+            def make_callback(turtle):
+                def callback(msg):
+                    poses[turtle] = (msg.x, msg.y, msg.theta)
+                return callback
+
             for turtle in turtles_alive:
                 if turtle not in subs:
                     topic = f'/{turtle}/pose'
                     subs[turtle] = self.create_subscription(Pose, topic, make_callback(turtle), 10)
                     self.get_logger().info(f'Suscripción creada para: {turtle}')
 
-            # Desuscribir tortugas que ya no existen
             turtles_to_remove = [t for t in subs if t not in turtles_alive]
             for turtle in turtles_to_remove:
                 self.destroy_subscription(subs[turtle])
                 del subs[turtle]
-                if turtle in poses:
-                    del poses[turtle]
+                poses.pop(turtle, None)
+                avisados.discard(turtle)
+                visitados.pop(turtle, None)
                 self.get_logger().info(f'Suscripción eliminada para: {turtle}')
-                if turtle in avisados:
-                    avisados.remove(turtle)
 
-            rclpy.spin_once(self, timeout_sec=0.1)
+            rclpy.spin_once(self, timeout_sec=0.01)  # 🔁 Revisión más frecuente
 
-            # Imprimir posiciones cada segundo
             current_time = time.time()
-            if current_time - last_print_time >= 1.0:
+            if current_time - last_print_time >= 0.1:  # 📡 Actualización más frecuente
                 for turtle in sorted(subs.keys()):
                     if turtle in poses:
                         x, y, theta = poses[turtle]
                         self.get_logger().info(f'{turtle} -> x: {x:.2f}, y: {y:.2f}, θ: {theta:.2f}')
+
+                        col = int((x - x0) / cell_w)
+                        row = int((y0 - y) / cell_h)
+
+                        if 0 <= row < size and 0 <= col < size:
+                            if self.matrix[row][col] == 1:
+                                self.get_logger().info(f'✅ Tortuga "{turtle}" está DENTRO de una celda marcada ({row}, {col})')
+
+                                if turtle in visitados:
+                                    x_prev, y_prev, theta_prev = visitados[turtle]
+                                    self.get_logger().warn(f'🔄 Teletransportando a {turtle} a posición segura ({x_prev:.2f}, {y_prev:.2f})')
+                                else:
+                                    x_prev, y_prev, theta_prev = x_centro, y_centro, 0.0
+                                    self.get_logger().warn(f'🛑 Tortuga "{turtle}" sin posición válida previa. Enviando al centro ({x_centro}, {y_centro})')
+
+                                tp_client = self.create_client(TeleportAbsolute, f'/{turtle}/teleport_absolute')
+                                tp_client.wait_for_service()
+                                req = TeleportAbsolute.Request()
+                                req.x = x_prev
+                                req.y = y_prev
+                                req.theta = theta_prev
+                                future = tp_client.call_async(req)
+                                rclpy.spin_until_future_complete(self, future)
+
+                        else:
+                            self.get_logger().warn(f'⚠️ Tortuga "{turtle}" está fuera del área del mapa')
                     elif turtle not in avisados:
                         self.get_logger().warn(f'No se pudo obtener posición de {turtle} (aún)')
                         avisados.add(turtle)
+
                 last_print_time = current_time
 
-            # Imprimir suscripciones activas
             if current_time - last_subs_print_time >= subs_print_interval:
                 self.get_logger().info(f'Suscripciones activas: {sorted(list(subs.keys()))}')
                 last_subs_print_time = current_time
-
-
 
     def spawn_turtle(self):
         cli_spawn = self.create_client(Spawn, '/spawn')
@@ -185,6 +219,7 @@ export function paintMap(matrix: any[][]): string {
     def draw_matrix(self):
         matrix_str = self.get_parameter('matrix_str').get_parameter_value().string_value
         matrix = ast.literal_eval(matrix_str)
+        self.matrix = matrix  # Guardar para uso en monitoreo
 
         x0, y0 = 0.0, 10.6
         xf, yf = 11.0, 0.0
@@ -196,7 +231,6 @@ export function paintMap(matrix: any[][]): string {
 
         self.set_pen(0, 0, 0, pen_size, 1)  # Apagar lápiz
 
-        # === DIBUJAR LÍNEAS HORIZONTALES (superior/inferior) ===
         for i in range(1, size):
             j = 0
             while j < size:
@@ -214,7 +248,6 @@ export function paintMap(matrix: any[][]): string {
                 else:
                     j += 1
 
-        # === DIBUJAR LÍNEAS VERTICALES (izquierda/derecha) ===
         for j in range(1, size):
             i = 0
             while i < size:

@@ -347,7 +347,7 @@ export class WorkspaceComponent implements OnDestroy {
     let code: string = '';
     switch(this.currentMap) { 
       case 1:
-        code = ''
+        code = paintMap(map1);
         break;
       case 2:
         code = paintMap(map2);
@@ -397,7 +397,7 @@ export class WorkspaceComponent implements OnDestroy {
       )
       .subscribe({
         next: (response) => {
-          //console.log(response.output);
+          console.log(response.output);
           
           if (!response) return;
           count--
@@ -642,7 +642,7 @@ export class WorkspaceComponent implements OnDestroy {
     if (tab) {
       tab.isPlaying = false;
       const session_id = this.consolesSessions.get(tabId.toString());
-      //console.log('Session ID stop:', session_id);
+      console.log('Session ID stop:', session_id);
       if (session_id) {
         this.consolesServices.get(tabId.toString())?.killExecution(session_id);
       }
