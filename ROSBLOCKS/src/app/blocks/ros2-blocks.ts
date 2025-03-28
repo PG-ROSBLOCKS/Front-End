@@ -199,7 +199,7 @@ export function definirBloquesROS2() {
   Blockly.Blocks['ros2_subscriber_msg_data'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField("Topic Message Data");
+        .appendField("Subscriber Response");
       // This block returns a value (output), so we use setOutput(true)
       this.setOutput(true, "String");
       this.setColour(160);
@@ -1177,6 +1177,11 @@ function validateDescendants(block: { type: string; data: string; unplug: () => 
   if (block.type === "srv_variable") {
     const blockService = block.data || "";
     const blockServiceNormalized = blockService.replace(/\.srv$/, "");
+    if (selectedServiceNormalized === "") {
+      block.unplug();
+      return;
+    }
+
     if (blockService && blockServiceNormalized !== selectedServiceNormalized) {
       messageServiceInstance?.sendMessage({
         type: 'SERVICE_MISMATCH',
