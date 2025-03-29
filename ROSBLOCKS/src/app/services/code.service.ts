@@ -14,8 +14,9 @@ export class CodeService {
   workspaceChanged$ = this.workspaceChangedSubject.asObservable();
   noTabs$ = this.noTabsSubject.asObservable();
   noBlocks$ = this.noBlocksSubject.asObservable();
-  private API_URL = 'http://localhost:8000';
-  private API_URL_NO_PORT = 'http://localhost:';
+  private IP = "18.204.43.194";
+  private API_URL = `http://${this.IP}:8000`;
+  private API_URL_NO_PORT = `http://${this.IP}:`;
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
@@ -124,7 +125,7 @@ export class CodeService {
   }
 
   vncTurtlesim(): string {
-    return `${this.API_URL_NO_PORT}8080/vnc_auto.html`;
+    return `${this.API_URL_NO_PORT}8080`;
   }
 
   vncTurtlesimReset(): string {
