@@ -323,10 +323,9 @@ export class WorkspaceComponent implements OnDestroy {
 
       this.mapSessionId = localStorage.getItem('mapSessionId') || '';
       this.mapCodeService = new CodeService(this.http);
-      console.log(this.mapSessionId);
+      //console.log(this.mapSessionId);
       
 
-      // Si hay un mapa cargado previamente, vuelve a pintarlo
       if (this.mapSessionId && this.currentMap !== 1) {
         setTimeout(() => {
           this.paint();
@@ -351,12 +350,12 @@ export class WorkspaceComponent implements OnDestroy {
     this.autoScrollEnabled = true;
     this.tabs = [];
     this.selectedTabId = null;
-    this.borrarMapa()
+    this.deleteMap()
     this.mapSessionId = ''
   }
 
   resetTurtleContainer(map?: number): void {
-    this.borrarMapa()
+    this.deleteMap()
     //When presing restart button
     if (map) {
       this.currentMap = map
@@ -404,7 +403,7 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   enviarCodigoMapa(code_to_send: string): void {
-    console.log(code_to_send);
+    //console.log(code_to_send);
     
     //Why count to 2?, because 2 turtles are painting the map, so this indicates when a turtle ends his job
     let count = 2;
@@ -427,13 +426,11 @@ export class WorkspaceComponent implements OnDestroy {
           if (!response) return of(null);
           this.mapFullyLoaded  =false
           this.mapSessionId = response.session_id;
-          console.log(`\x1b` + this.mapSessionId  + `\x1b[33m`);
           return codeService.connectToWebSocket(this.mapSessionId);
         })
       )
       .subscribe({
         next: (response) => {
-          console.log(response.output);
           
           if (!response) return;
           count--
@@ -452,8 +449,7 @@ export class WorkspaceComponent implements OnDestroy {
       });
   }
 
-  borrarMapa(): void {
-    console.log(this.mapSessionId);
+  deleteMap(): void {
     
     if (!this.mapCodeService || !this.mapSessionId) {
       return;
