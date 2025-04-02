@@ -47,9 +47,12 @@ export class CodeService {
   }
 
   killExecution(session_id: string): void {
+    console.log(session_id);
     this.http.get(`${this.API_URL}/execution/kill/${session_id}`, { responseType: 'json' })
       .subscribe({
         next: (response) => {
+          console.log(session_id);
+          
           console.log('Sesión successfully deleted:', response);
           this.closeConnection();
         },

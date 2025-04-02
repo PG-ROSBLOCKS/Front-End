@@ -64,6 +64,7 @@ export class WorkspaceComponent implements OnDestroy {
   tabsPlayed: { tabId: number; blockName: string }[] = [];  // List to manage played tabs with the block name "ros2_create_subscriber"
 
   tabRightClick: number | null = null;
+  mapSessionId: string = '';
 
   constructor(
     private http: HttpClient,
@@ -209,14 +210,30 @@ export class WorkspaceComponent implements OnDestroy {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const tabsData = JSON.parse(e.target?.result as string);
-        this.rewriteLocalStorageFromJSON(tabsData)
+        const fileData = JSON.parse(e.target?.result as string);
+
+        if (fileData['mapSessionId']) {
+          this.mapSessionId = fileData['mapSessionId'];
+        }
+
+        this.mapCodeService = new CodeService(this.http);
+
+        
+        if (this.mapSessionId && this.currentMap !== 1) {
+          setTimeout(() => {
+            this.paint();
+          }, 300);
+        }
+        
+        this.rewriteLocalStorageFromJSON(fileData);
+
         this.loadFromLocalStorage()
       } catch (error) {
         this.showAlert('Error loading data from file.', 'error');
       }
     };
     reader.readAsText(file);
+    this.resetTurtleContainer(1)
     this.showMessage('Data loaded successfully.', 'success');
   }
 
@@ -233,6 +250,7 @@ export class WorkspaceComponent implements OnDestroy {
           : '';
         localStorage.setItem(`workspace_${tab.id}`, workspaceXml);
         localStorage.setItem(`consoleService_${tab.id}`, "true");
+        localStorage.setItem('mapSessionId', this.mapSessionId);
         return { id: tab.id, name: tab.name };
       });
       localStorage.setItem('workspace_tabs', JSON.stringify(tabsData));
@@ -261,7 +279,7 @@ export class WorkspaceComponent implements OnDestroy {
           }
         }
       } else {
-        console.error('The data provided is not a valid object.');
+        //console.error('The data provided is not a valid object.');
       }
     } catch (error) {
       console.error('Error parsing JSON:', error);
@@ -302,6 +320,20 @@ export class WorkspaceComponent implements OnDestroy {
           this.consolesServices.set(tab.id.toString(), new CodeService(this.http));
         }
       });
+
+      this.mapSessionId = localStorage.getItem('mapSessionId') || '';
+      this.mapCodeService = new CodeService(this.http);
+      console.log(this.mapSessionId);
+      
+
+      // Si hay un mapa cargado previamente, vuelve a pintarlo
+      if (this.mapSessionId && this.currentMap !== 1) {
+        setTimeout(() => {
+          this.paint();
+        }, 300);
+      }
+
+
     } catch (error) {
       this.showAlert('Error loading data into cache.', 'error');
     }
@@ -319,9 +351,12 @@ export class WorkspaceComponent implements OnDestroy {
     this.autoScrollEnabled = true;
     this.tabs = [];
     this.selectedTabId = null;
+    this.borrarMapa()
+    this.mapSessionId = ''
   }
 
   resetTurtleContainer(map?: number): void {
+    this.borrarMapa()
     //When presing restart button
     if (map) {
       this.currentMap = map
@@ -391,8 +426,9 @@ export class WorkspaceComponent implements OnDestroy {
         switchMap((response) => {
           if (!response) return of(null);
           this.mapFullyLoaded  =false
-          const sessionId = response.session_id;
-          return codeService.connectToWebSocket(sessionId);
+          this.mapSessionId = response.session_id;
+          console.log(`\x1b` + this.mapSessionId  + `\x1b[33m`);
+          return codeService.connectToWebSocket(this.mapSessionId);
         })
       )
       .subscribe({
@@ -403,6 +439,7 @@ export class WorkspaceComponent implements OnDestroy {
           count--
           if (count == 0) {
             this.mapFullyLoaded = true
+            this.saveToLocalStorage()
           }
         },
         error: (error) => {
@@ -414,6 +451,21 @@ export class WorkspaceComponent implements OnDestroy {
         }
       });
   }
+
+  borrarMapa(): void {
+    console.log(this.mapSessionId);
+    
+    if (!this.mapCodeService || !this.mapSessionId) {
+      return;
+    }
+  
+    this.mapCodeService.killExecution(this.mapSessionId);
+    this.mapCodeService.closeConnection();
+  
+    this.mapSessionId = '';
+    this.mapFullyLoaded = true;
+  }
+  
 
   initializeBlockly(tabId: number): void {
     
