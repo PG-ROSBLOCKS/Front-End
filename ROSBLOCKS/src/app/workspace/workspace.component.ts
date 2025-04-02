@@ -1193,7 +1193,7 @@ export class WorkspaceComponent implements OnDestroy {
       })
     };
 
-    updateDynamicCategoryInToolbox(toolboxObj, 'ROS2 Blocks', 'Variables', 'Message Variables', msgVariablesCategory);
+    updateDynamicCategoryInToolbox(toolboxObj, 'ROS 2 Blocks', 'Variables', 'Message Variables', msgVariablesCategory);
     
     // Update the toolbox of the current workspace (if active)
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {

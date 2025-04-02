@@ -137,7 +137,6 @@ export function paintMap(matrix: any[][]): string {
                 for turtle in sorted(subs.keys()):
                     if turtle in poses:
                         x, y, theta = poses[turtle]
-                        self.get_logger().info(f'{turtle} -> x: {x:.2f}, y: {y:.2f}, θ: {theta:.2f}')
 
                         col = int((x - x0) / cell_w)
                         row = int((y0 - y) / cell_h)
@@ -147,7 +146,7 @@ export function paintMap(matrix: any[][]): string {
                                 self.get_logger().info(f'✅ Tortuga "{turtle}" está DENTRO de una celda marcada ({row}, {col})')
 
                                 if turtle in visitados:
-                                    x_prev, y_prev, theta_prev = visitados[turtle]
+                                    x_prev, y_prev, theta_prev = visitados[turtle][0], visitados[turtle][1], visitados[turtle][2]
                                     self.get_logger().warn(f'🔄 Teletransportando a {turtle} a posición segura ({x_prev:.2f}, {y_prev:.2f})')
                                 else:
                                     x_prev, y_prev, theta_prev = x_centro, y_centro, 0.0
@@ -161,6 +160,9 @@ export function paintMap(matrix: any[][]): string {
                                 req.theta = theta_prev
                                 future = tp_client.call_async(req)
                                 rclpy.spin_until_future_complete(self, future)
+                            else:
+                                visitados[turtle] = [x,y,theta]
+                                self.get_logger().info(f'{turtle} -> x: {x:.2f}, y: {y:.2f}, θ: {theta:.2f}')
 
                         else:
                             self.get_logger().warn(f'⚠️ Tortuga "{turtle}" está fuera del área del mapa')

@@ -492,11 +492,22 @@ function definirGeneradoresROS2() {
   };
 
   pythonGenerator.forBlock['ros2_turtlesim_publisher'] = function (block) {
-    const callbackCode = pythonGenerator.statementToCode(block, 'CALLBACK');
     addImport('time');
-    let code = `pub_sub\n`;
-    code += `${TAB_SPACE}${TAB_SPACE}time.sleep(1)  # Espera a que cargue el nodo\n`
-    code += pythonGenerator.prefixLines(removeIndentation(callbackCode), `${TAB_SPACE}${TAB_SPACE}`);
+
+    let mainBody = '';
+    const input = block.getInput('CALLBACK');
+    const targetBlock = input?.connection?.targetBlock();
+    if (targetBlock) {
+      const result = pythonGenerator.blockToCode(targetBlock);
+      mainBody = Array.isArray(result) ? result[0] : result;
+    }
+
+    let code =
+      `pub_sub\n` +
+      `${TAB_SPACE}${TAB_SPACE}time.sleep(2)\n` +
+      mainBody; 
+
+    code = indentSmartPreserveStructure(code, 2);
     return code;
   };
 
