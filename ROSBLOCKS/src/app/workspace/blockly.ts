@@ -5,7 +5,7 @@ export let toolbox = {
   contents: [
     {
       kind: 'category',
-      name: 'ROS2 Blocks',
+      name: 'ROS 2 Blocks',
       contents: [
         {
           kind: 'category',

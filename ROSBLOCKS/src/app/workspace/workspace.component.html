@@ -13,7 +13,8 @@
                                 }"
                                 (click)="selectTab(tab.id)"
                                 (contextmenu)="onRightClickTab($event,tab.id)">
-                                <input type="text" [(ngModel)]="tab.name" (focus)="storePreviousName(tab)" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
+                                <div class="gost" (click)="selectTab(tab.id)" *ngIf="tab.id !== selectedTabId"></div>
+                                <input type="text" [disabled]="tab.id !== selectedTabId"  [(ngModel)]="tab.name" (focus)="storePreviousName(tab)" (blur)="changeTabName(tab.id, tab.name)" class="node"/>
                                     <button class="deleteButton" (click)="confirmDeleteTab(tab.id)">✖</button>
                                     <button class="playButton" (click)="playTab(tab.id, false)">
                                         {{ tab.isPlaying ? '◼' : '▶' }}
@@ -27,6 +28,7 @@
                         <div class="ai">
                             <button class="playAll" (click)="playAllTabs()">▶</button>
                             <button class="stopAll" (click)="stopAllTabs()">◼</button>
+                            <!--<button (click)="borrarMapa()">test</button>-->
                         </div>
                     </div>
                 </div>
