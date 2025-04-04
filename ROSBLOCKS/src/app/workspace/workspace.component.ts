@@ -818,17 +818,34 @@ export class WorkspaceComponent implements OnDestroy {
       kind: 'categoryToolbox',
       contents: toolbox.contents
         .map((category: any) => {
-          const filteredContents = category.contents.filter((block: any) =>
-            block.type.toLowerCase().includes(query)
-          );
-          return filteredContents.length > 0 ? { ...category, contents: filteredContents } : null;
+          if (category.contents && Array.isArray(category.contents)) {
+            const filteredSubcontents = category.contents.map((item: any) => {
+              if (item.contents && Array.isArray(item.contents)) {
+                const filteredBlocks = item.contents.filter((block: any) => {
+                  if (block.kind === 'block' && block.type) {
+                    return block.type.toLowerCase().includes(query);
+                  } else if (block.kind === 'label' && block.text) {
+                    return block.text.toLowerCase().includes(query);
+                  }
+                  return false;
+                });
+                return filteredBlocks.length > 0 ? { ...item, contents: filteredBlocks } : null;
+              }
+              return null;
+            }).filter((subcat: any) => subcat !== null);
+  
+            return filteredSubcontents.length > 0 ? { ...category, contents: filteredSubcontents } : null;
+          }
+          return null;
         })
         .filter((category: any) => category !== null),
     };
+  
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.workspaces[this.selectedTabId].updateToolbox(filteredToolbox);
     }
   }
+  
 
   executeCode(code: string, tabId?: number) {
     if (tabId !== null && tabId !== undefined) {
