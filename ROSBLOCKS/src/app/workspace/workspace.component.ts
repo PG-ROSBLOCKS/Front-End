@@ -52,7 +52,7 @@ export class WorkspaceComponent implements OnDestroy {
   currentDisplayedConsoleOutput: string = '';
   testingCodeBackend: string = '';
   workspaces: { [key: number]: Blockly.WorkspaceSvg } = {};
-  autoScrollEnabled: boolean = true;
+  autoScrollEnabled: boolean = false;
   tabs: { name: string; id: number; isPlaying: boolean }[] = [];
   selectedTabId: number | null = null;
   sanitizedVncUrl!: SafeResourceUrl;
@@ -1021,9 +1021,6 @@ export class WorkspaceComponent implements OnDestroy {
 
   scrollToBottom() {
     const consoleContainer = document.querySelector('.console-output-container');
-    if (consoleContainer) {
-      consoleContainer.scrollTop = consoleContainer.scrollHeight;
-    }
   }
 
   candidateTabToDelete: number | null = null;
