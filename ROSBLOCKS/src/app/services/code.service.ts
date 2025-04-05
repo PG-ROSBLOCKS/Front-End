@@ -14,7 +14,7 @@ export class CodeService {
   workspaceChanged$ = this.workspaceChangedSubject.asObservable();
   noTabs$ = this.noTabsSubject.asObservable();
   noBlocks$ = this.noBlocksSubject.asObservable();
-  private IP = "";
+  private IP = "34.231.247.30";
   private API_URL = `http://${this.IP}:8000`;
   private API_URL_NO_PORT = `http://${this.IP}:`;
 
