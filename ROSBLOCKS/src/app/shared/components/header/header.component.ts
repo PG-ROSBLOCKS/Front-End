@@ -5,6 +5,7 @@ import { CodeService } from 'src/app/services/code.service';
 import { AlertService } from '../alert/alert.service';
 import { workspaceComments } from 'blockly/core/serialization';
 import { WorkspaceComponent } from 'src/app/workspace/workspace.component';
+import { UserService } from '../../user.service';
 
 @Component({
   selector: 'app-header',
@@ -17,13 +18,15 @@ export class HeaderComponent {
   noTabs: boolean = true;
   noBlocks: boolean = true;
   subscription!: Subscription;
-
+  isLoggedIn = false;
   showExport: boolean = true;
+  userInfo: any = null;
 
   constructor(private router: Router, 
     private service: CodeService, 
     private alertService: AlertService,
-    private workspace: WorkspaceComponent
+    private workspace: WorkspaceComponent,
+    private userService: UserService
   ) { }
 
   ngOnInit() {
@@ -39,6 +42,19 @@ export class HeaderComponent {
     this.subscription = this.service.noBlocks$.subscribe((noBlocks: boolean) => {
       this.noBlocks = noBlocks;
     });
+    const token = localStorage.getItem('access_token');
+    this.isLoggedIn = !!token;
+
+    if(this.isLoggedIn) {
+      this.userService.getUserInfo().subscribe(
+        (response) => {
+          this.userInfo = response;
+        },
+        (error) => {
+          console.error('Error fetching user info:', error);
+        }
+      );
+    }
   }
 
   ngOnDestroy() {
@@ -72,4 +88,13 @@ export class HeaderComponent {
       }
         }
     }
+
+    startOAuthLogin() {
+      const clientId = 'service-fastapi';
+      const redirectUri = encodeURIComponent('http://localhost:4200/oauth-callback');
+      const state = crypto.randomUUID();
+    
+      window.location.href = `http://34.58.80.154/hub/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
+    }
+    
   }

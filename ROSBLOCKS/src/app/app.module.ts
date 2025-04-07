@@ -14,6 +14,7 @@ import { AlertComponent } from './shared/components/alert/alert.component';
 import { ResizerDirective } from './workspace/resizer.directive';
 import { ConsoleOutputComponent } from './console-output/console-output.component';
 import { SuccessComponent } from './shared/components/success/success.component';
+import { OauthCallbackComponent } from './shared/oauth-callback/oauth-callback.component';
 
 @NgModule({
   declarations: [
@@ -27,6 +28,7 @@ import { SuccessComponent } from './shared/components/success/success.component'
     ResizerDirective,
     ConsoleOutputComponent,
     SuccessComponent,
+    OauthCallbackComponent,
   ],
   imports: [
     BrowserModule,

@@ -13,6 +13,19 @@
   margin: 20px;
   cursor: pointer;
 }
+
+.user-info {
+  display: flex;
+  align-items: center;
+  margin-left: 20px; /* espacio respecto al logo */
+}
+
+.username {
+  font-family: 'Poppins', sans-serif; /* misma fuente que los botones */
+  font-size: 14px;
+  color: white; /* para que combine con el header */
+  margin-left: 8px; /* un leve margen a la izquierda */
+}
   
   .buttons {
     display: flex;
