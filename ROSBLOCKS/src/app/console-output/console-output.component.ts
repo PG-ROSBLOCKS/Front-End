@@ -12,9 +12,33 @@ export class ConsoleOutputComponent implements AfterViewChecked {
   @Input() autoScrollEnabled: boolean = true;
   @ViewChild('consoleContainer') consoleContainer!: ElementRef<HTMLDivElement>;
 
-  ngAfterViewChecked(): void {
-    if (this.autoScrollEnabled && this.consoleContainer) {
-      this.consoleContainer.nativeElement.scrollTop = this.consoleContainer.nativeElement.scrollHeight;
+  private previousScrollHeight = 0;
+  private userScrolled = false;
+
+  ngAfterViewInit(): void {
+    if (this.consoleContainer) {
+      this.consoleContainer.nativeElement.addEventListener('scroll', () => {
+        const el = this.consoleContainer.nativeElement;
+        const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+        this.userScrolled = !isAtBottom;
+      });
     }
   }
+
+  ngAfterViewChecked(): void {
+    if (!this.consoleContainer) return;
+
+    const el = this.consoleContainer.nativeElement;
+    const currentScrollHeight = el.scrollHeight;
+
+    const contentGrew = currentScrollHeight > this.previousScrollHeight;
+
+    if (this.autoScrollEnabled && contentGrew && !this.userScrolled) {
+      el.scrollTop = currentScrollHeight;
+    }
+
+    this.previousScrollHeight = currentScrollHeight;
+  }
+  
+  
 }
