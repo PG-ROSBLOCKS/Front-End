@@ -127,7 +127,7 @@ export class CodeService {
   }
 
   vncTurtlesim(): string {
-    return `${this.API_URL_NO_PORT}8080/vnc_auto.html`;
+    return `${this.API_URL_NO_PORT}8080/vnc_lite.html`;
   }
 
   vncTurtlesimReset(): string {
