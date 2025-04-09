@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { WebSocketSubject, webSocket } from 'rxjs/webSocket';
 import { BehaviorSubject, Observable, tap, map } from 'rxjs';
+import { safeUUID } from '../utilities/sanitizer-tools';
 
 @Injectable({
   providedIn: 'root'
@@ -20,7 +21,7 @@ export class CodeService {
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
-    const uuid = localStorage.getItem('uuid') ?? crypto.randomUUID();
+    const uuid = localStorage.getItem('uuid') ?? safeUUID();
     localStorage.setItem('uuid', uuid);
 
     this.pollForIp(uuid);
@@ -165,4 +166,5 @@ export class CodeService {
       })
     );
   }
+  
 }
