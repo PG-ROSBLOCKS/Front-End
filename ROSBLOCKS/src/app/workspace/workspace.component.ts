@@ -141,7 +141,7 @@ export class WorkspaceComponent implements OnDestroy {
   
     const newTabs = this.tabs.filter(tab => !tempTabs.some(t => t.id === tab.id));
     if (newTabs.length === 0) {
-      console.error("No se pudo crear una nueva pestaña para duplicar.");
+      console.error("Could not create a  new duplicated tab.");
       return;
     }
     const newTab = newTabs[0];
@@ -153,19 +153,19 @@ export class WorkspaceComponent implements OnDestroy {
       if (originalXml && newWorkspace) {
         Blockly.Xml.domToWorkspace(originalXml, newWorkspace);
       } else {
-        console.error("No se pudo duplicar el workspace: ", { originalXml, newWorkspace });
+        console.error("Could not duplicate workspace: ", { originalXml, newWorkspace });
       }
     }, 50);
   }
   
 
-  // Escucha el click izquierdo en todo el documento
+  // Listens teft click
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     this.tabRightClick = null;
   }
   
-  // Escucha el click derecho en todo el documento
+  // Listens right click
   @HostListener('document:contextmenu', ['$event'])
   onDocumentContextMenu(event: MouseEvent): void {
     //This line prevents opening console on navigator
@@ -695,11 +695,7 @@ export class WorkspaceComponent implements OnDestroy {
    * @param code Generated code from the blocks
    */
   logGeneratedCode(tabId: number, tabName: string, code: string) {
-    const logMessage = `
-=== GENERATED CODE FOR TAB "${tabName}" ===
-${code}
-=== END OF GENERATED CODE ===
-`;
+    const logMessage = ``;
     const tabIdStr = tabId.toString();
     // Add the log to the console output
     this.consolesOutput.set(tabIdStr, 

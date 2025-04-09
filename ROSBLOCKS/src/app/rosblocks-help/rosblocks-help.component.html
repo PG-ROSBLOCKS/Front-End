@@ -13,30 +13,43 @@
                 />
                 <div class="buttonContainer">
                     <button class="dropdownBtn" (click)="toggleDropdown(1)">
-                        Opción 1 <span>{{ dropdowns[1] ? '˄' : '˅' }}</span>
+                        Acerca de ROSBlocks <span class="material-icons arrow-icon" [class.rotated]="dropdowns[1]">expand_more</span>
                     </button>
                     <ul *ngIf="dropdowns[1]" class="dropdownList">
-                        <li (click)="selectVideo('video1')">Subopción 1</li>
-                        <li (click)="selectVideo('video2')">Subopción 2</li>
-                        <li (click)="selectVideo('video3')">Subopción 3</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/lLdIpOVTyIc')">Introducción</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/aYthCCsBNSg')">¿Cómo usar ROSBlocks</li>
                     </ul>
 
                     <button class="dropdownBtn" (click)="toggleDropdown(2)">
-                        Opción 2 <span>{{ dropdowns[2] ? '˄' : '˅' }}</span>
+                        Programación básica <span class="material-icons arrow-icon" [class.rotated]="dropdowns[2]">expand_more</span>
                     </button>
                     <ul *ngIf="dropdowns[2]" class="dropdownList">
-                        <li (click)="selectVideo('videoA')">Subopción A</li>
-                        <li (click)="selectVideo('videoB')">Subopción B</li>
-                        <li (click)="selectVideo('videoC')">Subopción C</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/O-LjcZlkfz0')">Hola mundo</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/uJdPG1kd3xA')">Operadores matemáticos</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/nWAbipVVNi0')">Condicionales</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/Vcyn_vCJjPY')">Variables</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/_he6gpeBJXI')">Bucles</li>
                     </ul>
 
                     <button class="dropdownBtn" (click)="toggleDropdown(3)">
-                        Opción 3 <span>{{ dropdowns[3] ? '˄' : '˅' }}</span>
+                        Tópicos y servicios <span class="material-icons arrow-icon" [class.rotated]="dropdowns[3]">expand_more</span>
                     </button>
                     <ul *ngIf="dropdowns[3]" class="dropdownList">
-                        <li (click)="selectVideo('videoX')">Elemento X</li>
-                        <li (click)="selectVideo('videoY')">Elemento Y</li>
-                        <li (click)="selectVideo('videoZ')">Elemento Z</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/L44m4DlDA9A')">Como funcionan los tópicos</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/s3wKUnUphyc')">Ejercicio de tópicos</li>
+                    </ul>
+
+                    <button class="dropdownBtn" (click)="toggleDropdown(4)">
+                        Mensajes y servicios customizables <span class="material-icons arrow-icon" [class.rotated]="dropdowns[4]">expand_more</span>
+                    </button>
+                    <ul *ngIf="dropdowns[4]" class="dropdownList">
+                    </ul>
+
+                    <button class="dropdownBtn" (click)="toggleDropdown(5)">
+                        Simulador Turtlesim <span class="material-icons arrow-icon" [class.rotated]="dropdowns[5]">expand_more</span>
+                    </button>
+                    <ul *ngIf="dropdowns[5]" class="dropdownList">
+                        <li (click)="selectVideo('https://www.youtube.com/embed/gx22BEezinM')">Introducción a Turtlesim</li>
                     </ul>
                 </div>
             </div>

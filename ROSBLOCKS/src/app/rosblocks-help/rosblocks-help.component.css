@@ -65,12 +65,14 @@
 }
 
 .dropdownBtn {
+    position: relative;
     color: #FFF;
     width: 90%;
     padding: 8px 0;
-    padding-left: 25px;
+    padding-left: 20px;
+    padding-right: 40px; /* espacio para la flecha */
     border: none !important;
-    text-align: center;
+    text-align: left;
     margin: 5px 15px;
     border-radius: 5px;
     font-family: 'Albert Sans', sans-serif;
@@ -80,13 +82,27 @@
 }
 
 .dropdownBtn span {
-    position: relative;
-    left: 45px;
-    top: 9px;
-    font-family: 'Source Code Pro', monospace;
-    font-size: 25px;
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
     color: #3bdbdb;
-    transition: transform 0.2s;
+    transition: transform 0.3s ease;
+}
+
+.dropdownBtn span {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    color: #3bdbdb;
+    transition: transform 0.3s ease;
+}
+
+.dropdownBtn span.rotated {
+    transform: translateY(-50%) rotate(180deg);
 }
 
 .dropdownBtn:hover {
@@ -105,16 +121,19 @@
 }
 
 .dropdownList li {
-    padding: 8px;
-    margin: 10px 15px;
+    padding: 8px 12px;
+    margin: 5px auto;
     background-color: #CAFAFF;
     border-radius: 5px;
     color: #000;
     box-shadow: 0px 5px 5px 0px #00000047 inset;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    text-align: center;
+    text-align: left; /* Cambiado de center a left */
+    width: 85%; /* Asegura que el tamaño sea uniforme */
+    font-family: 'Albert Sans', sans-serif;
 }
+
 
 .dropdownList li:hover {
     background-color: #dcf5fd;
