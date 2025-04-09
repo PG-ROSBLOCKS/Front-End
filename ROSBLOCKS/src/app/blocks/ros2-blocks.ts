@@ -1097,6 +1097,20 @@ Blockly.Blocks['ros2_turtlesim_publisher'] = {
   }
 };
 
+Blockly.Blocks['init'] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField('__init__')
+    this.appendStatementInput('CALLBACK')
+      .appendField('Execute');
+    this.setPreviousStatement(false, null);
+    this.setNextStatement(false, null);
+    this.setColour(blockColors.Functions);
+    this.setTooltip('Creates a timer that periodically executes a callback.');
+    this.setHelpUrl('');
+  }
+};
+
 Blockly.Blocks['ros2_turtle_rotate'] = {
   init: function () {
     this.setInputsInline(true);

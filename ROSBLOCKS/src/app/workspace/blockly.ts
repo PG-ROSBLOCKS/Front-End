@@ -137,6 +137,7 @@ export let toolbox = {
           name: 'Functions',
           colour: '#897099',
           contents: [
+            { kind: "block", type: "init" },
             { kind: "block", type: "procedures_defnoreturn" },
             { kind: "block", type: "procedures_defreturn" },
             { kind: "block", type: "procedures_callnoreturn" },

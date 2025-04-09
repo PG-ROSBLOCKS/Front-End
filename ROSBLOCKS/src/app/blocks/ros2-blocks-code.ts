@@ -1,6 +1,6 @@
 import { pythonGenerator, Order } from 'blockly/python';
 import * as Blockly from 'blockly/core';
-import { indentSmart, removeIndentation, removeCommonIndentation, indentSmartPreserveStructure } from '../utilities/sanitizer-tools';
+import { indentSmart, removeIndentation, removeCommonIndentation, indentSmartPreserveStructure, sanitizeCustomAtribute } from '../utilities/sanitizer-tools';
 import { srvList } from '../shared/srv-list';
 import { get } from 'blockly/core/events/utils';
 
@@ -256,7 +256,7 @@ function definirGeneradoresROS2() {
     var message_type = block.getFieldValue('MESSAGE_TYPE');
     var message_name = block.getFieldValue('MESSAGE_NAME');
 
-    return `${message_type} ${message_name}\n`;
+    return `${message_type} ${sanitizeCustomAtribute(message_name)}\n`;
   };
   pythonGenerator.forBlock['ros2_service_block'] = function (block, generator) {
     var service_name = block.getFieldValue('SERVICE_NAME');
@@ -492,6 +492,26 @@ function definirGeneradoresROS2() {
   };
 
   pythonGenerator.forBlock['ros2_turtlesim_publisher'] = function (block) {
+    addImport('time');
+
+    let mainBody = '';
+    const input = block.getInput('CALLBACK');
+    const targetBlock = input?.connection?.targetBlock();
+    if (targetBlock) {
+      const result = pythonGenerator.blockToCode(targetBlock);
+      mainBody = Array.isArray(result) ? result[0] : result;
+    }
+
+    let code =
+      `pub_sub\n` +
+      `${TAB_SPACE}${TAB_SPACE}time.sleep(2)\n` +
+      mainBody; 
+
+    code = indentSmartPreserveStructure(code, 2);
+    return code;
+  };
+
+  pythonGenerator.forBlock['init'] = function (block) {
     addImport('time');
 
     let mainBody = '';
