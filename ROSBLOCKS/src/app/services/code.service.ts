@@ -16,11 +16,30 @@ export class CodeService {
   noBlocks$ = this.noBlocksSubject.asObservable();
   private API_URL = 'http://localhost:8000';
   private API_URL_NO_PORT = 'http://localhost:';
+  private API_CONTAINER_IP = '54.87.7.111';
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
-  }
+    const uuid = localStorage.getItem('uuid') ?? crypto.randomUUID();
+    localStorage.setItem('uuid', uuid);
 
+    this.pollForIp(uuid);
+  }
+  async pollForIp(uuid: string) {
+    try {
+      const res = await fetch(`http://${this.API_CONTAINER_IP}/api/get-ip/${uuid}`);
+      const data = await res.json();
+  
+      if (data.status === "ready") {
+        this.API_URL = `http://${data.ip}:8000`;
+        this.API_URL_NO_PORT = `http://${data.ip}:`;
+      } else {
+        setTimeout(() => this.pollForIp(uuid), 5000); // wait 5 seconds before retrying
+      }
+    } catch (err) {
+      setTimeout(() => this.pollForIp(uuid), 5000); // try again in 5 seconds
+    }
+  }
   uploadCode(fileName: string, code: string, type: string): Observable<any> {
 
     const payload = { file_name: fileName, code: code, type: type };
