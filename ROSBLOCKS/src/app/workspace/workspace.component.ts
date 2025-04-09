@@ -666,7 +666,7 @@ export class WorkspaceComponent implements OnDestroy {
       this.textCode.set(tabId.toString(), generatedCode);
       
       // Log the generated code to the console
-      this.logGeneratedCode(tabId, tab.name, generatedCode);
+      //this.logGeneratedCode(tabId, tab.name, generatedCode);
     }
 
     this.updateSrvList();
