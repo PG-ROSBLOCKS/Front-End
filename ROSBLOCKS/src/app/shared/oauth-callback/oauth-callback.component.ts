@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { environment } from '../../../environments/environment.development';
 
 @Component({
   selector: 'app-oauth-callback',
@@ -19,7 +20,7 @@ export class OauthCallbackComponent implements OnInit {
       const code = params['code'];
       if (code) {
         const body = new HttpParams().set('code', code);
-        this.http.post<any>('http://34.58.80.154/services/fastapi/get_token', body)
+        this.http.post<any>(`http://${environment.backendFastAPIAddress}/services/fastapi/get_token`, body)
           .subscribe({
             next: (response) => {
               console.log('Response:', response);

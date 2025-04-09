@@ -254,6 +254,26 @@ input::selection {
   transform: scale(1.01);
 }
 
+.loadingGif {
+  width: 80px;
+  height: auto;
+  margin-right: 10px;
+}
+
+.playTurtlesimBtn {
+  margin-right: 20px;
+  background-color: #015C66;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 15px;
+  cursor: pointer;
+}
+.playTurtlesimBtn:hover {
+  background-color: #006b77;
+  transform: scale(1.02);
+}
+
 
 #searchBox::placeholder {
   color: #04f2f256;

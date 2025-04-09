@@ -22,6 +22,8 @@ import { initializeCommonMsgs } from '../blocks/ros2-msgs';
 import { blockColors } from '../blocks/color-palette';
 import { MessageService } from '../shared/message.service';
 import { ErrorsService } from '../shared/components/error/errors.service';
+import { UserService } from '../shared/user.service';
+import { environment } from '../../environments/environment.development';
 
 @Component({
   selector: 'app-workspace',
@@ -29,6 +31,7 @@ import { ErrorsService } from '../shared/components/error/errors.service';
   styleUrls: ['./workspace.component.css']
 })
 export class WorkspaceComponent implements OnDestroy {
+
   @ViewChild('resizer') resizer!: ElementRef;
   @ViewChild('leftSection') leftSection!: ElementRef;
   @ViewChild('rightSection') rightSection!: ElementRef;
@@ -66,6 +69,10 @@ export class WorkspaceComponent implements OnDestroy {
   tabRightClick: number | null = null;
   mapSessionId: string = '';
 
+  isLoggedIn = false;
+  userInfo: any = null;
+  noVNCUrl: SafeResourceUrl = '';
+
   constructor(
     private http: HttpClient,
     private codeService: CodeService,
@@ -73,7 +80,8 @@ export class WorkspaceComponent implements OnDestroy {
     private successService: SuccessService,
     private errorsService: ErrorsService,
     private sanitizer: DomSanitizer,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private userService: UserService
   ) { }
 
   ngOnInit(): void {
@@ -82,6 +90,25 @@ export class WorkspaceComponent implements OnDestroy {
     initializeCommonMsgs();
     setMessageService(this.messageService);
     this.blockErrorMessages();
+    const token = localStorage.getItem('access_token');
+    this.isLoggedIn = !!token;
+
+    if(this.isLoggedIn) {
+      this.userService.getUserInfo().subscribe(
+        (response) => {
+          this.userInfo = response;
+          const user = this.userInfo.name;
+          const url = `http://34.133.109.120/user/kevin/proxy/8080/vnc_auto.html?token=G4zgKEfV1EzJoxwlqadQYFqvMKyVFp?host=34.133.109.120&path=user/kevin/proxy/8080/websockify/`;
+          this.noVNCUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+          console.log('VNC URL:', this.noVNCUrl);
+          console.log("url es:", url);
+          
+        },
+        (error) => {
+          console.error('Error fetching user info:', error);
+        }
+      );
+    }
   }
 
   blockErrorMessages(): void{
@@ -94,12 +121,14 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   reloadTurtlesim(): void {
-    const url = this.codeService.vncTurtlesim();
-
-    if (url) {
-      this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-    } else {
-      this.alertService.showAlert('Could not get URL');
+    if(this.userInfo){
+      const url = this.codeService.vncTurtlesim(this.userInfo.name);
+      if (url) {
+        this.sanitizedVncUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+        console.log('VNC URL:', this.sanitizedVncUrl);
+      } else {
+        this.alertService.showAlert('Could not get URL');
+      }
     }
   }
 
@@ -417,7 +446,7 @@ export class WorkspaceComponent implements OnDestroy {
     const codeService = this.mapCodeService;
   
     this.mapFullyLoaded = false
-    codeService.uploadCode(fileName, code, type)
+    codeService.uploadCode(fileName, code, type, this.userInfo.name)
       .pipe(
         switchMap(() => {
           return codeService.executeCode(fileName);
@@ -943,7 +972,7 @@ export class WorkspaceComponent implements OnDestroy {
       code = sanitizeGlobalVariables(code);
       console.log(code);
 
-      this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code, type)
+      this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code, type, this.userInfo.name)
         .pipe(
           switchMap(() => {
             if (type === "srv") {
@@ -1515,6 +1544,11 @@ export class WorkspaceComponent implements OnDestroy {
       });
     });
   }
+
+  playTurtlesim() {
+    throw new Error('Method not implemented.');
+    }
+    
 }
 
 export function hasValidChain(block: Blockly.Block | null, childBlock: string): boolean {

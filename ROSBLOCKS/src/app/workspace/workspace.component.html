@@ -91,12 +91,13 @@
                     <button class="reloadTurtle" (click)="reloadTurtlesim()">&#x21bb;</button>
                 </div>
             </div>
-            <div class="turtlesim">
-                <iframe #iframeElement [src]="sanitizedVncUrl" _ngcontent-ng-c809167999="" src="sanitizedVncUrl" title="VNC"></iframe>
+            <div class="turtlesim" *ngIf="isLoggedIn && userInfo">
+                <iframe #iframeElement [src]="noVNCUrl" title="VNC"></iframe>
                 <div class="turtleSimCover" *ngIf="!mapFullyLoaded">
-                    <img src="../../assets/loading.gif">
+                  <img src="../../assets/loading.gif">
                 </div>
-            </div>
+              </div>
+              
             <div class="bottomBarTurtle"></div>
             <div class="resetTurtleDiv">
                 <button (click)="resetTurtleContainer()">Restart</button>

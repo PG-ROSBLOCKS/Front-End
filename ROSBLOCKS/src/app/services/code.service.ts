@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { WebSocketSubject, webSocket } from 'rxjs/webSocket';
 import { BehaviorSubject, Observable, tap, map } from 'rxjs';
+import { environment } from '../../environments/environment.development';
 
 @Injectable({
   providedIn: 'root'
@@ -21,10 +22,9 @@ export class CodeService {
     this.wsSubject = undefined;
   }
 
-  uploadCode(fileName: string, code: string, type: string): Observable<any> {
+  uploadCode(fileName: string, code: string, type: string, user: string): Observable<any> {
 
-    const payload = { file_name: fileName, code: code, type: type };
-    console.log(payload);
+    const payload = { file_name: fileName, code: code, type: type, user: user };
     
     return this.http.post(`${this.API_URL}/upload/`, payload, {
       headers: { 'Content-Type': 'application/json' },
@@ -126,8 +126,19 @@ export class CodeService {
     return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
   }
 
-  vncTurtlesim(): string {
-    return `${this.API_URL_NO_PORT}8080/vnc_auto.html`;
+  vncTurtlesim(user: string): string {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No token found in local storage.');
+      return '';
+    }
+    if (!user) {
+      console.error('No user provided for VNC URL generation.');
+      return '';
+    }
+    const url = `http://${environment.backendFastAPIAddress}/user/${user}/proxy/8080/vnc_auto.html?token=${token}&host=${environment.backendFastAPIAddress}&path=user/${user}/proxy/8080/websockify`;
+    console.log('VNC URL:', url);
+    return url;
   }
 
   vncTurtlesimReset(): string {
