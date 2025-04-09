@@ -665,7 +665,8 @@ export class WorkspaceComponent implements OnDestroy {
       const generatedCode = pythonGenerator.workspaceToCode(ws);
       this.textCode.set(tabId.toString(), generatedCode);
       
-      this.logGeneratedCode(tabId, tab.name, generatedCode);
+      // Log the generated code to the console
+      //this.logGeneratedCode(tabId, tab.name, generatedCode);
     }
 
     this.updateSrvList();
