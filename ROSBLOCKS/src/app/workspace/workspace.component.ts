@@ -610,7 +610,7 @@ export class WorkspaceComponent implements OnDestroy {
     const ws = this.workspaces[tabId];
     if (!ws) return;
 
-    // 1. Validar bloques antes de ejecutar
+    // 1. Validates block before execution
     const topBlocks = ws.getTopBlocks(true);
     for (const block of topBlocks) {
       clearImports();
@@ -637,7 +637,7 @@ export class WorkspaceComponent implements OnDestroy {
           return;
         }
       
-        // 🔍 Verificar que el ros_send_request tenga TODOS los campos conectados
+        // check ros_send_request have ALL field connected
         let current = childBlock;
         while (current) {
           if (current.type === 'ros_send_request') {
@@ -646,7 +646,7 @@ export class WorkspaceComponent implements OnDestroy {
               this.alertService.showAlert('Error: Block "Send request" has incomplete fields.');
               return;
             }
-            break; // ya lo encontramos y validamos
+            break;
           }
           current = current.nextConnection?.targetBlock() ?? null;
         }
@@ -660,7 +660,7 @@ export class WorkspaceComponent implements OnDestroy {
       }
     }
 
-    // 2. Continuar con lógica original
+    // 2. Continues original logic
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       const generatedCode = pythonGenerator.workspaceToCode(ws);
       this.textCode.set(tabId.toString(), generatedCode);
@@ -934,7 +934,7 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   enviarCodigo(code_to_send: string, tabId: number) {
-    console.log('Sending code...');
+    console.log(code_to_send);
     const workspace = this.workspaces[tabId];
 
     let code = '';

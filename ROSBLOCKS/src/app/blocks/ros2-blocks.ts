@@ -1056,22 +1056,22 @@ Blockly.Blocks['ros2_turtle_set_pen'] = {
 
     this.appendValueInput("R")
       .setCheck("Number")
-      .appendField("Rojo:");
+      .appendField("Red:");
     this.appendValueInput("G")
       .setCheck("Number")
-      .appendField("Verde:");
+      .appendField("Green:");
     this.appendValueInput("B")
       .setCheck("Number")
-      .appendField("Azul:");
+      .appendField("Blue:");
     this.appendValueInput("WIDTH")
       .setCheck("Number")
       .appendField("Width:");
 
     this.appendDummyInput()
-      .appendField("Lápiz:")
+      .appendField("Pen:")
       .appendField(new Blockly.FieldDropdown([
-        ["Abajo", "0"],
-        ["Arriba", "1"]
+        ["Down", "0"],
+        ["Up", "1"]
       ]), "PEN_STATE");
 
     this.setInputsInline(true);
@@ -1097,6 +1097,20 @@ Blockly.Blocks['ros2_turtlesim_publisher'] = {
   }
 };
 
+Blockly.Blocks['init'] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField('__init__')
+    this.appendStatementInput('CALLBACK')
+      .appendField('Execute');
+    this.setPreviousStatement(false, null);
+    this.setNextStatement(false, null);
+    this.setColour(blockColors.Functions);
+    this.setTooltip('Creates a timer that periodically executes a callback.');
+    this.setHelpUrl('');
+  }
+};
+
 Blockly.Blocks['ros2_turtle_rotate'] = {
   init: function () {
     this.setInputsInline(true);
@@ -1106,7 +1120,7 @@ Blockly.Blocks['ros2_turtle_rotate'] = {
       .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
     this.appendValueInput("GRADOS")
       .setCheck("Number")
-      .appendField("Grados:");
+      .appendField("Degrees:");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
     this.setColour(blockColors.Turtlesim);

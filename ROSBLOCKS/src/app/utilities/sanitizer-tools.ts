@@ -30,6 +30,27 @@ export function extractFirstLine(text: string): { firstLine: string, remainingTe
   return { firstLine, remainingText };
 }
 
+export function sanitizeCustomAtribute(input: string): string {
+  let s = input.toLowerCase();
+
+  s = s.replace(/[^a-z0-9_]/g, "_");
+
+  s = s.replace(/__+/g, "_");
+
+  s = s.replace(/_+$/, "");
+
+  if (!s || !s[0].match(/[a-z]/)) {
+    s = "a" + s;
+  }
+
+  while (s.includes("__")) {
+    s = s.replace(/__+/g, "_");
+  }
+
+  return s;
+}
+
+
 export function sanitizeSrvFilename(filename: string): string {
   let sanitized = filename
       .trim() // Removes spaces at the beginning and end
