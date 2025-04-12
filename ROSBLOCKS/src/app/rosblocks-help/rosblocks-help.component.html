@@ -51,6 +51,13 @@
                     <ul *ngIf="dropdowns[5]" class="dropdownList">
                         <li (click)="selectVideo('https://www.youtube.com/embed/gx22BEezinM')">Introducción a Turtlesim</li>
                     </ul>
+
+                    <button class="dropdownBtn" (click)="toggleDropdown(6)">
+                        Export proyect <span class="material-icons arrow-icon" [class.rotated]="dropdowns[6]">expand_more</span>
+                    </button>
+                    <ul *ngIf="dropdowns[6]" class="dropdownList">
+                        <li (click)="selectVideo('https://www.youtube.com/embed/7EYOGoymTm0')">Como exportar proyecto</li>
+                    </ul>
                 </div>
             </div>
         </div>
