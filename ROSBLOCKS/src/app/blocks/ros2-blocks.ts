@@ -584,6 +584,7 @@ export function definirBloquesROS2() {
       this.appendDummyInput()
         .appendField("Create server")
         .appendField(new Blockly.FieldTextInput("MyServer"), "SERVER_NAME")
+        this.appendDummyInput()
         .appendField("Type")
         // We use a function that returns the updated list with only the name (without extension)
         .appendField(new Blockly.FieldDropdown(() => {
@@ -703,6 +704,7 @@ Blockly.Blocks["ros_create_client"] = {
     this.appendDummyInput()
       .appendField("Create Client")
       .appendField(new Blockly.FieldTextInput("minimal_client_async"), "CLIENT_NAME")
+      this.appendDummyInput()
       .appendField("Service Type")
       .appendField(new Blockly.FieldDropdown(() => {
         // Options according to `srvList`
@@ -718,6 +720,7 @@ Blockly.Blocks["ros_create_client"] = {
         this.updateChildren_();
         return newValue; // Ensure the validator returns a value
       }), "CLIENT_TYPE")
+      this.appendDummyInput()
       .appendField("Server")
       .appendField(new Blockly.FieldTextInput("MyServer"), "SERVICE_NAME");
     this.appendDummyInput()
