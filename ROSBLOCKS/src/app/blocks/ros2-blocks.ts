@@ -761,7 +761,6 @@ Blockly.Blocks["ros_create_client"] = {
   init: function () {
     this.appendDummyInput()
       .appendField("Create Client")
-      .appendField(new Blockly.FieldTextInput("minimal_client_async"), "CLIENT_NAME")
       this.appendDummyInput()
       .appendField("Service Type")
       .appendField(new Blockly.FieldDropdown(() => {
