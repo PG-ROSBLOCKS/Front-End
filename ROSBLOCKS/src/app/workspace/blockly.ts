@@ -113,7 +113,7 @@ export let toolbox = {
           name: 'Operations',
           colour: '#569BBD',
           contents: [
-            { kind: "block", type: "math_number" },
+            { kind: "block", type: "integer_number" },
             { kind: "block", type: "float_number" },
             { kind: "block", type: "math_arithmetic" },
             { kind: "block", type: "math_single" },

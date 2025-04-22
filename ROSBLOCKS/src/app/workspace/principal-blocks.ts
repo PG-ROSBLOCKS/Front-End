@@ -4,6 +4,7 @@
 
 export enum PrincipalBlock {
     ROS2_SERVICE_BLOCK = "ros2_service_block",
+    ROS2_MESSAGE_BLOCK = "ros2_message_block",
     ROS_CREATE_SERVER = "ros_create_server",
     ROS_CREATE_CLIENT = "ros_create_client",
     ROS2_PUBLISH_MESSAGE = "ros2_publish_message",
@@ -15,6 +16,7 @@ export enum PrincipalBlock {
 
 export const principalBlocks: string[] = [
     PrincipalBlock.ROS2_SERVICE_BLOCK,
+    PrincipalBlock.ROS2_MESSAGE_BLOCK,
     PrincipalBlock.ROS_CREATE_SERVER,
     PrincipalBlock.ROS_CREATE_CLIENT,
     PrincipalBlock.ROS2_PUBLISH_MESSAGE,
