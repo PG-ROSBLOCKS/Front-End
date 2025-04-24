@@ -1,0 +1,74 @@
+name: Deploy Angular to EC2
+on:
+  push:
+    branches: [ aws-tests ]
+
+env:
+  NODE_VERSION: 20.x
+
+jobs:
+# ────────────────────────────────────────────────────────────────
+  prep-config:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    # Sustituye la IP en ROSBLOCKS/src/app/services/code.service.ts
+    - name: Inject DEPLOY_HOST in API_CONTAINER_IP
+      shell: bash
+      run: |
+        HOST="${{ secrets.DEPLOY_HOST }}"
+        FILE="ROSBLOCKS/src/app/services/code.service.ts"
+
+        if [[ ! -f "$FILE" ]]; then
+          echo "❌ Archivo $FILE no encontrado"; exit 1
+        fi
+
+        # Reemplaza la línea: private API_CONTAINER_IP = '...';
+        sed -i -E \
+          "s~(API_CONTAINER_IP\\s*=\\s*['\"]).*(['\"])~\\1${HOST}\\2~" \
+          "$FILE"
+
+        echo "✔ API_CONTAINER_IP → ${HOST}"
+
+    # Empaqueta el código modificado
+    - uses: actions/upload-artifact@v4
+      with:
+        name: rosblocks-source
+        path: .
+
+# ────────────────────────────────────────────────────────────────
+  deploy-angular:
+    needs: prep-config
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: rosblocks-source
+        path: .
+
+    - name: Use Node ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    # Construimos el Angular dentro de ROSBLOCKS
+    - name: Install deps & build Angular
+      shell: bash
+      run: |
+        cd ROSBLOCKS
+        npm ci
+        npm run build -- --configuration production \
+          --output-path dist
+
+    # Sube la carpeta dist/ al servidor
+    - name: Upload dist to EC2
+      uses: easingthemes/ssh-deploy@v2.1.4
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
+        REMOTE_HOST:     ${{ secrets.DEPLOY_HOST }}
+        REMOTE_USER:     ${{ secrets.DEPLOY_USER }}
+        REMOTE_PORT:     ${{ secrets.DEPLOY_PORT }}
+        SOURCE:          "ROSBLOCKS/dist/"
+        TARGET:          ${{ secrets.DEPLOY_TARGET }}
