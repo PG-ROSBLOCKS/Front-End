@@ -72,5 +72,6 @@ jobs:
         REMOTE_PORT:     ${{ secrets.DEPLOY_PORT }}
         SOURCE:          "ROSBLOCKS/dist/"
         TARGET:          ${{ secrets.DEPLOY_TARGET }}
+        ARGS:            "--delete"                             # opcional
         SCRIPT_AFTER: |
           sudo systemctl restart nginx
