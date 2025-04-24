@@ -58,9 +58,7 @@ jobs:
       shell: bash
       run: |
         cd ROSBLOCKS
-        npm ci
-        npm run build -- --configuration production \
-          --output-path dist
+        ng build
 
     # Sube la carpeta dist/ al servidor
     - name: Upload dist to EC2
