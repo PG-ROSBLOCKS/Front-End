@@ -27,6 +27,7 @@ export class CodeService {
     this.pollForIp(uuid);
   }
   async pollForIp(uuid: string) {
+    console.log(`http://${this.API_CONTAINER_IP}/api/get-ip/${uuid}`);
     try {
       const res = await fetch(`http://${this.API_CONTAINER_IP}/api/get-ip/${uuid}`);
       const data = await res.json();
