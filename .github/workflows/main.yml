@@ -52,12 +52,17 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ env.NODE_VERSION }}
+        
+    # 👉 NUEVO PASO: instala Angular CLI globalmente
+    - name: Install Angular CLI
+      run: npm i -g @angular/cli
 
     # Construimos el Angular dentro de ROSBLOCKS
     - name: Install deps & build Angular
       shell: bash
       run: |
         cd ROSBLOCKS
+        npm install
         ng build
 
     # Sube la carpeta dist/ al servidor
