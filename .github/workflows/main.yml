@@ -72,3 +72,5 @@ jobs:
         REMOTE_PORT:     ${{ secrets.DEPLOY_PORT }}
         SOURCE:          "ROSBLOCKS/dist/"
         TARGET:          ${{ secrets.DEPLOY_TARGET }}
+        SCRIPT_AFTER: |
+          sudo systemctl restart nginx
