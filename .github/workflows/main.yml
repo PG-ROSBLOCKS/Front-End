@@ -57,23 +57,23 @@ jobs:
           #    – ajusta rutas según tu estructura
           SCRIPT_AFTER: |
             set -e
-            cd /home/ubuntu/ROSBLOCKS/ROSBLOCKS    # raíz del proyecto Angular
+            cd /home/ubuntu/ROSBLOCKS/ROSBLOCKS   # carpeta del frontend
+            echo "▶ instalando dependencias..."
+            npm install --omit=dev
 
-            # (Opcional) instala Node + Angular CLI si aún no existen
-            # source ~/.nvm/nvm.sh && nvm install 20 && nvm use 20
-            # npm i -g @angular/cli
-
-            echo "🛠  Installing dependencies…"
-            npm ci --include=dev
-
-            echo "🏗  Building Angular…"
+            echo "▶ compilando Angular..."
             npx ng build --configuration production --output-path dist
 
-            echo "🚚  Deploying bundle to /angular…"
-            sudo rm -rf /angular/*
-            sudo cp -r dist/* /angular/
+            echo "▶ copiando build a ~/angular..."
+            mkdir -p ~/angular
+            rm -rf   ~/angular/*
+            cp -r dist/* ~/angular/
 
-            echo "🔄  Restarting NGINX…"
+            echo "▶ publicando en /var/www/html..."
+            sudo rm -rf /var/www/html/*
+            sudo cp -r ~/angular/* /var/www/html/   # ← NUEVO COMANDO
+
+            echo "▶ reiniciando NGINX..."
             sudo systemctl restart nginx
 
-            echo "✅  Deployment finished"
+            echo "✅ despliegue completado"
