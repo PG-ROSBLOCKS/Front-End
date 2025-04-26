@@ -1,79 +1,50 @@
-name: Deploy Angular to EC2
+name: Deploy Angular App to S3 + CloudFront
+
 on:
   push:
-    branches: [ aws-tests ]
-
-env:
-  NODE_VERSION: 20.x   # sigue usando en CI para tareas de sed/lint, no para el build
+    branches:
+      - main # your deploy branch
 
 jobs:
-# ────────────────────────────────────────────────────────────────
-  prep-config:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+    # 1. Checkout
+    - uses: actions/checkout@v4
 
-      # Sustituye la IP del backend en CodeService
-      - name: Inject DEPLOY_HOST in API_CONTAINER_IP
-        run: |
-          HOST="${{ secrets.DEPLOY_HOST }}"
-          FILE="ROSBLOCKS/src/app/services/code.service.ts"
-          sed -i -E \
-            "s~(API_CONTAINER_IP\\s*=\\s*['\"]).*(['\"])~\\1${HOST}\\2~" \
-            "$FILE"
+    # 2. Node
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
 
-      # Empaquetamos TODO el repo como artefacto
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rosblocks-source
-          path: .
+    # 3. Instalar deps y compilar (en ROSBLOCKS)
+    - name: Install & Build
+      working-directory: ROSBLOCKS
+      run: |
+        npm ci
+        npm run build -- --configuration production  # genera dist/rosblocks/
 
-# ────────────────────────────────────────────────────────────────
-  deploy-on-ec2:
-    needs: prep-config
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: rosblocks-source
-          path: .
+    # 4. Configurar credenciales AWS
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region:            ${{ secrets.AWS_REGION }}
 
-      # Copiamos todo el repositorio al servidor
-      - name: Upload repo to EC2 and build there
-        uses: easingthemes/ssh-deploy@v2.1.4
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
-          REMOTE_HOST:     ${{ secrets.DEPLOY_HOST }}
-          REMOTE_USER:     ${{ secrets.DEPLOY_USER }}
-          REMOTE_PORT:     ${{ secrets.DEPLOY_PORT }}
-          SOURCE:          "."                # todo el repo
-          TARGET:          "/home/ubuntu/ROSBLOCKS"
-          ARGS:            "--delete"
+    # 5. Sincronizar a S3  (ajusta nombre del subfolder)
+    - name: Upload to S3
+      run: |
+        aws s3 sync ROSBLOCKS/dist/rosblocks/ s3://$S3_BUCKET_NAME --delete
+      env:
+        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
 
-          # 1) Construye el proyecto Angular
-          # 2) Copia dist/ a /angular (directorio que atiende NGINX)
-          # 3) Reinicia NGINX
-          #    – ajusta rutas según tu estructura
-          SCRIPT_AFTER: |
-            set -e
-            cd /home/ubuntu/ROSBLOCKS/ROSBLOCKS   # carpeta del frontend
-            echo "▶ instalando dependencias..."
-            npm install --omit=dev
-
-            echo "▶ compilando Angular..."
-            npx ng build --configuration production --output-path dist
-
-            echo "▶ copiando build a ~/angular..."
-            mkdir -p ~/angular
-            rm -rf   ~/angular/*
-            cp -r dist/* ~/angular/
-
-            echo "▶ publicando en /var/www/html..."
-            sudo rm -rf /var/www/html/*
-            sudo cp -r ~/angular/* /var/www/html/   # ← NUEVO COMANDO
-
-            echo "▶ reiniciando NGINX..."
-            sudo systemctl restart nginx
-
-            echo "✅ despliegue completado"
+    # 6. Invalidar CloudFront
+    - name: Invalidate CloudFront cache
+      run: |
+        aws cloudfront create-invalidation \
+          --distribution-id $CLOUDFRONT_DIST_ID \
+          --paths "/*"
+      env:
+        CLOUDFRONT_DIST_ID: ${{ secrets.CLOUDFRONT_DIST_ID }}
