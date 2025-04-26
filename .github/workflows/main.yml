@@ -3,7 +3,7 @@ name: Deploy Angular App to S3 + CloudFront
 on:
   push:
     branches:
-      - main # your deploy branch
+      - aws-tests # your deploy branch
 
 jobs:
   build-and-deploy:
