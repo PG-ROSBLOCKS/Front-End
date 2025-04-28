@@ -5,12 +5,11 @@
     <div class="helpContainer">
         <div class="left">
             <div class="blockly-container">
-                <input
-                    id="searchBox"
-                    type="text"
-                    placeholder="Buscar"
-                    (input)="onSearch($event)"
-                />
+                <div class="centerDiv">
+                    <button class="getBack" routerLink="/">
+                        <span class="material-icons">arrow_back</span> Regresar
+                    </button>
+                </div>
                 <div class="buttonContainer">
                     <button class="dropdownBtn" (click)="toggleDropdown(1)">
                         Acerca de ROSBlocks <span class="material-icons arrow-icon" [class.rotated]="dropdowns[1]">expand_more</span>
@@ -58,7 +57,7 @@
                     <ul *ngIf="dropdowns[4]" class="dropdownList">
                         <li (click)="selectVideo('https://www.youtube.com/embed/7EYOGoymTm0?si=Xav7hgLQ_FS8_UD3')">Exportar el proyecto de ROSBlocks y probarlo en Ubuntu</li>
                     </ul>
-
+                    <br>
                 </div>
             </div>
         </div>

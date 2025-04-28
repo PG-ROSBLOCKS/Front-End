@@ -1310,6 +1310,45 @@ Blockly.Blocks['integer_number'] = {
   }
 };
 
+Blockly.Blocks['ros2_publish_twist_full'] = {
+  init: function () {
+    this.setInputsInline(false);
+    this.appendDummyInput()
+      .appendField("Publish Twist from")
+      .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
+    
+    this.appendDummyInput()
+      .appendField("Linear Velocity:");
+    this.appendValueInput("LINEAR_X")
+      .setCheck("Number")
+      .appendField("linear.x:");
+    this.appendValueInput("LINEAR_Y")
+      .setCheck("Number")
+      .appendField("linear.y:");
+    this.appendValueInput("LINEAR_Z")
+      .setCheck("Number")
+      .appendField("linear.z:");
+
+    this.appendDummyInput()
+      .appendField("Angular Velocity:");
+    this.appendValueInput("ANGULAR_X")
+      .setCheck("Number")
+      .appendField("angular.x:");
+    this.appendValueInput("ANGULAR_Y")
+      .setCheck("Number")
+      .appendField("angular.y:");
+    this.appendValueInput("ANGULAR_Z")
+      .setCheck("Number")
+      .appendField("angular.z:");
+
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setColour(blockColors.Turtlesim);
+    this.setTooltip("Publishes a complete Twist message, allowing full control over linear and angular vectors.");
+    this.setHelpUrl("");
+  }
+};
+
 function validateDescendants(block: { type: string; data: string; unplug: () => void; inputList: any[]; nextConnection: { targetBlock: () => any; }; }, selectedServiceNormalized: string) {
   if (!block) return;
 

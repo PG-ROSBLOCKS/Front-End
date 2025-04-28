@@ -203,3 +203,51 @@ cursor: pointer;
     margin: 0;
   }
   
+  .getBack {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 5px;
+    font-family: 'Albert Sans', sans-serif;
+    background-color: #4a616b;
+    box-shadow: 0px 5px 10px 0px #00000040 inset;
+    border: none;
+    border-radius: 5px;
+    color: #FFF;
+    font-size: 24px;
+    cursor: pointer;
+    transition: background-color 0.2s ease; /* SOLO transición de color */
+}
+
+/* Hover: cambia a un color más claro */
+.getBack:hover {
+    background-color: #5e7987;
+}
+
+/* Active: cambia a un color más oscuro */
+.getBack:active {
+    background-color: #3b4d55;
+}
+
+
+.centerDiv {
+    width: 90%;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    margin: 0 auto;
+    margin-top: 20px;
+}
+
+
+.blockly-container {
+    height: calc(100vh - 56px);
+    overflow-y: scroll;
+    overflow-x: hidden;
+}

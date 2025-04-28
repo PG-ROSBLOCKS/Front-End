@@ -19,6 +19,7 @@ export let toolbox = {
             { kind: "block", type: "ros2_spawn_turtle" },
             { kind: "block", type: "ros2_turtle_set_pen" },
             { kind: "block", type: "ros2_turtle_rotate" },
+            { kind: "block", type: "ros2_publish_twist_full" },
           ]
         },
         {

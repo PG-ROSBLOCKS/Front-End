@@ -29,6 +29,9 @@ import { ErrorsService } from '../shared/components/error/errors.service';
   styleUrls: ['./workspace.component.css']
 })
 export class WorkspaceComponent implements OnDestroy {
+  private lastActivityTimestamp: number = Date.now();
+  private inactivityTimer: any;
+  
   @ViewChild('resizer') resizer!: ElementRef;
   @ViewChild('leftSection') leftSection!: ElementRef;
   @ViewChild('rightSection') rightSection!: ElementRef;
@@ -83,6 +86,35 @@ export class WorkspaceComponent implements OnDestroy {
     initializeCommonMsgs();
     setMessageService(this.messageService);
     this.blockErrorMessages();
+    this.startInactivityCheck();
+  }
+  
+  @HostListener('window:mousemove')
+  @HostListener('window:keydown')
+  @HostListener('window:click')
+  @HostListener('window:scroll')
+  resetInactivityTimer(): void {
+    this.lastActivityTimestamp = Date.now();
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = null;
+    }
+  }
+  
+  private startInactivityCheck(): void {
+    setInterval(() => {
+      const now = Date.now();
+      const minutesInactive = (now - this.lastActivityTimestamp) / (60 * 1000);
+  
+      if (minutesInactive >= 1 && !this.inactivityTimer) {
+        this.alertService.showAlert('Due to inactivity, all nodes have been stopped');
+        this.stopAllTabs();
+        this.deleteMap();
+        this.inactivityTimer = setTimeout(() => {
+          this.inactivityTimer = null;
+        }, 60000);
+      }
+    }, 60000);
   }
 
   blockErrorMessages(): void {

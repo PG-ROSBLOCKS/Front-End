@@ -436,7 +436,7 @@ iframe {
   height: 523px; 
   border: none;
   margin: 0 auto;
-  zoom: 60%;
+  zoom: 59%;
 }
 
 /* Covers top bar of noVNC */
@@ -445,7 +445,7 @@ iframe {
   width: 100%;
   height: 14px;
   position: relative;
-  top: -19px;
+  top: -16px;
   z-index: 10;
 }
 
@@ -454,7 +454,7 @@ iframe {
   width: 100%;
   height: 14px;
   position: relative;
-  top: 20px;
+  top: 16px;
   z-index: 10;
 }
 
@@ -481,13 +481,16 @@ iframe {
   left: calc(50% + 125px);
 }
 .reloadTurtle {
-  border-radius: 100%;
+  border-radius: 5px;
   position: relative;
   top: 20px;
+  left: -45px;
   border: none;
-  width: 20px;
-  height: 20px;
   cursor: pointer;
+}
+
+.reloadText {
+  font-size: 12px;
 }
 
 .reloadTurtle:hover {

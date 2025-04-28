@@ -41,8 +41,9 @@
   .help {
     box-shadow: 0px 2px 5px 0px #0404044f inset;
     font-family: 'Poppins', sans-serif;
-    border: 1px solid #333E43;
-    background-color: #333E43;
+    border: 1px solid #f158f1;
+    background-color: #ec4eec;
+    box-shadow: 0px 0px 5px #f15ff2c9;
     color: white;
   }
 
@@ -52,8 +53,8 @@
   }
 
   .help:hover {
-    border: 1px solid #404d53;
-    background-color: #404d53;
+    border: 1px solid #fc70fc;
+    background-color: #fc70fc;
   }
 
   .export.export:active {
@@ -62,8 +63,8 @@
   }
 
   .help:active {
-    border: 1px solid #303a3f;
-    background-color: #303a3f;
+    border: 1px solid #f858f8;
+    background-color: #f858f8;
   }
 
   .separator {

@@ -680,3 +680,27 @@ function definirGeneradoresROS2() {
 };
 }
 
+pythonGenerator.forBlock['ros2_publish_twist_full'] = function (block) {
+  const msgClass = addImport('geometry_msgs.msg.Twist');
+  const turtleName = block.getFieldValue('TURTLE_NAME');
+
+  const linearX = pythonGenerator.valueToCode(block, 'LINEAR_X', Order.ATOMIC) || '0.0';
+  const linearY = pythonGenerator.valueToCode(block, 'LINEAR_Y', Order.ATOMIC) || '0.0';
+  const linearZ = pythonGenerator.valueToCode(block, 'LINEAR_Z', Order.ATOMIC) || '0.0';
+  const angularX = pythonGenerator.valueToCode(block, 'ANGULAR_X', Order.ATOMIC) || '0.0';
+  const angularY = pythonGenerator.valueToCode(block, 'ANGULAR_Y', Order.ATOMIC) || '0.0';
+  const angularZ = pythonGenerator.valueToCode(block, 'ANGULAR_Z', Order.ATOMIC) || '0.0';
+
+  let code = `self.publisher_ = self.create_publisher(${msgClass}, '/${turtleName}/cmd_vel', 10)\n`;
+  code += `msg = ${msgClass}()\n`;
+  code += `msg.linear.x = float(${linearX})\n`;
+  code += `msg.linear.y = float(${linearY})\n`;
+  code += `msg.linear.z = float(${linearZ})\n`;
+  code += `msg.angular.x = float(${angularX})\n`;
+  code += `msg.angular.y = float(${angularY})\n`;
+  code += `msg.angular.z = float(${angularZ})\n`;
+  code += `self.publisher_.publish(msg)\n`;
+  code += `self.get_logger().info("Published full Twist message")\n`;
+
+  return code;
+};
