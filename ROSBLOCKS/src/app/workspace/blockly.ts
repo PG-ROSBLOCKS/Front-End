@@ -131,6 +131,7 @@ export let toolbox = {
           contents: [
             { kind: "block", type: "variables_get" },
             { kind: "block", type: "variables_set" },
+            { kind: "block", type: "ros2_cast_type" },
           ],
         },
         {

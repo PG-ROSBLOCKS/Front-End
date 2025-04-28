@@ -1349,6 +1349,41 @@ Blockly.Blocks['ros2_publish_twist_full'] = {
   }
 };
 
+Blockly.Blocks['ros2_cast_type'] = {
+  init: function () {
+    this.appendValueInput('VALUE')
+      .setCheck(null)  // Puede recibir cualquier tipo
+      .appendField('Cast')
+      .appendField(new Blockly.FieldDropdown(() => {
+        const allOptionsMap = new Map<string, string>();
+
+        // Agregar tipos de mensajes comunes
+        common_msgs_for_custom.forEach(([label, value]) => {
+          allOptionsMap.set(value, label);
+        });
+
+        // Agregar tipos personalizados (msgList) si no están
+        msgList.forEach((msg) => {
+          if (!allOptionsMap.has(msg.name)) {
+            allOptionsMap.set(msg.name, msg.name);
+          }
+        });
+
+        const options: [string, string][] = Array.from(allOptionsMap.entries()).map(
+          ([value, label]) => [label, value]
+        );
+
+        return options.length > 0 ? options : [['No types available', '']];
+      }), 'TARGET_TYPE');
+      
+    this.setOutput(true, null); // Resultado casteado
+    this.setColour(blockColors.Cycles);  // Podrías definir un color "Conversions" en tu color-palette
+    this.setTooltip('Casts a value to the selected ROS2 message type.');
+    this.setHelpUrl('');
+  }
+};
+
+
 function validateDescendants(block: { type: string; data: string; unplug: () => void; inputList: any[]; nextConnection: { targetBlock: () => any; }; }, selectedServiceNormalized: string) {
   if (!block) return;
 

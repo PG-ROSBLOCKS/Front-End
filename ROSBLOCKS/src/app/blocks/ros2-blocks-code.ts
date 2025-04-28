@@ -704,3 +704,25 @@ pythonGenerator.forBlock['ros2_publish_twist_full'] = function (block) {
 
   return code;
 };
+
+pythonGenerator.forBlock['ros2_cast_type'] = function (block) {
+  const valueCode = pythonGenerator.valueToCode(block, 'VALUE', Order.NONE) || 'None';
+  const targetType = block.getFieldValue('TARGET_TYPE') || 'string';
+
+  let castedCode = valueCode;
+
+  if (targetType === 'string' || targetType === 'std_msgs.msg.String' || targetType === 'std_msgs/String') {
+    castedCode = `str(${valueCode})`;
+  } else if (['int32', 'int64', 'int16', 'uint32', 'uint64', 'std_msgs.msg.Int64', 'std_msgs.msg.Int16'].includes(targetType)) {
+    castedCode = `int(${valueCode})`;
+  } else if (['float32', 'float64', 'std_msgs.msg.Float32', 'std_msgs.msg.Float64'].includes(targetType)) {
+    castedCode = `float(${valueCode})`;
+  } else if (targetType === 'bool' || targetType === 'std_msgs.msg.Bool') {
+    castedCode = `bool(${valueCode})`;
+  } else {
+    castedCode = `${valueCode}`;
+  }
+
+  return [castedCode, Order.FUNCTION_CALL];
+};
+
