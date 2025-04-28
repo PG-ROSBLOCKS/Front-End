@@ -104,7 +104,6 @@ export function definirBloquesROS2() {
       }
 
       // Now that updateShape_ preserves connections, call it here to build the block shape.
-      this.updateShape_();
     },
 
     // Esta función recorre recursivamente un bloque y sus sub-bloques
