@@ -274,7 +274,7 @@ export function definirBloquesROS2() {
       // A "dummy" input just to display the selected type label
       this.appendDummyInput("TITLE")
         .appendField('Publish type:')
-        .appendField(new Blockly.FieldLabelSerializable('No type'), 'MSG_TYPE');
+        .appendField(new Blockly.FieldLabelSerializable('Select type'), 'MSG_TYPE');
 
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
@@ -1369,7 +1369,7 @@ Blockly.Blocks['ros2_cast_type'] = {
       }), 'TARGET_TYPE');
       
     this.setOutput(true, null);
-    this.setColour(blockColors.Cycles);
+    this.setColour(blockColors.Variables);
     this.setTooltip('Casts a value to the selected ROS2 message type.');
     this.setHelpUrl('');
   }
