@@ -682,8 +682,20 @@ export class WorkspaceComponent implements OnDestroy {
         const mainInput = block.getInput('MAIN');
         const childBlock = mainInput?.connection?.targetBlock();
         const hasPublisher = hasValidChain(childBlock ?? null, "ros2_publish_message");
+        const topic = block.getFieldValue('TOPIC_NAME');
         if (!hasPublisher) {
           this.alertService.showAlert('Error: Block "Create Publisher" needs at least one "Publish Message" inside.');
+          return;
+        }
+        if (topic === "/") {
+          this.alertService.showAlert('Error: Block "Create Publisher" needs a valid topic.');
+          return;
+        }
+      }
+      if (block.type === 'ros2_create_subscriber') {
+        const topic = block.getFieldValue('TOPIC_NAME');
+        if (topic === "/") {
+          this.alertService.showAlert('Error: Block "Create Subscriber" needs a valid topic.');
           return;
         }
       }
