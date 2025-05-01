@@ -1066,7 +1066,7 @@ export class WorkspaceComponent implements OnDestroy {
           switchMap(() => {
             if (type === "srv") {
               console.log("The file is a service (.srv), stopping execution after uploadCode.");
-              const confirmationMessage = `Servicio ${fileName} created successfully.`;
+              const confirmationMessage = `Service ${fileName} created successfully.`;
               this.consolesOutput.set(tabId.toString(),
                 (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
               // ... (código existente para actualizar consola) ...
@@ -1079,8 +1079,8 @@ export class WorkspaceComponent implements OnDestroy {
 
               return of(null); // Sigue retornando null
             } else if (type === "msg") {
-              console.log("The file is a menssage (.msg), stopping execution after uploadCode.");
-              const confirmationMessage = `Mensaje ${fileName} created successfully.`;
+              console.log("The file is a message (.msg), stopping execution after uploadCode.");
+              const confirmationMessage = `Message ${fileName} created successfully.`;
               this.consolesOutput.set(tabId.toString(),
                 (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
               // ... (código existente para actualizar consola) ...

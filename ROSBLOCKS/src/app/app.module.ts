@@ -14,6 +14,9 @@ import { AlertComponent } from './shared/components/alert/alert.component';
 import { ResizerDirective } from './workspace/resizer.directive';
 import { ConsoleOutputComponent } from './console-output/console-output.component';
 import { SuccessComponent } from './shared/components/success/success.component';
+import { LandingComponent } from './landing/landing.component';
+import { RouteReuseStrategy } from '@angular/router';
+import { SimpleReuseStrategy } from './landing/reuse-strategy';
 
 @NgModule({
   declarations: [
@@ -27,6 +30,7 @@ import { SuccessComponent } from './shared/components/success/success.component'
     ResizerDirective,
     ConsoleOutputComponent,
     SuccessComponent,
+    LandingComponent,
   ],
   imports: [
     BrowserModule,
@@ -34,7 +38,7 @@ import { SuccessComponent } from './shared/components/success/success.component'
     AppRoutingModule,
     HttpClientModule,
   ],
-  providers: [],
+  providers: [{provide: RouteReuseStrategy, useClass: SimpleReuseStrategy}],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
