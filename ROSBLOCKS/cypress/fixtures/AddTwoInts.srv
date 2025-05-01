@@ -1,0 +1,5 @@
+# Archivo AddTwoInts.srv generado por ROSBlocks
+int64 a
+int64 b
+---
+int64 sum

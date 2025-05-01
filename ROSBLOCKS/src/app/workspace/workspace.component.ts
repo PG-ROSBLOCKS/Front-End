@@ -1011,6 +1011,7 @@ export class WorkspaceComponent implements OnDestroy {
 
   enviarCodigo(code_to_send: string, tabId: number) {
     console.log(code_to_send);
+    console.log('Tab ID:', tabId);
     const workspace = this.workspaces[tabId];
 
     let code = '';
