@@ -1,4 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Location } from '@angular/common';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-rosblocks-help',
@@ -6,6 +8,13 @@ import { Component, ElementRef, ViewChild } from '@angular/core';
   styleUrls: ['./rosblocks-help.component.css']
 })
 export class RosblocksHelpComponent {
+
+  constructor(
+    private location: Location, // Imported from @angular/common
+    private router: Router
+  ) {}
+
+
   dropdowns: { [key: number]: boolean } = {};
   selectedVideo: string | null = null;
 
@@ -29,7 +38,16 @@ export class RosblocksHelpComponent {
     }
   }
 
-  
+  goBack(): void {
+    // `navigationId` > 1 means there is a previous route in Angular’s history
+    if (window.history.state?.navigationId > 1) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/workspace']); // Fallback to landing
+    }
+  }
+
+    
   videoSections = [
     {
       url: 'https://www.youtube.com/embed/3n1agY5XYOk?si=QdJwRjAO0jIiE1xs',
