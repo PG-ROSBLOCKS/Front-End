@@ -5,6 +5,7 @@ import { EventType } from 'blockly/core/events/type';
 import { common_msgs, common_msgs_for_custom } from './ros2-msgs';
 import type { MessageService } from '../shared/message.service'; // asegúrate del path correcto
 import { blockColors } from './color-palette';
+import { sanitizeBaseNameAllowUnderscoreWithoutExtension, sanitizeNameWithoutExtension, validateTopicName } from '../utilities/sanitizer-tools';
 
 let messageServiceInstance: MessageService | null = null;
 
@@ -20,7 +21,7 @@ export function definirBloquesROS2() {
     init: function () {
       this.appendDummyInput()
         .appendField('Create Publisher')
-        .appendField(new Blockly.FieldTextInput('/my_topic'), 'TOPIC_NAME')
+        .appendField(new Blockly.FieldTextInput('/my_topic', validateTopicName), 'TOPIC_NAME')
         .appendField('Type')
         .appendField(new Blockly.FieldDropdown(() => {
           const allOptionsMap = new Map<string, string>();
@@ -57,18 +58,22 @@ export function definirBloquesROS2() {
       this.messageType = '';
 
       this.setOnChange((event: { type: EventType; blockId: any; element: string; name: string; }) => {
+        const topic = this.getFieldValue('TOPIC_NAME') || '';
+        if (topic === '/') {
+            this.setWarningText('The topic name cannot be empty.');
+        } else {
+          this.setWarningText(null);
+        }
         if (!this.workspace || this.workspace.isDragging()) return;
-
         if (event.type === Blockly.Events.BLOCK_CHANGE && event.blockId === this.id) {
           if (event.element === 'field' && event.name === 'MSG_TYPE') {
             this.messageType = this.getFieldValue('MSG_TYPE');
-            this.updateChildren_(); // aquí sí directo
+            this.updateChildren_(); 
           }
         } else if (event.type === Blockly.Events.BLOCK_MOVE) {
-          // Delay para evitar conflictos durante el drag-and-drop
           setTimeout(() => {
             this.updateChildren_();
-          }, 10); // puede ajustarse
+          }, 10); 
         }
       });
 
@@ -104,7 +109,6 @@ export function definirBloquesROS2() {
       }
 
       // Now that updateShape_ preserves connections, call it here to build the block shape.
-      this.updateShape_();
     },
 
     // Esta función recorre recursivamente un bloque y sus sub-bloques
@@ -150,7 +154,7 @@ export function definirBloquesROS2() {
       this.appendDummyInput()
         .appendField("Minimal Publisher")
         .appendField("Topic")
-        .appendField(new Blockly.FieldTextInput("/my_topic"), "TOPIC_NAME")
+        .appendField(new Blockly.FieldTextInput("/my_topic", validateTopicName), "TOPIC_NAME")
         .appendField("Type")
         .appendField(new Blockly.FieldDropdown(common_msgs), "MSG_TYPE");
       this.appendDummyInput()
@@ -172,7 +176,7 @@ export function definirBloquesROS2() {
     init: function () {
       this.appendDummyInput()
         .appendField("Create Subscriber")
-        .appendField(new Blockly.FieldTextInput("/my_topic"), "TOPIC_NAME")
+        .appendField(new Blockly.FieldTextInput("/my_topic", validateTopicName), "TOPIC_NAME")
         .appendField("Type")
         .appendField(new Blockly.FieldDropdown(() => {
           const allOptionsMap = new Map<string, string>();
@@ -205,6 +209,16 @@ export function definirBloquesROS2() {
       this.setHelpUrl("");
 
       this.messageType = '';
+
+      this.setOnChange((event: { type: EventType; blockId: any; element: string; name: string; }) => {
+        const topic = this.getFieldValue('TOPIC_NAME') || '';
+        if (topic === '/') {
+            this.setWarningText('The topic name cannot be empty.');
+        } else {
+          this.setWarningText(null);
+        }
+      }
+      );
     },
 
     mutationToDom: function () {
@@ -608,7 +622,7 @@ export function definirBloquesROS2() {
     init: function () {
       this.appendDummyInput()
         .appendField("Service")
-        .appendField(new Blockly.FieldTextInput("MyService"), "SERVICE_NAME");
+        .appendField(new Blockly.FieldTextInput("MyService", sanitizeNameWithoutExtension), "SERVICE_NAME");
       this.appendStatementInput("REQUEST_MESSAGES") // Just accepts message blocks
         .setCheck("ros2_named_message")
         .appendField("Request");
@@ -626,7 +640,7 @@ export function definirBloquesROS2() {
     init: function () {
       this.appendDummyInput()
         .appendField("Defines Message")
-        .appendField(new Blockly.FieldTextInput("MyMessage"), "MESSAGE_NAME");
+        .appendField(new Blockly.FieldTextInput("MyMessage", sanitizeNameWithoutExtension), "MESSAGE_NAME");
       this.appendStatementInput("MESSAGE_FIELDS")
         .setCheck("ros2_named_message")
         .appendField("Message fields");
@@ -641,7 +655,7 @@ export function definirBloquesROS2() {
     init: function () {
       this.appendDummyInput()
         .appendField("Create server")
-        .appendField(new Blockly.FieldTextInput("MyServer"), "SERVER_NAME")
+        .appendField(new Blockly.FieldTextInput("MyServer", sanitizeNameWithoutExtension), "SERVER_NAME")
         this.appendDummyInput()
         .appendField("Type")
         // We use a function that returns the updated list with only the name (without extension)
@@ -741,7 +755,7 @@ Blockly.Blocks['ros2_publish_twist'] = {
     this.appendDummyInput()
       .appendField("Publish Twist from");
     this.appendDummyInput()
-      .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
+      .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
     this.appendValueInput("LINEAR")
       .setCheck("Number")
       .appendField("Linear Velocity:");
@@ -779,7 +793,7 @@ Blockly.Blocks["ros_create_client"] = {
       }), "CLIENT_TYPE")
       this.appendDummyInput()
       .appendField("Server")
-      .appendField(new Blockly.FieldTextInput("MyServer"), "SERVICE_NAME");
+      .appendField(new Blockly.FieldTextInput("MyServer", sanitizeNameWithoutExtension), "SERVICE_NAME");
     this.appendDummyInput()
       .appendField("Server wait time ")
       .appendField(new Blockly.FieldNumber(0.5, 0.1, 60, 0.1), "TIMER")
@@ -1078,7 +1092,7 @@ Blockly.Blocks['ros2_turtle_set_pose'] = {
       .appendField("Set turtle position");
     this.appendDummyInput()
       .appendField("Name:")
-      .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
+      .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
     this.appendValueInput("X")
       .setCheck("Number")
       .appendField("X:");
@@ -1114,7 +1128,7 @@ Blockly.Blocks['ros2_kill_turtle'] = {
   init: function () {
     this.appendDummyInput()
       .appendField("Kill turtle:")
-      .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
+      .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
     this.setColour(blockColors.Turtlesim);
@@ -1128,7 +1142,7 @@ Blockly.Blocks['ros2_spawn_turtle'] = {
     this.appendDummyInput()
       .appendField("Spawn turtle")
       .appendField("Name:")
-      .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
+      .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
 
     this.appendValueInput("X")
       .setCheck("Number")
@@ -1155,7 +1169,7 @@ Blockly.Blocks['ros2_turtle_set_pen'] = {
   init: function () {
     this.appendDummyInput()
       .appendField("Change pen of")
-      .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
+      .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
 
     this.appendValueInput("R")
       .setCheck("Number")
@@ -1220,7 +1234,7 @@ Blockly.Blocks['ros2_turtle_rotate'] = {
     this.appendDummyInput()
       .appendField("Rotate turtle");
     this.appendDummyInput()
-      .appendField(new Blockly.FieldTextInput("turtle1"), "TURTLE_NAME");
+      .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
     this.appendValueInput("GRADOS")
       .setCheck("Number")
       .appendField("Degrees:");
@@ -1309,6 +1323,80 @@ Blockly.Blocks['integer_number'] = {
     return text; // valid integer string
   }
 };
+
+Blockly.Blocks['ros2_publish_twist_full'] = {
+  init: function () {
+    this.setInputsInline(false);
+    this.appendDummyInput()
+      .appendField("Publish Twist from")
+      .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
+    
+    this.appendDummyInput()
+      .appendField("Linear Velocity:");
+    this.appendValueInput("LINEAR_X")
+      .setCheck("Number")
+      .appendField("linear.x:");
+    this.appendValueInput("LINEAR_Y")
+      .setCheck("Number")
+      .appendField("linear.y:");
+    this.appendValueInput("LINEAR_Z")
+      .setCheck("Number")
+      .appendField("linear.z:");
+
+    this.appendDummyInput()
+      .appendField("Angular Velocity:");
+    this.appendValueInput("ANGULAR_X")
+      .setCheck("Number")
+      .appendField("angular.x:");
+    this.appendValueInput("ANGULAR_Y")
+      .setCheck("Number")
+      .appendField("angular.y:");
+    this.appendValueInput("ANGULAR_Z")
+      .setCheck("Number")
+      .appendField("angular.z:");
+
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setColour(blockColors.Turtlesim);
+    this.setTooltip("Publishes a complete Twist message, allowing full control over linear and angular vectors.");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ros2_cast_type'] = {
+  init: function () {
+    this.appendValueInput('VALUE')
+      .setCheck(null)  // Puede recibir cualquier tipo
+      .appendField('Cast')
+      .appendField(new Blockly.FieldDropdown(() => {
+        const allOptionsMap = new Map<string, string>();
+
+        // Agregar tipos de mensajes comunes
+        common_msgs_for_custom.forEach(([label, value]) => {
+          allOptionsMap.set(value, label);
+        });
+
+        // Agregar tipos personalizados (msgList) si no están
+        msgList.forEach((msg) => {
+          if (!allOptionsMap.has(msg.name)) {
+            allOptionsMap.set(msg.name, msg.name);
+          }
+        });
+
+        const options: [string, string][] = Array.from(allOptionsMap.entries()).map(
+          ([value, label]) => [label, value]
+        );
+
+        return options.length > 0 ? options : [['No types available', '']];
+      }), 'TARGET_TYPE');
+      
+    this.setOutput(true, null); // Resultado casteado
+    this.setColour(blockColors.Cycles);  // Podrías definir un color "Conversions" en tu color-palette
+    this.setTooltip('Casts a value to the selected ROS2 message type.');
+    this.setHelpUrl('');
+  }
+};
+
 
 function validateDescendants(block: { type: string; data: string; unplug: () => void; inputList: any[]; nextConnection: { targetBlock: () => any; }; }, selectedServiceNormalized: string) {
   if (!block) return;
