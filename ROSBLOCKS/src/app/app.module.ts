@@ -17,6 +17,7 @@ import { SuccessComponent } from './shared/components/success/success.component'
 import { LandingComponent } from './landing/landing.component';
 import { RouteReuseStrategy } from '@angular/router';
 import { SimpleReuseStrategy } from './landing/reuse-strategy';
+import { LoadingComponent } from './loading/loading.component';
 
 @NgModule({
   declarations: [
@@ -31,6 +32,7 @@ import { SimpleReuseStrategy } from './landing/reuse-strategy';
     ConsoleOutputComponent,
     SuccessComponent,
     LandingComponent,
+    LoadingComponent,
   ],
   imports: [
     BrowserModule,

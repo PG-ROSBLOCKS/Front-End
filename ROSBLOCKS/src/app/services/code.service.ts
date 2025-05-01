@@ -15,9 +15,16 @@ export class CodeService {
   workspaceChanged$ = this.workspaceChangedSubject.asObservable();
   noTabs$ = this.noTabsSubject.asObservable();
   noBlocks$ = this.noBlocksSubject.asObservable();
+
+  private readySubject    = new BehaviorSubject<boolean>(false);
+  private progressSubject = new BehaviorSubject<number>(0);
+
+  ready$    = this.readySubject.asObservable();
+  progress$ = this.progressSubject.asObservable();   // 0 – 100 %
+
   private API_URL = 'http://localhost:8000';
   private API_URL_NO_PORT = 'http://localhost:';
-  private API_CONTAINER_IP = '98.81.98.98';
+  private API_CONTAINER_IP = '44.222.251.149';
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
@@ -26,22 +33,27 @@ export class CodeService {
 
     this.pollForIp(uuid);
   }
-  async pollForIp(uuid: string) {
-    console.log(`http://${this.API_CONTAINER_IP}/api/get-ip/${uuid}`);
+  private async pollForIp(uuid: string) {
     try {
-      const res = await fetch(`http://${this.API_CONTAINER_IP}/api/get-ip/${uuid}`);
+      const res  = await fetch(`${this.API_CONTAINER_IP}/api/get-ip/${uuid}`);
       const data = await res.json();
-  
-      if (data.status === "ready") {
-        this.API_URL = `http://${data.ip}:8000`;
+
+      if (data.status === 'ready') {
+        this.API_URL         = `http://${data.ip}:8000`;
         this.API_URL_NO_PORT = `http://${data.ip}:`;
+        this.readySubject.next(true);          // ← ¡laboratorio listo!
       } else {
-        setTimeout(() => this.pollForIp(uuid), 5000); // wait 5 seconds before retrying
+        // actualiza una barra “indeterminada” (opcional)
+        this.progressSubject.next(
+          (this.progressSubject.value + 5) % 100
+        );
+        setTimeout(() => this.pollForIp(uuid), 5_000);
       }
-    } catch (err) {
-      setTimeout(() => this.pollForIp(uuid), 5000); // try again in 5 seconds
+    } catch {
+      setTimeout(() => this.pollForIp(uuid), 5_000);
     }
   }
+  
   uploadCode(fileName: string, code: string, type: string): Observable<any> {
 
     const payload = { file_name: fileName, code: code, type: type };

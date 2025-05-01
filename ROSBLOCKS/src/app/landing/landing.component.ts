@@ -16,6 +16,6 @@ export class LandingComponent {
 
   // Navigate to the workspace (root)
   start(): void {
-    this.router.navigate(['/workspace']);
+    this.router.navigate(['/loading']);
   }
 }
