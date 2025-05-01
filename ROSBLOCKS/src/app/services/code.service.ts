@@ -17,7 +17,7 @@ export class CodeService {
   noBlocks$ = this.noBlocksSubject.asObservable();
   private API_URL = 'http://localhost:8000';
   private API_URL_NO_PORT = 'http://localhost:';
-  private API_CONTAINER_IP = '35.170.58.255';
+  private API_CONTAINER_IP = '98.81.98.98';
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
