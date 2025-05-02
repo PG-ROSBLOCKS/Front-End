@@ -467,54 +467,53 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   enviarCodigoMapa(code_to_send: string): void {
-    //console.log(code_to_send);
-
-    //Why count to 2?, because 2 turtles are painting the map, so this indicates when a turtle ends his job
     let count = 2;
     const fileName = "turtleMap.py";
     const type = "pub_sub";
     const code = code_to_send;
-
+  
     if (!this.mapCodeService) {
       this.mapCodeService = new CodeService(this.http);
     }
     const codeService = this.mapCodeService;
-
-    this.mapFullyLoaded = false
-    this.codeService.ready$.pipe(
+  
+    this.mapFullyLoaded = false;
+    codeService.ready$.pipe(               // ← USAMOS codeService.ready$
       filter(ready => ready),
       take(1),
-    
-      switchMap(() =>
-        this.codeService.uploadCode(fileName, code, type)
-      ),
-      switchMap(() => this.codeService.executeCode(fileName)),
+  
+      // 1) cuando esté listo, subo
+      switchMap(() => codeService.uploadCode(fileName, code, type)),  // ← USAMOS codeService.uploadCode
+  
+      // 2) luego ejecuto
+      switchMap(() => codeService.executeCode(fileName)),             // ← USAMOS codeService.executeCode
+  
+      // 3) abro WS
       switchMap(response => {
-          if (!response) return of(null);
-          this.mapFullyLoaded = false
-          this.mapSessionId = response.session_id;
-          return codeService.connectToWebSocket(this.mapSessionId);
-        })
-      )
-      .subscribe({
-        next: (response) => {
-
-          if (!response) return;
-          count--
-          if (count == 0) {
-            this.mapFullyLoaded = true
-            this.saveToLocalStorage()
-          }
-        },
-        error: (error) => {
-          console.error('Error:', error)
-          this.mapFullyLoaded = true
-        },
-        complete: () => {
-          this.mapFullyLoaded = true
+        if (!response) return of(null);
+        this.mapFullyLoaded = false;
+        this.mapSessionId = response.session_id;
+        return codeService.connectToWebSocket(this.mapSessionId);     // ← USAMOS codeService.connectToWebSocket
+      })
+    ).subscribe({
+      next: wsMsg => {
+        if (!wsMsg) return;
+        count--;
+        if (count === 0) {
+          this.mapFullyLoaded = true;
+          this.saveToLocalStorage();
         }
-      });
+      },
+      error: err => {
+        console.error('Error:', err);
+        this.mapFullyLoaded = true;
+      },
+      complete: () => {
+        this.mapFullyLoaded = true;
+      }
+    });
   }
+  
 
   deleteMap(): void {
 
@@ -1051,88 +1050,84 @@ export class WorkspaceComponent implements OnDestroy {
       code = replaceSelfWithNodeInMain(create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType));
     }
     const codeService = this.consolesServices.get(tabId.toString());
-
-
-    if (codeService === undefined) {
+    if (!codeService) {
       console.error('Service not found for the tab', tabId);
       return;
-    } else {
-      if (this.websockets.get(tabId.toString())) {
-        this.websockets.get(tabId.toString())?.unsubscribe();
-      }
-      //make variables global in each "def"
-      code = sanitizeGlobalVariables(code);
-      console.log(code);
-
-      this.websockets.set(tabId.toString(),
-      // 1) primero espero a que el service emita ready = true
-      this.codeService.ready$.pipe(
-        filter(ready => ready),  // sólo cuando realmente está listo
-        take(1),                 // me suscribo una sola vez
-        // 2) en cuanto esté listo, subo el código
-        switchMap(() =>
-          this.codeService.uploadCode(fileName, code, type)
-        ),
-        // 3) si es .srv o .msg, corto aquí y devuelvo un null para no seguir
-        switchMap(_ => {
-            if (type === "srv") {
-              console.log("The file is a service (.srv), stopping execution after uploadCode.");
-              const confirmationMessage = `Service ${fileName} created successfully.`;
-              this.consolesOutput.set(tabId.toString(),
-                (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
-              // ... (código existente para actualizar consola) ...
-              if (this.selectedTabId === tabId) {
-                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
-                this.changeDetectorRef.detectChanges(); // <-- Lugar correcto
-              }
-              // Añadir esta línea para actualizar la lista de servicios:
-              this.updateSrvList().subscribe();
-
-              return of(null); // Sigue retornando null
-            } else if (type === "msg") {
-              console.log("The file is a message (.msg), stopping execution after uploadCode.");
-              const confirmationMessage = `Message ${fileName} created successfully.`;
-              this.consolesOutput.set(tabId.toString(),
-                (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage + '\n');
-              // ... (código existente para actualizar consola) ...
-              if (this.selectedTabId === tabId) {
-                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
-                this.changeDetectorRef.detectChanges(); // <-- Lugar correcto
-              }
-              // Añadir esta línea para actualizar la lista de mensajes:
-              this.updateMsgList().subscribe();
-
-              return of(null); // Sigue retornando null
-            }
-            return codeService.executeCode(fileName);
-          }),
-          switchMap((response) => {
-            if (!response) return of(null);
-            console.log('Backend response:', response);
-            const sessionId = response.session_id;
-            this.consolesSessions.set(tabId.toString(), sessionId);
-            console.log('Session ID:', sessionId);
-            return codeService.connectToWebSocket(sessionId);
-          })
-        )
-        .subscribe({
-          next: (response) => {
-            if (!response) return;
-            console.log('Websocket message:', response.output);
-            if (response.output !== this.consolesOutput.get(tabId.toString())) {
-              this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output + '\n');
-              if (this.selectedTabId === tabId) {
-                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
-              }
-              if (this.autoScrollEnabled) {
-                setTimeout(() => this.scrollToBottom(), 100);
-              }
-            }
-          },
-          error: (error) => console.error('Error:', error),
-          complete: () => console.log('Completed process')
-        }));
     }
+    
+    // si había un WebSocket activo, lo cerramos
+    if (this.websockets.get(tabId.toString())) {
+      this.websockets.get(tabId.toString())!.unsubscribe();
+    }
+    
+    // preparar y subir
+    code = sanitizeGlobalVariables(code);
+    console.log(code);
+    
+    this.websockets.set(tabId.toString(),
+      codeService.ready$.pipe(               // ← USAMOS codeService.ready$, NO this.codeService
+        filter(ready => ready),
+        take(1),
+    
+        // 1) cuando esté listo, subimos
+        switchMap(() => codeService.uploadCode(fileName, code, type)),  // ← USAMOS codeService.uploadCode
+    
+        // 2) si es srv/msg cortamos aquí
+        switchMap(_ => {
+          if (type === 'srv') {
+            console.log("The file is a service (.srv), stopping execution after uploadCode.");
+            const msg = `Service ${fileName} created successfully.\n`;
+            this.consolesOutput.set(tabId.toString(),
+              (this.consolesOutput.get(tabId.toString()) ?? '') + msg
+            );
+            if (this.selectedTabId === tabId) {
+              this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString())!;
+              this.changeDetectorRef.detectChanges();
+            }
+            this.updateSrvList().subscribe();
+            return of(null);
+          } else if (type === 'msg') {
+            console.log("The file is a message (.msg), stopping execution after uploadCode.");
+            const msg = `Message ${fileName} created successfully.\n`;
+            this.consolesOutput.set(tabId.toString(),
+              (this.consolesOutput.get(tabId.toString()) ?? '') + msg
+            );
+            if (this.selectedTabId === tabId) {
+              this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString())!;
+              this.changeDetectorRef.detectChanges();
+            }
+            this.updateMsgList().subscribe();
+            return of(null);
+          }
+          // 3) si no es srv/msg, ejecutamos
+          return codeService.executeCode(fileName);  // ← USAMOS codeService.executeCode
+        }),
+    
+        // 4) abrimos WS sobre la misma svc
+        switchMap(response => {
+          if (!response) return of(null);
+          const sessionId = response.session_id;
+          this.consolesSessions.set(tabId.toString(), sessionId);
+          return codeService.connectToWebSocket(sessionId);
+        })
+      )
+      .subscribe({
+        next: wsMsg => {
+          if (!wsMsg) return;
+          console.log('Websocket message:', wsMsg.output);
+          const prev = this.consolesOutput.get(tabId.toString()) ?? '';
+          if (!prev.endsWith(wsMsg.output)) {
+            this.consolesOutput.set(tabId.toString(), prev + wsMsg.output + '\n');
+            if (this.selectedTabId === tabId) {
+              this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString())!;
+            }
+            if (this.autoScrollEnabled) setTimeout(() => this.scrollToBottom(), 100);
+          }
+        },
+        error: err => console.error('Error:', err),
+        complete: () => console.log('Completed process')
+      })
+    ); 
   }
 
   scrollToBottom() {
