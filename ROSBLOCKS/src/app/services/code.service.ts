@@ -24,7 +24,7 @@ export class CodeService {
 
   private API_URL = 'http://localhost:8000';
   private API_URL_NO_PORT = 'http://localhost:';
-  private API_CONTAINER_IP = '3.239.193.10';
+  private API_CONTAINER_IP = '3.214.143.84';
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
