@@ -161,7 +161,7 @@ export class CodeService {
   }
 
   vncTurtlesim(): string {
-    return `${this.DOMAIN}/session/${this.uuid}/vnc/vnc_lite.html?path=session/${this.uuid}/vnc/websockify`;
+    return `${this.DOMAIN}/session/${this.uuid}/vnc/vnc_lite.html?path=session/${this.uuid}/vnc/vnc_lite.html`;
   }  
 
   vncTurtlesimReset(): string {
