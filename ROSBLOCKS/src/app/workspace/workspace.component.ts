@@ -7,7 +7,7 @@ import { definirBloquesROS2, setMessageService } from '../blocks/ros2-blocks';
 import { clearImports, definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
 import { Observable, Subscription, forkJoin, of } from 'rxjs';
-import { switchMap, tap } from 'rxjs/operators';
+import { filter, switchMap, take, tap } from 'rxjs/operators';
 import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, linesAfter, linesBeforeComment, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables, removeOneIndentLevel } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
@@ -481,12 +481,15 @@ export class WorkspaceComponent implements OnDestroy {
     const codeService = this.mapCodeService;
 
     this.mapFullyLoaded = false
-    codeService.uploadCode(fileName, code, type)
-      .pipe(
-        switchMap(() => {
-          return codeService.executeCode(fileName);
-        }),
-        switchMap((response) => {
+    this.codeService.ready$.pipe(
+      filter(ready => ready),
+      take(1),
+    
+      switchMap(() =>
+        this.codeService.uploadCode(fileName, code, type)
+      ),
+      switchMap(() => this.codeService.executeCode(fileName)),
+      switchMap(response => {
           if (!response) return of(null);
           this.mapFullyLoaded = false
           this.mapSessionId = response.session_id;
@@ -1061,9 +1064,17 @@ export class WorkspaceComponent implements OnDestroy {
       code = sanitizeGlobalVariables(code);
       console.log(code);
 
-      this.websockets.set(tabId.toString(), codeService.uploadCode(fileName, code, type)
-        .pipe(
-          switchMap(() => {
+      this.websockets.set(tabId.toString(),
+      // 1) primero espero a que el service emita ready = true
+      this.codeService.ready$.pipe(
+        filter(ready => ready),  // sólo cuando realmente está listo
+        take(1),                 // me suscribo una sola vez
+        // 2) en cuanto esté listo, subo el código
+        switchMap(() =>
+          this.codeService.uploadCode(fileName, code, type)
+        ),
+        // 3) si es .srv o .msg, corto aquí y devuelvo un null para no seguir
+        switchMap(_ => {
             if (type === "srv") {
               console.log("The file is a service (.srv), stopping execution after uploadCode.");
               const confirmationMessage = `Service ${fileName} created successfully.`;
