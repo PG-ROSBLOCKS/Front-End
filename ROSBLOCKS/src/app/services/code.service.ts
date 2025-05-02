@@ -25,7 +25,6 @@ export class CodeService {
   private API_URL = 'http://localhost:8000';
   private uuid: string = '';
   private DOMAIN = 'https://api.rosblocks.com.co';
-  private errorRegex = /Traceback \(most recent call last\)|Error|Exception|Segmentation fault/i;
 
 
   constructor(private http: HttpClient) {
@@ -71,18 +70,7 @@ export class CodeService {
     this.wsSubject = webSocket(
       `wss://api.rosblocks.com.co/session/${this.uuid}/app/execution/ws/${sessionId}`
     );
-    this.wsSubject.subscribe({
-      next: (msg) => this.handleWebSocketMessage(msg),
-      error: (err) => console.error('WebSocket error:', err),
-      complete: () => console.log('Alert sent'),
-    });
     return this.wsSubject;
-  }
-  private handleWebSocketMessage(msg: any): void {
-    if (typeof msg === 'string' && this.errorRegex.test(msg)) {
-      console.warn('Python error detected:', msg);
-      alert('The Python code has crashed. Please check the console for details.');
-    }
   }
   
 
