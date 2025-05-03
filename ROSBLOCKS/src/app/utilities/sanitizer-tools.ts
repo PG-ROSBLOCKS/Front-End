@@ -509,8 +509,8 @@ export function removeCommonIndentation(code: string) {
     if (cleaned === '') {
       return '/';
     }
-    // 4. Add one slash at the beginning
-    return '/' + cleaned;
+
+    return cleaned;
   }
   
   export function safeUUID(): string {
