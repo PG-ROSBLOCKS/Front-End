@@ -31,7 +31,7 @@ import { ErrorsService } from '../shared/components/error/errors.service';
 export class WorkspaceComponent implements OnDestroy {
   private lastActivityTimestamp: number = Date.now();
   private inactivityTimer: any;
-  
+
   @ViewChild('resizer') resizer!: ElementRef;
   @ViewChild('leftSection') leftSection!: ElementRef;
   @ViewChild('rightSection') rightSection!: ElementRef;
@@ -88,7 +88,7 @@ export class WorkspaceComponent implements OnDestroy {
     this.blockErrorMessages();
     this.startInactivityCheck();
   }
-  
+
   @HostListener('window:mousemove')
   @HostListener('window:keydown')
   @HostListener('window:click')
@@ -100,12 +100,12 @@ export class WorkspaceComponent implements OnDestroy {
       this.inactivityTimer = null;
     }
   }
-  
+
   private startInactivityCheck(): void {
     setInterval(() => {
       const now = Date.now();
       const minutesInactive = (now - this.lastActivityTimestamp) / (10 * 60 * 1000);
-  
+
       if (minutesInactive >= 1 && !this.inactivityTimer) {
         this.alertService.showAlert('Due to inactivity, all nodes have been stopped');
         this.stopAllTabs();
@@ -471,23 +471,23 @@ export class WorkspaceComponent implements OnDestroy {
     const fileName = "turtleMap.py";
     const type = "pub_sub";
     const code = code_to_send;
-  
+
     if (!this.mapCodeService) {
       this.mapCodeService = new CodeService(this.http);
     }
     const codeService = this.mapCodeService;
-  
+
     this.mapFullyLoaded = false;
     codeService.ready$.pipe(               // ← USAMOS codeService.ready$
       filter(ready => ready),
       take(1),
-  
+
       // 1) cuando esté listo, subo
       switchMap(() => codeService.uploadCode(fileName, code, type)),  // ← USAMOS codeService.uploadCode
-  
+
       // 2) luego ejecuto
       switchMap(() => codeService.executeCode(fileName)),             // ← USAMOS codeService.executeCode
-  
+
       // 3) abro WS
       switchMap(response => {
         if (!response) return of(null);
@@ -513,7 +513,7 @@ export class WorkspaceComponent implements OnDestroy {
       }
     });
   }
-  
+
 
   deleteMap(): void {
 
@@ -1012,6 +1012,9 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   enviarCodigo(code_to_send: string, tabId: number) {
+    performance.clearMarks();
+    performance.clearMeasures();
+    performance.mark('ps_start');
     console.log(code_to_send);
     const workspace = this.workspaces[tabId];
 
@@ -1054,24 +1057,26 @@ export class WorkspaceComponent implements OnDestroy {
       console.error('Service not found for the tab', tabId);
       return;
     }
-    
+
     // si había un WebSocket activo, lo cerramos
     if (this.websockets.get(tabId.toString())) {
       this.websockets.get(tabId.toString())!.unsubscribe();
     }
-    
+
     // preparar y subir
     code = sanitizeGlobalVariables(code);
     console.log(code);
-    
+
     this.websockets.set(tabId.toString(),
-      codeService.ready$.pipe(               // ← USAMOS codeService.ready$, NO this.codeService
+      codeService.ready$.pipe(
         filter(ready => ready),
         take(1),
-    
-        // 1) cuando esté listo, subimos
-        switchMap(() => codeService.uploadCode(fileName, code, type)),  // ← USAMOS codeService.uploadCode
-    
+        switchMap(() => {
+          performance.mark('upload_start');
+          return codeService.uploadCode(fileName, code, type).pipe(
+            tap(() => performance.mark('upload_end'))
+          );
+        }),
         // 2) si es srv/msg cortamos aquí
         switchMap(_ => {
           if (type === 'srv') {
@@ -1099,35 +1104,51 @@ export class WorkspaceComponent implements OnDestroy {
             this.updateMsgList().subscribe();
             return of(null);
           }
-          // 3) si no es srv/msg, ejecutamos
-          return codeService.executeCode(fileName);  // ← USAMOS codeService.executeCode
+          // 3) si no es srv/msg, ejecutamos con las marcas de tiempo
+          performance.mark('exec_start');
+          return codeService.executeCode(fileName).pipe(
+            tap(() => performance.mark('exec_end'))
+          );
         }),
-    
+
         // 4) abrimos WS sobre la misma svc
-        switchMap(response => {
-          if (!response) return of(null);
-          const sessionId = response.session_id;
-          this.consolesSessions.set(tabId.toString(), sessionId);
-          return codeService.connectToWebSocket(sessionId);
+        switchMap(resp => {
+          if (!resp) return of(null);
+          const sid = resp.session_id;
+          this.consolesSessions.set(tabId.toString(), sid);
+          performance.mark('ws_wait');
+          return codeService.connectToWebSocket(sid);
         })
       )
-      .subscribe({
-        next: wsMsg => {
-          if (!wsMsg) return;
-          console.log('Websocket message:', wsMsg.output);
-          const prev = this.consolesOutput.get(tabId.toString()) ?? '';
-          if (!prev.endsWith(wsMsg.output)) {
-            this.consolesOutput.set(tabId.toString(), prev + wsMsg.output + '\n');
-            if (this.selectedTabId === tabId) {
-              this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString())!;
+        .subscribe({
+          next: wsMsg => {
+            if (!wsMsg) return;
+            /* 4 ── primera línea deseada por WS -> marcar ------------- */
+            if (/Mensaje del publicador:/i.test(wsMsg.output) &&
+              !performance.getEntriesByName('ws_first').length) {
+
+              performance.mark('ws_first');
+              performance.measure('upload', 'upload_start', 'upload_end');
+              if (performance.getEntriesByName('exec_end').length)     // ★2
+                performance.measure('execute', 'exec_start', 'exec_end');
+              performance.measure('wsFirst', 'ws_wait', 'ws_first');
+              console.table(performance.getEntriesByType('measure'));
             }
-            if (this.autoScrollEnabled) setTimeout(() => this.scrollToBottom(), 100);
-          }
-        },
-        error: err => console.error('Error:', err),
-        complete: () => console.log('Completed process')
-      })
-    ); 
+
+            console.log('Websocket message:', wsMsg.output);
+            const prev = this.consolesOutput.get(tabId.toString()) ?? '';
+            if (!prev.endsWith(wsMsg.output)) {
+              this.consolesOutput.set(tabId.toString(), prev + wsMsg.output + '\n');
+              if (this.selectedTabId === tabId) {
+                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString())!;
+              }
+              if (this.autoScrollEnabled) setTimeout(() => this.scrollToBottom(), 100);
+            }
+          },
+          error: err => console.error('Error:', err),
+          complete: () => console.log('Completed process')
+        })
+    );
   }
 
   scrollToBottom() {
@@ -1450,9 +1471,9 @@ export class WorkspaceComponent implements OnDestroy {
               setTimeout(() => {
                 console.log(`Executing asynchronous cleanup for tab ${otherTabId} for message ${normalizedMessageName}`);
                 try {
-                   const messageInfo = msgList.find(m =>
-                     (m.name && m.name.replace(/\\.msg$/, '') === normalizedMessageName)
-                   );
+                  const messageInfo = msgList.find(m =>
+                    (m.name && m.name.replace(/\\.msg$/, '') === normalizedMessageName)
+                  );
                   // Re-check workspace existence inside timeout
                   if (this.workspaces[otherTabId]) { // Re-check existence
                     if (messageInfo && messageInfo.fields) {
@@ -1517,7 +1538,7 @@ export class WorkspaceComponent implements OnDestroy {
             });
         },
         needConfirmation: true,
-        requirePlayedCheck: true 
+        requirePlayedCheck: true
       },
       {
         types: ['ros2_service_block'],
@@ -2276,7 +2297,7 @@ export class WorkspaceComponent implements OnDestroy {
     Object.keys(this.workspaces).forEach((tabKey) => {
       const workspace = this.workspaces[+tabKey];
       if (workspace) { // Check if workspace exists
-          this.globalMessageBlockDeletedInWorkspace(workspace, normalizedMessageName);
+        this.globalMessageBlockDeletedInWorkspace(workspace, normalizedMessageName);
       }
     });
   }
@@ -2311,23 +2332,23 @@ export class WorkspaceComponent implements OnDestroy {
           let parent = block.getParent();
           let related = false;
           while (parent) {
-             if ((parent.type === 'ros2_create_publisher' || parent.type === 'ros2_create_subscriber' || parent.type === 'ros2_publish_message') ) {
-                const parentMsgType = parent.getFieldValue('MSG_TYPE');
-                if (parentMsgType && parentMsgType.replace(/\\.msg$/, "") === normalizedMessageName) {
-                    related = true;
-                    break;
-                }
-             } else if (parent.type === 'ros2_message_block') {
-                 const parentMsgName = parent.getFieldValue('MESSAGE_NAME');
-                 if (parentMsgName && parentMsgName.replace(/\\.msg$/, "") === normalizedMessageName) {
-                     related = true;
-                     break;
-                 }
-             }
-             parent = parent.getParent();
+            if ((parent.type === 'ros2_create_publisher' || parent.type === 'ros2_create_subscriber' || parent.type === 'ros2_publish_message')) {
+              const parentMsgType = parent.getFieldValue('MSG_TYPE');
+              if (parentMsgType && parentMsgType.replace(/\\.msg$/, "") === normalizedMessageName) {
+                related = true;
+                break;
+              }
+            } else if (parent.type === 'ros2_message_block') {
+              const parentMsgName = parent.getFieldValue('MESSAGE_NAME');
+              if (parentMsgName && parentMsgName.replace(/\\.msg$/, "") === normalizedMessageName) {
+                related = true;
+                break;
+              }
+            }
+            parent = parent.getParent();
           }
 
-          if(related) {
+          if (related) {
             console.log(`  Found msg_variable block ${block.id} related to message ${normalizedMessageName}`);
             blocksToRemove.push(block);
           }
@@ -2353,11 +2374,11 @@ export class WorkspaceComponent implements OnDestroy {
 
         // 4. Message definition block itself (should already be handled by the initial delete event, but good for cascade)
         else if (block.type === 'ros2_message_block') {
-           const msgName = block.getFieldValue('MESSAGE_NAME');
-           if (msgName && msgName.replace(/\\.msg$/, "") === normalizedMessageName) {
-                console.log(`  Found message definition block ${block.id} for ${normalizedMessageName}`);
-                blocksToRemove.push(block);
-           }
+          const msgName = block.getFieldValue('MESSAGE_NAME');
+          if (msgName && msgName.replace(/\\.msg$/, "") === normalizedMessageName) {
+            console.log(`  Found message definition block ${block.id} for ${normalizedMessageName}`);
+            blocksToRemove.push(block);
+          }
         }
 
       } catch (e) {
@@ -2392,118 +2413,118 @@ export class WorkspaceComponent implements OnDestroy {
     // Browse all workspaces
     Object.keys(this.workspaces).forEach((tabKey) => {
       const workspace = this.workspaces[+tabKey];
-       if (workspace) { // Check if workspace exists
-            this.cascadeDeleteMessageVariablesInWorkspace(workspace, normalizedMessageName, messageFields);
-       }
+      if (workspace) { // Check if workspace exists
+        this.cascadeDeleteMessageVariablesInWorkspace(workspace, normalizedMessageName, messageFields);
+      }
     });
   }
 
   // Modified to operate on a specific workspace for message variables
   cascadeDeleteMessageVariablesInWorkspace(workspace: Blockly.WorkspaceSvg, messageName: string, messageFields: MsgVariable[]): void {
-      if (!workspace) {
-          console.warn(`Attempted to cascade delete message variables in a null or undefined workspace for message ${messageName}.`);
-          return;
+    if (!workspace) {
+      console.warn(`Attempted to cascade delete message variables in a null or undefined workspace for message ${messageName}.`);
+      return;
+    }
+    const normalizedMessageName = messageName.replace(/\\.msg$/, "");
+    console.log(`Cascading Variable Elimination for Message ${normalizedMessageName} in workspace ${workspace.id}`);
+
+
+    const blocksToDelete: Blockly.Block[] = [];
+    const processedBlocks = new Set<string>(); // To avoid processing the same block multiple times
+
+    // Recursive function to identify blocks to delete within this workspace
+    const findBlocksToDelete = (block: any, msgToDelete: string) => { // Use Blockly.Block type
+      if (!block || processedBlocks.has(block.id)) return; // Check if null or already processed
+      processedBlocks.add(block.id);
+
+      let shouldDelete = false;
+      let reason = "";
+
+      try {
+        // Check specific block types related to messages
+        if (block.type === 'msg_variable') {
+          // Need to determine if this variable belongs to the deleted message.
+          // This requires checking parent context as msg_variable doesn't store parent message name.
+          let parent = block.getParent();
+          while (parent) {
+            let parentMsgName = null;
+            if (parent.type === 'ros2_create_publisher' || parent.type === 'ros2_create_subscriber' || parent.type === 'ros2_publish_message') {
+              parentMsgName = parent.getFieldValue('MSG_TYPE');
+            } else if (parent.type === 'ros2_message_block') {
+              parentMsgName = parent.getFieldValue('MESSAGE_NAME');
+            }
+
+            if (parentMsgName) {
+              const normalizedParentMsgName = parentMsgName.replace(/\\.msg$/, "");
+              if (normalizedParentMsgName === msgToDelete) {
+                shouldDelete = true;
+                reason = `Block ${block.id} (msg_variable) is child of ${parent.type} using message ${msgToDelete}`;
+                break;
+              }
+            }
+            parent = parent.getParent();
+          }
+
+        } else if (block.type === 'ros2_publish_message' || block.type === 'ros2_create_publisher' || block.type === 'ros2_create_subscriber') {
+          const msgType = block.getFieldValue('MSG_TYPE');
+          if (msgType) {
+            const normalizedMsgType = msgType.replace(/\\.msg$/, "");
+            if (normalizedMsgType === msgToDelete) {
+              shouldDelete = true;
+              reason = `Block ${block.id} (${block.type}) uses message type ${msgToDelete}`;
+            }
+          }
+        }
+        // Potentially add checks for blocks that might *contain* msg_variable indirectly
+
+        // If the block should be deleted, add it to the list
+        if (shouldDelete && !blocksToDelete.includes(block)) {
+          console.log(`  Found block ${block.id} of type ${block.type} related to message ${msgToDelete}: ${reason}`);
+          blocksToDelete.push(block);
+        }
+
+        // Continue recursive search in connected blocks
+        if (block.inputList) {
+          block.inputList.forEach((input: any) => {
+            if (input.connection && input.connection.targetBlock()) {
+              findBlocksToDelete(input.connection.targetBlock(), msgToDelete);
+            }
+          });
+        }
+
+        // 2. Examinar el siguiente bloque
+        if (block.nextConnection && block.nextConnection.targetBlock()) {
+          findBlocksToDelete(block.nextConnection.targetBlock(), msgToDelete);
+        }
+
+      } catch (e) {
+        console.error(`Error analyzing block ${block.id} of type ${block.type} for message cascade:`, e);
       }
-      const normalizedMessageName = messageName.replace(/\\.msg$/, "");
-      console.log(`Cascading Variable Elimination for Message ${normalizedMessageName} in workspace ${workspace.id}`);
+    };
 
+    // Start the search from all top-level blocks in this workspace
+    workspace.getTopBlocks().forEach(block => {
+      findBlocksToDelete(block, normalizedMessageName);
+    });
 
-      const blocksToDelete: Blockly.Block[] = [];
-      const processedBlocks = new Set<string>(); // To avoid processing the same block multiple times
+    // Use a Set to ensure uniqueness before disposing
+    const uniqueBlocksToDelete = [...new Set(blocksToDelete)];
 
-      // Recursive function to identify blocks to delete within this workspace
-      const findBlocksToDelete = (block: any, msgToDelete: string) => { // Use Blockly.Block type
-          if (!block || processedBlocks.has(block.id)) return; // Check if null or already processed
-          processedBlocks.add(block.id);
-
-          let shouldDelete = false;
-          let reason = "";
-
-          try {
-              // Check specific block types related to messages
-              if (block.type === 'msg_variable') {
-                  // Need to determine if this variable belongs to the deleted message.
-                  // This requires checking parent context as msg_variable doesn't store parent message name.
-                  let parent = block.getParent();
-                  while(parent) {
-                      let parentMsgName = null;
-                      if (parent.type === 'ros2_create_publisher' || parent.type === 'ros2_create_subscriber' || parent.type === 'ros2_publish_message') {
-                          parentMsgName = parent.getFieldValue('MSG_TYPE');
-                      } else if (parent.type === 'ros2_message_block') {
-                           parentMsgName = parent.getFieldValue('MESSAGE_NAME');
-                      }
-
-                      if(parentMsgName) {
-                           const normalizedParentMsgName = parentMsgName.replace(/\\.msg$/, "");
-                           if (normalizedParentMsgName === msgToDelete) {
-                               shouldDelete = true;
-                               reason = `Block ${block.id} (msg_variable) is child of ${parent.type} using message ${msgToDelete}`;
-                               break;
-                           }
-                      }
-                      parent = parent.getParent();
-                  }
-
-              } else if (block.type === 'ros2_publish_message' || block.type === 'ros2_create_publisher' || block.type === 'ros2_create_subscriber') {
-                 const msgType = block.getFieldValue('MSG_TYPE');
-                 if (msgType) {
-                    const normalizedMsgType = msgType.replace(/\\.msg$/, "");
-                    if (normalizedMsgType === msgToDelete) {
-                        shouldDelete = true;
-                        reason = `Block ${block.id} (${block.type}) uses message type ${msgToDelete}`;
-                    }
-                 }
-              }
-              // Potentially add checks for blocks that might *contain* msg_variable indirectly
-
-              // If the block should be deleted, add it to the list
-              if (shouldDelete && !blocksToDelete.includes(block)) {
-                  console.log(`  Found block ${block.id} of type ${block.type} related to message ${msgToDelete}: ${reason}`);
-                  blocksToDelete.push(block);
-              }
-
-              // Continue recursive search in connected blocks
-              if (block.inputList) {
-                  block.inputList.forEach((input: any) => {
-                      if (input.connection && input.connection.targetBlock()) {
-                          findBlocksToDelete(input.connection.targetBlock(), msgToDelete);
-                      }
-                  });
-              }
-
-              // 2. Examinar el siguiente bloque
-              if (block.nextConnection && block.nextConnection.targetBlock()) {
-                  findBlocksToDelete(block.nextConnection.targetBlock(), msgToDelete);
-              }
-
-          } catch (e) {
-              console.error(`Error analyzing block ${block.id} of type ${block.type} for message cascade:`, e);
-          }
-      };
-
-      // Start the search from all top-level blocks in this workspace
-      workspace.getTopBlocks().forEach(block => {
-          findBlocksToDelete(block, normalizedMessageName);
-      });
-
-      // Use a Set to ensure uniqueness before disposing
-      const uniqueBlocksToDelete = [...new Set(blocksToDelete)];
-
-      // Delete the identified blocks in reverse order
-      console.log(`Disposing ${uniqueBlocksToDelete.length} blocks via message cascade in workspace ${workspace.id}`);
-      uniqueBlocksToDelete.reverse().forEach(block => {
-          if (!block.isDisposed()) { // Check if not already disposed
-              try {
-                  console.log(`  Deleting block ${block.id} of type ${block.type}`);
-                  block.dispose(true); // true to delete connected blocks
-              } catch (e) {
-                  console.error(`  Error deleting block ${block.id}:`, e);
-              }
-          } else {
-              console.log(` Block ${block.id} was already disposed (message cascade).`);
-          }
-      });
-      // End of modified function scope
+    // Delete the identified blocks in reverse order
+    console.log(`Disposing ${uniqueBlocksToDelete.length} blocks via message cascade in workspace ${workspace.id}`);
+    uniqueBlocksToDelete.reverse().forEach(block => {
+      if (!block.isDisposed()) { // Check if not already disposed
+        try {
+          console.log(`  Deleting block ${block.id} of type ${block.type}`);
+          block.dispose(true); // true to delete connected blocks
+        } catch (e) {
+          console.error(`  Error deleting block ${block.id}:`, e);
+        }
+      } else {
+        console.log(` Block ${block.id} was already disposed (message cascade).`);
+      }
+    });
+    // End of modified function scope
   }
 }
 
