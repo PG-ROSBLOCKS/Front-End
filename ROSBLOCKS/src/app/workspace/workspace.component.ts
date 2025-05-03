@@ -1070,6 +1070,7 @@ export class WorkspaceComponent implements OnDestroy {
       code = replaceMessageFilename(code, fileName);
     } else if (type === "client") {
       console.log('Creating client...');
+      performance.mark('clickClient');
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Cliente');
       code = replaceSelfWithNodeInMain(create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType));
     }
