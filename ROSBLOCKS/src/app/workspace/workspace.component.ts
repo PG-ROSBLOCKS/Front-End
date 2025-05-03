@@ -69,6 +69,12 @@ export class WorkspaceComponent implements OnDestroy {
   tabRightClick: number | null = null;
   mapSessionId: string = '';
 
+  //test auxiliar variables
+  private allTotal = 0;
+  private allReady = 0;
+  private allRunning = false;
+  private seenMsgs = new WeakSet<any>();
+
   constructor(
     private http: HttpClient,
     private codeService: CodeService,
@@ -957,6 +963,21 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   playAllTabs() {
+
+    //init testing
+    performance.clearMarks();
+    performance.clearMeasures();
+    performance.mark('all_start');
+
+    this.allRunning = true;
+    this.allReady = 0;
+    this.seenMsgs = new WeakSet();
+
+    /* cuenta cuántos tabs realmente se lanzarán */
+    this.allTotal = this.tabs.filter(tab => this.workspaces[tab.id]).length;
+
+    //end testing
+
     for (const tab of this.tabs) {
       const tabId = tab.id;
       if (!this.workspaces[tabId]) continue;
@@ -1123,10 +1144,9 @@ export class WorkspaceComponent implements OnDestroy {
         .subscribe({
           next: wsMsg => {
             if (!wsMsg) return;
-            /* 4 ── primera línea deseada por WS -> marcar ------------- */
+            /*init asr testing*/
             if (/Mensaje del publicador:/i.test(wsMsg.output) &&
               !performance.getEntriesByName('ws_first').length) {
-
               performance.mark('ws_first');
               performance.measure('upload', 'upload_start', 'upload_end');
               if (performance.getEntriesByName('exec_end').length)     // ★2
@@ -1134,6 +1154,39 @@ export class WorkspaceComponent implements OnDestroy {
               performance.measure('wsFirst', 'ws_wait', 'ws_first');
               console.table(performance.getEntriesByType('measure'));
             }
+
+            if (/Respuesta del servidor:/i.test(wsMsg.output) &&
+              !performance.getEntriesByName('srvFirst').length) {
+
+              performance.mark('srv_first');
+              performance.measure('upload', 'upload_start', 'upload_end');
+              performance.measure('execute', 'exec_start', 'exec_end');
+              performance.measure('srvTotal', 'clickClient', 'srv_first');   // ← total
+              console.table(performance.getEntriesByType('measure'));
+            }
+
+            if (this.allRunning && !this.seenMsgs.has(wsMsg)) {  
+              this.seenMsgs.add(wsMsg);                         
+              this.allReady++;
+
+              if (this.allReady === this.allTotal) {
+                this.allRunning = false;
+                performance.mark('all_first');
+                performance.measure('allFirst', 'all_start', 'all_first');
+
+                const { duration } =
+                  performance.getEntriesByName('allFirst')[0] || { duration: -1 };
+
+                console.table(performance.getEntriesByName('allFirst'));
+                const SLA = 5000;
+                if (duration > SLA)
+                  console.error(`SLA FAIL – ${duration.toFixed(0)} ms > ${SLA}`);
+                else
+                  console.info(`Play-All OK – ${duration.toFixed(0)} ms`);
+              }
+            }
+
+            /**end asr testing*/
 
             console.log('Websocket message:', wsMsg.output);
             const prev = this.consolesOutput.get(tabId.toString()) ?? '';
