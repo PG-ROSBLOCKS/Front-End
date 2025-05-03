@@ -488,12 +488,24 @@ export function removeCommonIndentation(code: string) {
    * - Ensures it starts with a '/'.
    * - Replaces repeated '/' sequences with a single one.
    */
-  export function validateTopicName(text: string) {
-    // 1. Remove everything that is not alphanumeric, underscore, or slash
+  export function validateTopicName(text: string): string {
+    // 1. Remove everything that is not alphanumeric, "_" or "/"
     let cleaned = text.replace(/[^A-Za-z0-9_/]/g, '');
-    // 2. Collapse multiple '/' into a single one
-    cleaned = cleaned.replace(/\//g, '');
-    // 3. Ensure it starts with a slash
+
+    // 2. Collapse sequences of "/" into a single one
+    cleaned = cleaned.replace(/\/+/g, '/');
+
+    // 3. Remove trailing slash if it is not the only character
+    if (cleaned.length > 1 && cleaned.endsWith('/')) {
+      cleaned = cleaned.slice(0, -1);
+    }
+
+    // 4. Ensure it starts with a slash
+    if (!cleaned.startsWith('/')) {
+      cleaned = '/' + cleaned;
+    }
+
+    // 5. If it is empty or only "/", return "/"
     if (cleaned === '') {
       return '/';
     }
