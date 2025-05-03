@@ -481,24 +481,24 @@ export function definirBloquesROS2() {
      */
     mutationToDom: function () {
       const container = document.createElement('mutation');
-      container.setAttribute('messageType', this.messageType || '');
-      container.setAttribute('messageFields', JSON.stringify(this.messageFields));
-      container.setAttribute('fieldValues', JSON.stringify(this.fieldValues));
+      container.setAttribute('messagetype', this.messageType || '');
+      container.setAttribute('messagefields', JSON.stringify(this.messageFields));
+      container.setAttribute('fieldvalues', JSON.stringify(this.fieldValues));
       return container;
     },
 
     domToMutation: function (xmlElement: { getAttribute: (arg0: string) => string; }) {
       console.log(`[${this.id}] domToMutation START`, xmlElement);
-      this.messageType = xmlElement.getAttribute('messageType') || '';
+      this.messageType = xmlElement.getAttribute('messagetype') || '';
 
       try {
-        this.messageFields = JSON.parse(xmlElement.getAttribute('messageFields') || "[]");
+        this.messageFields = JSON.parse(xmlElement.getAttribute('messagefields') || "[]");
       } catch (e) {
         this.messageFields = [];
       }
 
       try {
-        this.fieldValues = JSON.parse(xmlElement.getAttribute('fieldValues') || "{}");
+        this.fieldValues = JSON.parse(xmlElement.getAttribute('fieldvalues') || "{}");
       } catch (e) {
         this.fieldValues = {};
       }
