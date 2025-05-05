@@ -992,6 +992,7 @@ export class WorkspaceComponent implements OnDestroy {
       this.stopTab(tabId);
     }
     this.resetTurtleContainer(this.currentMap);
+    this.seenMsgs = new WeakSet();
   }
 
   cleanConsole() {
@@ -1033,6 +1034,7 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   enviarCodigo(code_to_send: string, tabId: number) {
+    resetNodePerf();
     performance.mark('ps_start');
     console.log(code_to_send);
     const workspace = this.workspaces[tabId];
@@ -1144,47 +1146,37 @@ export class WorkspaceComponent implements OnDestroy {
           next: wsMsg => {
             if (!wsMsg) return;
             /*init asr testing*/
-            if (/Mensaje del publicador:/i.test(wsMsg.output) &&
-              !performance.getEntriesByName('ws_first').length) {
-              performance.mark('ws_first');
-              performance.measure('upload', 'upload_start', 'upload_end');
-              if (performance.getEntriesByName('exec_end').length)     // ★2
-                performance.measure('execute', 'exec_start', 'exec_end');
-              performance.measure('wsFirst', 'ws_wait', 'ws_first');
+            /* ---------- MEDICIONES PUB/SUB ---------- */
+            if (/Mensaje del publicador:/i.test(wsMsg.output)) {
+              performance.mark('ws_first');                 // sólo la marca
+              safeMeasure('upload', 'upload_start', 'upload_end');
+              if (performance.getEntriesByName('exec_end').length) {
+                safeMeasure('execute', 'exec_start', 'exec_end');
+              }
+              safeMeasure('wsFirst', 'ws_wait', 'ws_first');
               console.table(performance.getEntriesByType('measure'));
             }
 
-            if (/Respuesta del servidor:/i.test(wsMsg.output) &&
-              !performance.getEntriesByName('srvFirst').length) {
-
+            /* ---------- MEDICIONES CLIENTE/SERVIDOR ---------- */
+            if (/Respuesta del servidor:/i.test(wsMsg.output)) {
               performance.mark('srv_first');
-              performance.measure('upload', 'upload_start', 'upload_end');
-              performance.measure('execute', 'exec_start', 'exec_end');
-              performance.measure('srvTotal', 'clickClient', 'srv_first');   // ← total
+              safeMeasure('upload', 'upload_start', 'upload_end');
+              safeMeasure('execute', 'exec_start', 'exec_end');
+              safeMeasure('srvTotal', 'clickClient', 'srv_first');
               console.table(performance.getEntriesByType('measure'));
             }
 
-            if (this.allRunning && !this.seenMsgs.has(wsMsg)) {  
-              this.seenMsgs.add(wsMsg);                         
+            /* ---------- MEDICIÓN PLAY-ALL ---------- */
+            if (this.allRunning && !this.seenMsgs.has(wsMsg)) {
+              this.seenMsgs.add(wsMsg);
               this.allReady++;
-
               if (this.allReady === this.allTotal) {
                 this.allRunning = false;
                 performance.mark('all_first');
-                performance.measure('allFirst', 'all_start', 'all_first');
-
-                const { duration } =
-                  performance.getEntriesByName('allFirst')[0] || { duration: -1 };
-
+                safeMeasure('allFirst', 'all_start', 'all_first');
                 console.table(performance.getEntriesByName('allFirst'));
-                const SLA = 5000;
-                if (duration > SLA)
-                  console.error(`SLA FAIL – ${duration.toFixed(0)} ms > ${SLA}`);
-                else
-                  console.info(`Play-All OK – ${duration.toFixed(0)} ms`);
               }
             }
-
             /**end asr testing*/
 
             console.log('Websocket message:', wsMsg.output);
@@ -2623,6 +2615,22 @@ export function hasAllFieldsConnected(block: Blockly.Block): boolean {
 
   // Verify that all inputs have a block connected
   return fieldInputs.every(input => input.connection?.targetBlock());
+}
+
+function resetNodePerf() {
+  const nodeMarks = [
+    'ps_start', 'upload_start', 'upload_end',
+    'exec_start', 'exec_end', 'ws_wait', 'ws_first',
+    'clickClient', 'srv_first'
+  ];
+  nodeMarks.forEach(m => performance.clearMarks(m));
+  nodeMarks.forEach(m => performance.clearMeasures(m));
+}
+
+function safeMeasure(name: string, start: string, end: string) {
+  if (!performance.getEntriesByName(name).length) {
+    performance.measure(name, start, end);
+  }
 }
 
 
