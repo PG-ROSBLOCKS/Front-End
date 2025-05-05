@@ -1033,8 +1033,6 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   enviarCodigo(code_to_send: string, tabId: number) {
-    performance.clearMarks();
-    performance.clearMeasures();
     performance.mark('ps_start');
     console.log(code_to_send);
     const workspace = this.workspaces[tabId];
