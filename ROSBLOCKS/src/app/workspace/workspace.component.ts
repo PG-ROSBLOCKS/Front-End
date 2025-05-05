@@ -581,7 +581,14 @@ export class WorkspaceComponent implements OnDestroy {
 
     this.workspaces[tabId].addChangeListener((event) => {
       if (event.type != 'viewport_change' && event.type != 'selected' && event.type != 'click') {
+        this.codeService.setNoBlocks(
+          this.workspaces[tabId].getAllBlocks(false).length === 0
+        );
+        this.codeService.setNoTabs(this.tabs.length === 0);
         this.saveToLocalStorage();
+      }
+      if (event.type === Blockly.Events.BLOCK_CHANGE || event.type === Blockly.Events.BLOCK_CREATE || event.type === Blockly.Events.BLOCK_DELETE) {
+        this.codeService.setWorkspaceChanged(true);
       }
     });
     this.registerGenericDeletionListeners(tabId);
