@@ -31,6 +31,7 @@ export let toolbox = {
           { kind: 'block', type: 'ros2_create_subscriber' },
           { kind: 'block', type: 'ros2_print_msg_type' },
           { kind: 'block', type: 'ros2_publish_message' },
+          { kind: 'block', type: 'ros2_subscriber_msg_data' },
         ],
       },
       {
@@ -54,12 +55,11 @@ export let toolbox = {
       },
       {
         kind: 'category',
-        name: 'ROS 2 Custom Messages',
+        name: 'Custom Messages',
         colour: blockColors.Messages,
         contents: [
           { kind: 'block', type: 'ros2_message_block' },
           { kind: 'block', type: 'ros2_named_message' },
-          { kind: 'block', type: 'ros2_subscriber_msg_data' },
         ],
       },
       {
