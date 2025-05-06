@@ -26,8 +26,8 @@
                             </li>
                         </ul>
                         <div class="ai">
-                            <button class="playAll" (click)="playAllTabs()">▶</button>
-                            <button class="stopAll" (click)="stopAllTabs()">◼</button>
+                            <button *ngIf="canPlayAny" class="playAll" (click)="playAllTabs()">▶</button>
+                            <button *ngIf="canStopAny" class="stopAll" (click)="stopAllTabs()">◼</button>
                             <!--<button (click)="borrarMapa()">test</button>-->
                         </div>
                     </div>
@@ -106,8 +106,16 @@
             </div>
             <div class="console">
                 <p id=console_title>Console</p>
+                <!-- Indicador de Estado -->
+                <span *ngIf="selectedTabId !== null" class="status-indicator">
+                  Status:
+                  <strong [ngClass]="{'status-running': selectedTabIsPlaying, 'status-stopped': !selectedTabIsPlaying}">
+                    {{ selectedTabIsPlaying ? 'Running' : 'Stopped' }}
+                  </strong>
+                </span>
+                <!-- Fin Indicador de Estado -->
                 <br>
-                <app-console-output [output]="getConsoleLines()" [autoScrollEnabled]="autoScrollEnabled"></app-console-output>           
+                <app-console-output [output]="getConsoleLines()" [autoScrollEnabled]="autoScrollEnabled"></app-console-output>
             </div>
             <button (click)="cleanConsole()" class="btnClean">Clear console</button>
             <button (click)="seeTopics()" class="btnTopics">Active topics</button>
