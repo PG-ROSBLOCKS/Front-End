@@ -13,7 +13,7 @@ import { create_client, create_publisher, create_server } from '../blocks/code-g
 import { srvList, SrvInfo } from '../shared/srv-list';
 import { msgList, MsgInfo, MsgVariable } from '../shared/msg-list';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { toolbox, updateDynamicCategoryInToolbox } from "./blockly";
+import { toolbox, updateDeepCategoryInToolbox, updateNestedCategoryInToolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
 import { paintMap, isValidMap } from '../maps/mapBuilder';
 import { map1, map2, map3 } from '../maps/maps';
@@ -23,6 +23,7 @@ import { blockColors } from '../blocks/color-palette';
 import { MessageService } from '../shared/message.service';
 import { ErrorsService } from '../shared/components/error/errors.service';
 import { parseMatrix } from './workspace-utils';
+import { colour } from 'blockly/blocks';
 
 
 @Component({
@@ -1243,7 +1244,8 @@ export class WorkspaceComponent implements OnDestroy {
     const srvVariablesCategory = {
       kind: 'category',
       type: 'category',
-      name: 'Service Variables',
+      name: 'Custom srv types created',
+      colour : blockColors.Services,
       contents: srvList.map((service: SrvInfo) => {
         const requestBlocks = service.variables?.request?.map((variable: any) =>
           this.createSrvVariableBlock(variable, "request")
@@ -1254,6 +1256,7 @@ export class WorkspaceComponent implements OnDestroy {
         return {
           kind: 'category',
           type: 'category',
+          colour: blockColors.Services,
           name: service.name ? service.name.replace(/\.srv$/, "") : "",
           contents: [
             { kind: 'label', text: "Request:" },
@@ -1270,7 +1273,13 @@ export class WorkspaceComponent implements OnDestroy {
         };
       })
     };
-    updateDynamicCategoryInToolbox(toolboxObj, 'ROS 2 Blocks', 'Variables', 'Service Variables', srvVariablesCategory);
+
+    updateDeepCategoryInToolbox(
+      toolboxObj,
+      ['ROS 2 Blocks', 'ROS 2 msg and srv types', 'ROS 2 srv types'],
+      'Custom srv types created',
+      srvVariablesCategory
+    );
 
     // Update the toolbox of the current workspace (if active)
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
@@ -1285,37 +1294,43 @@ export class WorkspaceComponent implements OnDestroy {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
       ? { ...toolbox }
       : { kind: 'categoryToolbox', contents: [] };
-
-    const msgVariablesCategory = {
+  
+    const typeToBlocksMap: Record<string, any[]> = {};
+  
+    // Agrupar campos por tipo base
+    msgList.forEach((message: MsgInfo) => {
+      message.fields?.forEach((field: any) => {
+        const baseType = field.type.split('/').pop(); // Ej: Vector3, Float32, etc.
+        if (!typeToBlocksMap[baseType]) {
+          typeToBlocksMap[baseType] = [];
+        }
+        const block = this.createMsgVariableBlock(field);
+        block.data = message.name;
+        typeToBlocksMap[baseType].push(block);
+      });
+    });
+  
+    // Crear lista de bloques planos con etiquetas por tipo
+    const flatContents: any[] = [];
+    Object.entries(typeToBlocksMap).forEach(([type, blocks]) => {
+      flatContents.push({ kind: 'label', text: `${type} message fields:` });
+      flatContents.push(...blocks);
+    });
+  
+    const defaultMsgTypesCategory = {
       kind: 'category',
-      type: 'category',
-      name: 'Message Variables',
-      contents: msgList.map((message: MsgInfo) => {
-        const fieldBlocks = message.fields?.map((variable: any) =>
-          this.createMsgVariableBlock(variable)
-        ) || [];
-
-        return {
-          kind: 'category',
-          type: 'category',
-          name: (() => {
-            const parts = message.name.split('.');
-            if (parts.length === 3 && parts[1] === 'msg') {
-              return parts[2]; // E.g., 'Twist'
-            }
-            return message.name; // E.g., 'message3'
-          })(),
-          contents: [
-            { kind: 'label', text: "Message fields:" },
-            ...fieldBlocks
-          ]
-        };
-      })
+      name: 'Default msg types',
+      colour: blockColors.Messages,
+      contents: flatContents
     };
-
-    updateDynamicCategoryInToolbox(toolboxObj, 'ROS 2 Blocks', 'Variables', 'Message Variables', msgVariablesCategory);
-
-    // Update the toolbox of the current workspace (if active)
+    updateDeepCategoryInToolbox(
+      toolboxObj,
+      ['ROS 2 Blocks', 'ROS 2 msg and srv types', 'ROS 2 msg types'],
+      'Default msg types',
+      defaultMsgTypesCategory
+    );
+  
+    // Actualiza el toolbox del workspace activo
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.workspaces[this.selectedTabId].updateToolbox({
         kind: 'categoryToolbox',
@@ -1323,6 +1338,7 @@ export class WorkspaceComponent implements OnDestroy {
       });
     }
   }
+  
 
   updateSrvList(): Observable<any> {
     return this.codeService.checkSrvFiles().pipe(
@@ -1699,7 +1715,7 @@ export class WorkspaceComponent implements OnDestroy {
 
       allBlocks.forEach((block: any) => {
         try {
-          // 1. Service variables (request/response)
+          // 1. Custom srv types created (request/response)
           if (block.type === 'srv_variable') {
             // Check if the block belongs to the service through its fields
             const variableName = block.getFieldValue('VAR_NAME');
@@ -1986,7 +2002,7 @@ export class WorkspaceComponent implements OnDestroy {
 
     allBlocks.forEach((block: Blockly.Block) => { // More specific type
       try {
-        // 1. Service variables (request/response)
+        // 1. Custom srv types created (request/response)
         if (block.type === 'srv_variable') {
           // Check if the block belongs to the service through its fields or data attribute
           const variableName = block.getFieldValue('VAR_NAME');

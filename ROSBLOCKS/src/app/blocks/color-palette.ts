@@ -7,6 +7,7 @@ export const blockColors = {
     Services: '#E3B75D',
     Clients: '#D97A66',
     Messages: '#C76A90',
+    Utils: '#A8B65D',
     Conditionals: '#3A8439',
     Cycles: '#3E7E7E',
     Operations: '#569BBD',
