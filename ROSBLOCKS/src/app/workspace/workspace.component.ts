@@ -1343,7 +1343,7 @@ export class WorkspaceComponent implements OnDestroy {
         };
       })
     };
-    updateDynamicCategoryInToolbox(toolboxObj, 'ROS 2 Blocks', 'Variables', 'Service Variables', srvVariablesCategory);
+    updateDynamicCategoryInToolbox(toolboxObj, 'ROS 2 Blocks', 'ROS 2 msg and srv types', 'Service Variables', srvVariablesCategory);
 
     // Update the toolbox of the current workspace (if active)
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
@@ -1386,7 +1386,7 @@ export class WorkspaceComponent implements OnDestroy {
       })
     };
 
-    updateDynamicCategoryInToolbox(toolboxObj, 'ROS 2 Blocks', 'Variables', 'Message Variables', msgVariablesCategory);
+    updateDynamicCategoryInToolbox(toolboxObj, 'ROS 2 Blocks', 'ROS 2 msg and srv types', 'Message Variables', msgVariablesCategory);
 
     // Update the toolbox of the current workspace (if active)
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
