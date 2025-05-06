@@ -1157,7 +1157,7 @@ export class WorkspaceComponent implements OnDestroy {
             if (!wsMsg) return;
             /*init asr testing*/
             /* ---------- MEDICIONES PUB/SUB ---------- */
-            if (/Mensaje del publicador:/i.test(wsMsg.output)) {
+            /*if (/Mensaje del publicador:/i.test(wsMsg.output)) {
               performance.mark('ws_first');                 // sólo la marca
               safeMeasure('upload', 'upload_start', 'upload_end');
               if (performance.getEntriesByName('exec_end').length) {
@@ -1168,7 +1168,7 @@ export class WorkspaceComponent implements OnDestroy {
             }
 
             /* ---------- MEDICIONES CLIENTE/SERVIDOR ---------- */
-            if (/Respuesta del servidor:/i.test(wsMsg.output)) {
+            /*if (/Respuesta del servidor:/i.test(wsMsg.output)) {
               performance.mark('srv_first');
               safeMeasure('upload', 'upload_start', 'upload_end');
               safeMeasure('execute', 'exec_start', 'exec_end');
@@ -1177,7 +1177,7 @@ export class WorkspaceComponent implements OnDestroy {
             }
 
             /* ---------- MEDICIÓN PLAY-ALL ---------- */
-            if (this.allRunning && !this.seenMsgs.has(wsMsg)) {
+            /* if (this.allRunning && !this.seenMsgs.has(wsMsg)) {
               this.seenMsgs.add(wsMsg);
               this.allReady++;
               if (this.allReady === this.allTotal) {
