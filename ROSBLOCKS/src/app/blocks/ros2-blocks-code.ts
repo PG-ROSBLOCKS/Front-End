@@ -447,25 +447,26 @@ function definirGeneradoresROS2() {
   };
 
   pythonGenerator.forBlock['ros2_spawn_turtle'] = function (block) {
-    const name = block.getFieldValue('TURTLE_NAME') || '"turtle1"';
+    const name = block.getFieldValue('TURTLE_NAME') || 'turtle1';
     const x = pythonGenerator.valueToCode(block, 'X', Order.ATOMIC) || '5.0';
     const y = pythonGenerator.valueToCode(block, 'Y', Order.ATOMIC) || '5.0';
     const theta = pythonGenerator.valueToCode(block, 'THETA', Order.ATOMIC) || '0.0';
-
+  
     const srvClass = addImport('turtlesim.srv.Spawn');
-
+  
     let code = `self.spawn_client = self.create_client(${srvClass}, 'spawn')\n`;
-    code += `while not self.spawn_client.wait_for_service(timeout_sec=1.0): self.get_logger().info('Esperando servicio spawn...')\n`;
+    code += `while not self.spawn_client.wait_for_service(timeout_sec=1.0): self.get_logger().info('Waiting for spawn service...')\n`;
     code += `req = ${srvClass}.Request()\n`;
     code += `req.x = float(${x})\n`;
     code += `req.y = float(${y})\n`;
     code += `req.theta = float(${theta})\n`;
-    code += `req.name = '${name}'\n`;
+    code += `req.name = ${JSON.stringify(name)}\n`;
     code += `future = self.spawn_client.call_async(req)\n`;
-    code += `future.add_done_callback(lambda future: self.get_logger().info('Tortuga ' + '${name}' + ' creada en (${x}, ${y}) con orientación ${theta}.'))\n`;
-
+    code += `future.add_done_callback(lambda future: self.get_logger().info(f"Turtle {req.name} created in (${x}, ${y}) with orientation ${theta}."))\n`;
+  
     return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
   };
+  
 
   pythonGenerator.forBlock['ros2_turtle_set_pen'] = function (block) {
     const turtleName = block.getFieldValue('TURTLE_NAME');
@@ -705,22 +706,39 @@ pythonGenerator.forBlock['ros2_publish_twist_full'] = function (block) {
   return code;
 };
 
+pythonGenerator.forBlock['integer_number'] = function (block) {
+  const numberText = block.getFieldValue('NUM') || '0';
+  return [numberText, Order.ATOMIC];
+};
+
+
 pythonGenerator.forBlock['ros2_cast_type'] = function (block) {
   const valueCode = pythonGenerator.valueToCode(block, 'VALUE', Order.NONE) || 'None';
-  const targetType = block.getFieldValue('TARGET_TYPE') || 'string';
+  const targetType = block.getFieldValue('TARGET_TYPE') || '';
 
   let castedCode = valueCode;
 
-  if (targetType === 'string' || targetType === 'std_msgs.msg.String' || targetType === 'std_msgs/String') {
-    castedCode = `str(${valueCode})`;
-  } else if (['int32', 'int64', 'int16', 'uint32', 'uint64', 'std_msgs.msg.Int64', 'std_msgs.msg.Int16'].includes(targetType)) {
-    castedCode = `int(${valueCode})`;
-  } else if (['float32', 'float64', 'std_msgs.msg.Float32', 'std_msgs.msg.Float64'].includes(targetType)) {
-    castedCode = `float(${valueCode})`;
-  } else if (targetType === 'bool' || targetType === 'std_msgs.msg.Bool') {
-    castedCode = `bool(${valueCode})`;
-  } else {
-    castedCode = `${valueCode}`;
+  if (targetType) {
+    if (['string', 'bool', 'int64', 'int16', 'float32', 'float64', 'char', 'byte'].includes(targetType)) {
+      // Para tipos primitivos: usar funciones estándar de Python
+      if (targetType === 'string') {
+        castedCode = `str(${valueCode})`;
+      } else if (targetType === 'bool') {
+        castedCode = `bool(${valueCode})`;
+      } else if (targetType === 'char') {
+        castedCode = `chr(${valueCode})`;
+      } else if (targetType === 'byte') {
+        castedCode = `bytes([${valueCode}])`; // Byte único
+      } else {
+        // int64, int16, float32, float64
+        castedCode = `${targetType.startsWith('float') ? 'float' : 'int'}(${valueCode})`;
+      }
+    } else {
+      // Para tipos de ROS2 complejos: crear una instancia
+      // Ejemplo: Twist(), Odometry(), Pose()
+      const typeName = targetType.split('/').pop() || targetType;
+      castedCode = `${typeName}()`;
+    }
   }
 
   return [castedCode, Order.FUNCTION_CALL];
@@ -730,5 +748,3 @@ pythonGenerator.forBlock['integer_number'] = function (block) {
   const numberText = block.getFieldValue('NUM') || '0';
   return [numberText, Order.ATOMIC];
 };
-
-

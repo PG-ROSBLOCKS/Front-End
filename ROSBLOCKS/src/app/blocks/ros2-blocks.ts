@@ -289,7 +289,7 @@ export function definirBloquesROS2() {
       // A "dummy" input just to display the selected type label
       this.appendDummyInput("TITLE")
         .appendField('Publish type:')
-        .appendField(new Blockly.FieldLabelSerializable('No type'), 'MSG_TYPE');
+        .appendField(new Blockly.FieldLabelSerializable('Select type'), 'MSG_TYPE');
 
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
@@ -1248,19 +1248,17 @@ Blockly.Blocks['ros2_turtle_rotate'] = {
 // BLOCKS FOR COMMON TYPES
 Blockly.Blocks['text_char_to_ascii'] = {
   init: function () {
-    this.appendDummyInput()
-      .appendField("ASCII of")
-      .appendField(new Blockly.FieldTextInput("a", this.validateChar), "CHAR");
+    this.appendValueInput("CHAR")
+      .setCheck("String")
+      .appendField("ASCII of");
+
     this.setOutput(true, "Number");
     this.setColour(blockColors.Text);
-    this.setTooltip("Returns the ASCII code of a single character");
+    this.setTooltip("Returns the ASCII code of a single character.");
     this.setHelpUrl("");
-  },
-
-  validateChar: function (text: string): string {
-    return text.length === 1 ? text : text.charAt(0); // Enforces only 1 character
   }
 };
+
 Blockly.Blocks['text_ascii_to_char'] = {
   init: function () {
     this.appendValueInput("ASCII_CODE")
@@ -1307,20 +1305,17 @@ Blockly.Blocks['integer_number'] = {
   init: function() {
     this.appendDummyInput()
       .appendField(new Blockly.FieldTextInput("0", this.validateInt), "NUM");
-    // Output both Number (general) and Integer (specific)
     this.setOutput(true, ["Number", "Integer"]);
     this.setColour(230);
     this.setTooltip("Número entero explícito (int64)");
     this.setHelpUrl("");
   },
 
-  // Validate only integers
   validateInt: function(text: string) {
-    // Allow optional minus sign, require at least one digit
     const intRegex = /^-?\d+$/;
     if (!intRegex.test(text)) return null;
 
-    return text; // valid integer string
+    return text;
   }
 };
 
@@ -1366,17 +1361,15 @@ Blockly.Blocks['ros2_publish_twist_full'] = {
 Blockly.Blocks['ros2_cast_type'] = {
   init: function () {
     this.appendValueInput('VALUE')
-      .setCheck(null)  // Puede recibir cualquier tipo
+      .setCheck(null)
       .appendField('Cast')
       .appendField(new Blockly.FieldDropdown(() => {
         const allOptionsMap = new Map<string, string>();
 
-        // Agregar tipos de mensajes comunes
         common_msgs_for_custom.forEach(([label, value]) => {
           allOptionsMap.set(value, label);
         });
 
-        // Agregar tipos personalizados (msgList) si no están
         msgList.forEach((msg) => {
           if (!allOptionsMap.has(msg.name)) {
             allOptionsMap.set(msg.name, msg.name);
@@ -1390,8 +1383,8 @@ Blockly.Blocks['ros2_cast_type'] = {
         return options.length > 0 ? options : [['No types available', '']];
       }), 'TARGET_TYPE');
       
-    this.setOutput(true, null); // Resultado casteado
-    this.setColour(blockColors.Cycles);  // Podrías definir un color "Conversions" en tu color-palette
+    this.setOutput(true, null);
+    this.setColour(blockColors.Variables);
     this.setTooltip('Casts a value to the selected ROS2 message type.');
     this.setHelpUrl('');
   }
@@ -1401,7 +1394,6 @@ Blockly.Blocks['ros2_cast_type'] = {
 function validateDescendants(block: { type: string; data: string; unplug: () => void; inputList: any[]; nextConnection: { targetBlock: () => any; }; }, selectedServiceNormalized: string) {
   if (!block) return;
 
-  // Validar si el bloque es del tipo "srv_variable"
   if (block.type === "srv_variable") {
     const blockService = block.data || "";
     const blockServiceNormalized = blockService.replace(/\.srv$/, "");
@@ -1424,19 +1416,15 @@ function validateDescendants(block: { type: string; data: string; unplug: () => 
       });
 
       block.unplug();
-      // Opcional: Puedes retornar aquí si deseas detener la validación en esta rama
-      // return;
     }
   }
 
-  // Recorrer todas las conexiones de entrada (inputs)
   block.inputList.forEach((input) => {
     if (input.connection && input.connection.targetBlock()) {
       validateDescendants(input.connection.targetBlock(), selectedServiceNormalized);
     }
   });
 
-  // Además, verificar la conexión "next" (para bloques conectados en secuencia)
   if (block.nextConnection && block.nextConnection.targetBlock()) {
     validateDescendants(block.nextConnection.targetBlock(), selectedServiceNormalized);
   }

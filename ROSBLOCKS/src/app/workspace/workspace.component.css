@@ -478,11 +478,12 @@ iframe {
 
 .centerReload {
   position: absolute;
-  left: calc(50% + 125px);
+  left: calc(50% + 105px);
 }
 .reloadTurtle {
   border-radius: 5px;
   position: relative;
+  padding: 0 5px;
   top: 20px;
   left: -45px;
   border: none;

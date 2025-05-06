@@ -38,7 +38,6 @@ export let toolbox = {
         contents: [
           { kind: 'block', type: 'ros2_create_publisher' },
           { kind: 'block', type: 'ros2_create_subscriber' },
-          { kind: 'block', type: 'ros2_print_msg_type' },
           { kind: 'block', type: 'ros2_publish_message' },
         ],
       },
@@ -132,19 +131,6 @@ export let toolbox = {
             { kind: "block", type: "variables_get" },
             { kind: "block", type: "variables_set" },
             { kind: "block", type: "ros2_cast_type" },
-          ],
-        },
-        {
-          kind: 'category',
-          name: 'Functions',
-          colour: '#897099',
-          contents: [
-            { kind: "block", type: "init" },
-            { kind: "block", type: "procedures_defnoreturn" },
-            { kind: "block", type: "procedures_defreturn" },
-            { kind: "block", type: "procedures_callnoreturn" },
-            { kind: "block", type: "procedures_callreturn" },
-            { kind: "block", type: "procedures_ifreturn" },
           ],
         },
         {
