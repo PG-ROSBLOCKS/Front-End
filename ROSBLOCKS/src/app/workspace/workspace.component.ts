@@ -1,5 +1,5 @@
 import { AlertService } from './../shared/components/alert/alert.service';
-import { Component, AfterViewInit, OnInit, OnDestroy, ElementRef, ViewChild, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, ElementRef, ViewChild, HostListener, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
@@ -22,6 +22,8 @@ import { initializeCommonMsgs } from '../blocks/ros2-msgs';
 import { blockColors } from '../blocks/color-palette';
 import { MessageService } from '../shared/message.service';
 import { ErrorsService } from '../shared/components/error/errors.service';
+import { parseMatrix } from './workspace-utils';
+
 
 @Component({
   selector: 'app-workspace',
@@ -356,7 +358,7 @@ export class WorkspaceComponent implements OnDestroy {
         // next: ([srvResult, msgResult]) => { // <-- Cambiar esta línea
         next: () => { // <-- A e
           // --- TODA la lógica que depende de las listas y carga workspaces va AQUÍ ---
-          console.log('SrvList and MsgList updated, proceeding to load workspaces.');
+          //console.log('SrvList and MsgList updated, proceeding to load workspaces.');
 
           this.tabs = tabsData;
 
@@ -391,6 +393,7 @@ export class WorkspaceComponent implements OnDestroy {
             this.selectTab(this.tabs[0].id);
           }
 
+          this.showMessage('Last session recovered.', 'success');
         },
         error: (err) => {
           console.error('Error updating service or message lists:', err);
@@ -806,7 +809,7 @@ export class WorkspaceComponent implements OnDestroy {
     if (tab) {
       tab.isPlaying = false;
       const session_id = this.consolesSessions.get(tabId.toString());
-      console.log('Session ID stop:', session_id);
+      //console.log('Session ID stop:', session_id);
       if (session_id) {
         this.consolesServices.get(tabId.toString())?.killExecution(session_id);
       }
@@ -1233,7 +1236,7 @@ export class WorkspaceComponent implements OnDestroy {
       const reader = new FileReader();
       reader.onload = () => {
         const content = reader.result as string;
-        this.matrix = this.parseMatrix(content);
+        this.matrix = parseMatrix(content);
         if (isValidMap(this.matrix)) {
           this.matrixLoaded = true;
           this.currentMap = 4
@@ -1249,12 +1252,6 @@ export class WorkspaceComponent implements OnDestroy {
       };
       reader.readAsText(file);
     }
-  }
-
-  parseMatrix(content: string): number[][] {
-    return content.trim().split('\n').map(row =>
-      row.trim().split('').map(char => (char === '1' ? 1 : 0))
-    );
   }
 
   drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: number[][]): void {
@@ -1409,7 +1406,7 @@ export class WorkspaceComponent implements OnDestroy {
           } else {
             srvList.length = 0;
           }
-          console.log("srvList updated:", srvList);
+          //console.log("srvList updated:", srvList);
           this.updateSrvVariablesCategory();
         },
         error: (error) => { // Lógica 'error'
@@ -1435,7 +1432,7 @@ export class WorkspaceComponent implements OnDestroy {
               }
             });
           }
-          console.log("msgList updated:", msgList);
+          //console.log("msgList updated:", msgList);
           this.updateMsgVariablesCategory();
         },
         error: (error) => {
