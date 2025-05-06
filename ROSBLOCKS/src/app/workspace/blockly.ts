@@ -40,7 +40,7 @@ export let toolbox = {
         contents: [
           { kind: 'block', type: 'ros2_service_block' },
           { kind: 'block', type: 'ros_create_server' },
-          { kind: 'block', type: 'srv_response_set_field' },
+          { kind: 'block', type: 'ros2_named_message' },
         ],
       },
       {
@@ -58,7 +58,7 @@ export let toolbox = {
         colour: blockColors.Messages,
         contents: [
           { kind: 'block', type: 'ros2_message_block' },
-          { kind: 'block', type: 'srv_response_set_field' },
+          { kind: 'block', type: 'ros2_named_message' },
           { kind: 'block', type: 'ros2_subscriber_msg_data' },
         ],
       },
