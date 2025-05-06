@@ -51,38 +51,51 @@ export function sanitizeCustomAtribute(input: string): string {
 }
 
 
-export function sanitizeSrvFilename(filename: string): string {
-  let sanitized = filename
-      .trim() // Removes spaces at the beginning and end
-      .replace(/[^a-zA-Z0-9\s]/g, "") // Removes disallowed characters (except spaces)
-      .replace(/\s+/g, "_") // Replaces spaces with "_"
-      .replace(/_+/g, "") // Removes all "_" (as they are not valid)
-      .replace(/^(\d+)/, "_$1"); // Prevents the filename from starting with a number
+function sanitizeBaseName(name: string, defaultName: string): string {
+  let sanitized = name
+    .trim()
+    .replace(/[^a-zA-Z0-9\s]/g, "") 
+    .replace(/\s+/g, "_")           
+    .replace(/_+/g, "")            
+    .replace(/^(\d+)/, "_$1");     
 
-  // Ensure it starts with an uppercase letter (PascalCase)
-  sanitized = sanitized.replace(/(^[a-z])/, (match) => match.toUpperCase());
+  // PascalCase
+  sanitized = sanitized.replace(/(^[a-z])/, m => m.toUpperCase());
 
-  // If the result is empty, assign a generic name
-  if (!sanitized) sanitized = "SrvUnnamed";
 
-  return sanitized.concat(".srv"); // Ensures that it ends with `.srv`
+  if (!sanitized) sanitized = defaultName;
+
+  return sanitized;
+}
+
+function sanitizeBaseNameAllowUnderscore(name: string, defaultName: string): string {
+  let sanitized = name
+    .trim()
+    .replace(/[^a-zA-Z0-9\s_]/g, "") 
+    .replace(/\s+/g, "_")            
+    .replace(/_+/g, "_")             
+    .replace(/^(\d+)/, "_$1");       
+
+  if (!sanitized) sanitized = defaultName;
+  return sanitized;
+}
+
+export function sanitizeBaseNameAllowUnderscoreWithoutExtension(filename: string, defaultName = "Unnamed"): string {
+  return sanitizeBaseNameAllowUnderscore(filename, defaultName);
 }
 
 export function sanitizeMsgFilename(filename: string): string {
-  let sanitized = filename
-      .trim() // Removes spaces at the beginning and end
-      .replace(/[^a-zA-Z0-9\s]/g, "") // Removes disallowed characters (except spaces)
-      .replace(/\s+/g, "_") // Replaces spaces with "_"
-      .replace(/_+/g, "") // Removes all "_" (as they are not valid)
-      .replace(/^(\d+)/, "_$1"); // Prevents the filename from starting with a number
+  const base = sanitizeBaseName(filename, "MsgUnnamed");
+  return `${base}.msg`;
+}
 
-  // Ensure it starts with an uppercase letter (PascalCase)
-  sanitized = sanitized.replace(/(^[a-z])/, (match) => match.toUpperCase());
+export function sanitizeSrvFilename(filename: string): string {
+  const base = sanitizeBaseName(filename, "SrvUnnamed");
+  return `${base}.srv`;
+}
 
-  // If the result is empty, assign a generic name
-  if (!sanitized) sanitized = "MsgUnnamed";
-
-  return sanitized.concat(".msg"); // Ensures that it ends with `.msg`
+export function sanitizeNameWithoutExtension(filename: string, defaultName = "Unnamed"): string {
+  return sanitizeBaseName(filename, defaultName);
 }
 
 export function extractServiceFilename(input: string): string | null {
@@ -467,6 +480,37 @@ export function removeCommonIndentation(code: string) {
       return code.trimEnd();
     }
     return code.substring(0, index).trimEnd();
+  }
+
+  /**
+   * Validates and sanitizes a ROS topic name:
+   * - Allows only letters, digits, and underscores.
+   * - Ensures it starts with a '/'.
+   * - Replaces repeated '/' sequences with a single one.
+   */
+  export function validateTopicName(text: string): string {
+    // 1. Remove everything that is not alphanumeric, "_" or "/"
+    let cleaned = text.replace(/[^A-Za-z0-9_/]/g, '');
+
+    // 2. Collapse sequences of "/" into a single one
+    cleaned = cleaned.replace(/\/+/g, '/');
+
+    // 3. Remove trailing slash if it is not the only character
+    if (cleaned.length > 1 && cleaned.endsWith('/')) {
+      cleaned = cleaned.slice(0, -1);
+    }
+
+    // 4. Ensure it starts with a slash
+    if (!cleaned.startsWith('/')) {
+      cleaned = '/' + cleaned;
+    }
+
+    // 5. If it is empty or only "/", return "/"
+    if (cleaned === '') {
+      return '/';
+    }
+
+    return cleaned;
   }
   
   export function safeUUID(): string {

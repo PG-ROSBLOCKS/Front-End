@@ -1,0 +1,33 @@
+.landing-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;          /* Full-screen vertical centering */
+  gap: 2rem;              /* Space between buttons */
+}
+
+.action-btn {
+  padding: 2rem 4rem;     /* Large clickable area */
+  font-size: 1.5rem;      /* Readable text */
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.action-btn:hover {
+  background-color: #e0e0e0;
+}
+
+/* Highlight the primary action */
+.action-btn.primary {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.action-btn.primary:hover {
+  background-color: #2563eb;
+}

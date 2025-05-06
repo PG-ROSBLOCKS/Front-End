@@ -15,32 +15,43 @@ export class CodeService {
   workspaceChanged$ = this.workspaceChangedSubject.asObservable();
   noTabs$ = this.noTabsSubject.asObservable();
   noBlocks$ = this.noBlocksSubject.asObservable();
+
+  private readySubject    = new BehaviorSubject<boolean>(false);
+  private progressSubject = new BehaviorSubject<number>(0);
+
+  ready$    = this.readySubject.asObservable();
+  progress$ = this.progressSubject.asObservable();   // 0 – 100 %
+
   private API_URL = 'http://localhost:8000';
-  private API_URL_NO_PORT = 'http://localhost:';
-  private API_CONTAINER_IP = '50.16.174.0';
+  private uuid: string = '';
+  private DOMAIN = 'https://api.rosblocks.com.co';
+
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
-    const uuid = localStorage.getItem('uuid') ?? safeUUID();
-    localStorage.setItem('uuid', uuid);
-
-    this.pollForIp(uuid);
+    this.uuid = localStorage.getItem('uuid') ?? safeUUID();
+    localStorage.setItem('uuid', this.uuid);
+  
+    this.pollForIp(this.uuid);
   }
-  async pollForIp(uuid: string) {
+  
+  private async pollForIp(uuid: string) {
     try {
-      const res = await fetch(`http://${this.API_CONTAINER_IP}/api/get-ip/${uuid}`);
+      const res = await fetch(`${this.DOMAIN}/api/get-ip/${uuid}`);
       const data = await res.json();
   
       if (data.status === "ready") {
-        this.API_URL = `http://${data.ip}:8000`;
-        this.API_URL_NO_PORT = `http://${data.ip}:`;
+        this.API_URL = `${this.DOMAIN}/session/${uuid}/app`;
+        this.readySubject.next(true);
       } else {
-        setTimeout(() => this.pollForIp(uuid), 5000); // wait 5 seconds before retrying
+        this.progressSubject.next((this.progressSubject.value + 5) % 100);
+        setTimeout(() => this.pollForIp(uuid), 5000);
       }
     } catch (err) {
-      setTimeout(() => this.pollForIp(uuid), 5000); // try again in 5 seconds
+      setTimeout(() => this.pollForIp(uuid), 5000);
     }
   }
+  
   uploadCode(fileName: string, code: string, type: string): Observable<any> {
 
     const payload = { file_name: fileName, code: code, type: type };
@@ -56,9 +67,12 @@ export class CodeService {
   }
 
   connectToWebSocket(sessionId: string): WebSocketSubject<any> {
-    this.wsSubject = webSocket(`${this.API_URL.replace('http', 'ws')}/execution/ws/${sessionId}`);
+    this.wsSubject = webSocket(
+      `wss://api.rosblocks.com.co/session/${this.uuid}/app/execution/ws/${sessionId}`
+    );
     return this.wsSubject;
   }
+  
 
   sendMessage(message: string): void {
     if (this.wsSubject) {
@@ -147,8 +161,8 @@ export class CodeService {
   }
 
   vncTurtlesim(): string {
-    return `${this.API_URL_NO_PORT}8080/vnc_lite.html`;
-  }
+    return `${this.DOMAIN}/session/${this.uuid}/vnc/vnc_lite.html?path=session/${this.uuid}/vnc/websockify`;
+  }  
 
   vncTurtlesimReset(): string {
     return `${this.API_URL}/reset/`;

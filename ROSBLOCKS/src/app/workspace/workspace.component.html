@@ -88,8 +88,11 @@
             </div>
             <div class="barTurtle">
                 <div class="centerReload">
-                    <button class="reloadTurtle" (click)="reloadTurtlesim()">&#x21bb;</button>
-                </div>
+                    <button class="reloadTurtle" (click)="reloadTurtlesim()">
+                      <span class="reloadIcon">&#x21bb;</span> <!-- ícono de recarga -->
+                      <span class="reloadText">Reload</span>  <!-- texto nuevo -->
+                    </button>
+                  </div>                  
             </div>
             <div class="turtlesim">
                 <iframe #iframeElement [src]="sanitizedVncUrl" _ngcontent-ng-c809167999="" src="sanitizedVncUrl" title="VNC"></iframe>

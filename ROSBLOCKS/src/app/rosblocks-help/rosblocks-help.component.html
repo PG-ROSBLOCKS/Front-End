@@ -5,60 +5,81 @@
     <div class="helpContainer">
         <div class="left">
             <div class="blockly-container">
-                <input
-                    id="searchBox"
-                    type="text"
-                    placeholder="Buscar"
-                    (input)="onSearch($event)"
-                />
+                <div class="centerDiv">
+                    <button class="getBack" (click)="goBack()">
+                        <span class="material-icons">arrow_back</span> Regresar
+                      </button>
+                </div>
                 <div class="buttonContainer">
                     <button class="dropdownBtn" (click)="toggleDropdown(1)">
                         Acerca de ROSBlocks <span class="material-icons arrow-icon" [class.rotated]="dropdowns[1]">expand_more</span>
                     </button>
                     <ul *ngIf="dropdowns[1]" class="dropdownList">
-                        <li (click)="selectVideo('https://www.youtube.com/embed/lLdIpOVTyIc')">Introducción</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/aYthCCsBNSg')">¿Cómo usar ROSBlocks</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/3n1agY5XYOk?si=QdJwRjAO0jIiE1xs')">Introducción</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/QEOcgvTbHLM?si=LuHonW5Bu9qf9RWL')">Funcionalidades básicas</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/yhh464-fKWI?si=F6I4RLbClCGigqbN')">Correcta gestión de recursos y bloques</li>
                     </ul>
 
                     <button class="dropdownBtn" (click)="toggleDropdown(2)">
                         Programación básica <span class="material-icons arrow-icon" [class.rotated]="dropdowns[2]">expand_more</span>
                     </button>
                     <ul *ngIf="dropdowns[2]" class="dropdownList">
-                        <li (click)="selectVideo('https://www.youtube.com/embed/O-LjcZlkfz0')">Hola mundo</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/uJdPG1kd3xA')">Operadores matemáticos</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/nWAbipVVNi0')">Condicionales</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/Vcyn_vCJjPY')">Variables</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/_he6gpeBJXI')">Bucles</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/OuZQJktaxN8?si=fc4FCzmqNSJLZ0-7')">Hola mundo</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/ywTdRU6jq0M?si=EptUYYzOy-rMX6iB')">Operadores matemáticos</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/sKIScjO1Gn4?si=0eHLwqqwnjYcnrJb')">Condicionales</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/HkH_jvJuW6I?si=pH--FQet96HGhy9b')">Variables</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/mDGx1dLg2pM?si=pQcpR53LKwg-lLUE')">Bucles</li>
                     </ul>
 
                     <button class="dropdownBtn" (click)="toggleDropdown(3)">
                         Tópicos y servicios <span class="material-icons arrow-icon" [class.rotated]="dropdowns[3]">expand_more</span>
                     </button>
                     <ul *ngIf="dropdowns[3]" class="dropdownList">
-                        <li (click)="selectVideo('https://www.youtube.com/embed/L44m4DlDA9A')">Como funcionan los tópicos</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/s3wKUnUphyc')">Ejercicio de tópicos</li>
-                    </ul>
-
-                    <button class="dropdownBtn" (click)="toggleDropdown(4)">
-                        Mensajes y servicios customizables <span class="material-icons arrow-icon" [class.rotated]="dropdowns[4]">expand_more</span>
-                    </button>
-                    <ul *ngIf="dropdowns[4]" class="dropdownList">
+                        <li (click)="selectVideo('https://www.youtube.com/embed/jqcUW2ZM0Ik?si=WNMpNRw8ZpFcF76m')">¿Cómo funcionan los tópicos?</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/HYLY4aPUVY8?si=HnrKPWu2j1XeVSY_')">Ejercicio de tópicos</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/kfTGi7bi8Lg?si=ujLwSrLUQOdRO87g')">¿Cómo funcionan los servicios?</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/bYQr1gWEfBg?si=0oSj-T62FgN0vMjP')">Ejercicio de servicios</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/FjxuTH_zGeA?si=SfLwO8g3ZjhXElz6')">Ejercicio de custom messages</li>
                     </ul>
 
                     <button class="dropdownBtn" (click)="toggleDropdown(5)">
                         Simulador Turtlesim <span class="material-icons arrow-icon" [class.rotated]="dropdowns[5]">expand_more</span>
                     </button>
                     <ul *ngIf="dropdowns[5]" class="dropdownList">
-                        <li (click)="selectVideo('https://www.youtube.com/embed/gx22BEezinM')">Introducción a Turtlesim</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/4yl0FtIFwwQ?si=x56pXq1Ql5SIYNpP')">Introducción a Turtlesim</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/8F5Q3jEI7vc?si=JjuMltC4XHJDD3ob')">Funcionalidades, mapas predeterminados y personalizados</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/jofV0_vv3lQ?si=bj6MCsvO1OrdD7Uk')">Movimientos de la tortuga</li>
                     </ul>
+                    
+                    <button class="dropdownBtn" (click)="toggleDropdown(4)">
+                        ¿Cómo exportar y probar tus proyectos? <span class="material-icons arrow-icon" [class.rotated]="dropdowns[4]">expand_more</span>
+                    </button>
+                    <ul *ngIf="dropdowns[4]" class="dropdownList">
+                        <li (click)="selectVideo('https://www.youtube.com/embed/7EYOGoymTm0?si=Xav7hgLQ_FS8_UD3')">Exportar el proyecto de ROSBlocks y probarlo en Ubuntu</li>
+                    </ul>
+                    <br>
                 </div>
             </div>
         </div>
 
         <div class="right">
-            <div *ngIf="selectedVideo">
-                <iframe [src]="selectedVideo | safe" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <div class="video-section" *ngIf="selectedVideo">
+              <iframe
+                [src]="selectedVideo | safe"
+                frameborder="0"
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen>
+              </iframe>
+          
+              <h3 class="video-title">{{ selectedTitle }}</h3>
+          
+              <div *ngFor="let paragraph of selectedDescription" class="video-description">
+                <pre class="text-content">{{ paragraph }}</pre>
+              </div>
             </div>
-        </div>
+          </div>
+          
+          
+          
     </div>
 </div>

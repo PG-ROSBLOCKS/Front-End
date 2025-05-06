@@ -680,3 +680,55 @@ function definirGeneradoresROS2() {
 };
 }
 
+pythonGenerator.forBlock['ros2_publish_twist_full'] = function (block) {
+  const msgClass = addImport('geometry_msgs.msg.Twist');
+  const turtleName = block.getFieldValue('TURTLE_NAME');
+
+  const linearX = pythonGenerator.valueToCode(block, 'LINEAR_X', Order.ATOMIC) || '0.0';
+  const linearY = pythonGenerator.valueToCode(block, 'LINEAR_Y', Order.ATOMIC) || '0.0';
+  const linearZ = pythonGenerator.valueToCode(block, 'LINEAR_Z', Order.ATOMIC) || '0.0';
+  const angularX = pythonGenerator.valueToCode(block, 'ANGULAR_X', Order.ATOMIC) || '0.0';
+  const angularY = pythonGenerator.valueToCode(block, 'ANGULAR_Y', Order.ATOMIC) || '0.0';
+  const angularZ = pythonGenerator.valueToCode(block, 'ANGULAR_Z', Order.ATOMIC) || '0.0';
+
+  let code = `self.publisher_ = self.create_publisher(${msgClass}, '/${turtleName}/cmd_vel', 10)\n`;
+  code += `msg = ${msgClass}()\n`;
+  code += `msg.linear.x = float(${linearX})\n`;
+  code += `msg.linear.y = float(${linearY})\n`;
+  code += `msg.linear.z = float(${linearZ})\n`;
+  code += `msg.angular.x = float(${angularX})\n`;
+  code += `msg.angular.y = float(${angularY})\n`;
+  code += `msg.angular.z = float(${angularZ})\n`;
+  code += `self.publisher_.publish(msg)\n`;
+  code += `self.get_logger().info("Published full Twist message")\n`;
+
+  return code;
+};
+
+pythonGenerator.forBlock['ros2_cast_type'] = function (block) {
+  const valueCode = pythonGenerator.valueToCode(block, 'VALUE', Order.NONE) || 'None';
+  const targetType = block.getFieldValue('TARGET_TYPE') || 'string';
+
+  let castedCode = valueCode;
+
+  if (targetType === 'string' || targetType === 'std_msgs.msg.String' || targetType === 'std_msgs/String') {
+    castedCode = `str(${valueCode})`;
+  } else if (['int32', 'int64', 'int16', 'uint32', 'uint64', 'std_msgs.msg.Int64', 'std_msgs.msg.Int16'].includes(targetType)) {
+    castedCode = `int(${valueCode})`;
+  } else if (['float32', 'float64', 'std_msgs.msg.Float32', 'std_msgs.msg.Float64'].includes(targetType)) {
+    castedCode = `float(${valueCode})`;
+  } else if (targetType === 'bool' || targetType === 'std_msgs.msg.Bool') {
+    castedCode = `bool(${valueCode})`;
+  } else {
+    castedCode = `${valueCode}`;
+  }
+
+  return [castedCode, Order.FUNCTION_CALL];
+};
+
+pythonGenerator.forBlock['integer_number'] = function (block) {
+  const numberText = block.getFieldValue('NUM') || '0';
+  return [numberText, Order.ATOMIC];
+};
+
+
