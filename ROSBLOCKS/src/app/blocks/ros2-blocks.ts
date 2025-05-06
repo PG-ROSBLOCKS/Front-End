@@ -366,7 +366,7 @@ export function definirBloquesROS2() {
 
     /** Rebuilds the inputs according to the messageFields list */
     updateShape_: function () {
-      console.log(`[${this.id}] updateShape_ START for type: ${this.messageType}`);
+      //console.log(`[${this.id}] updateShape_ START for type: ${this.messageType}`);
       // 1. Save existing connections
       const savedConnections: { [inputName: string]: Blockly.Connection | null } = {};
       for (const input of this.inputList) {
@@ -389,11 +389,11 @@ export function definirBloquesROS2() {
       }
 
       // 3. Dynamically add new fields/inputs
-      console.log(`[${this.id}] updateShape_ - Calling addFieldsRecursively with fields:`, this.messageFields);
+      //console.log(`[${this.id}] updateShape_ - Calling addFieldsRecursively with fields:`, this.messageFields);
       this.addFieldsRecursively(this.messageFields, "");
 
       // 4. Restore connections
-      console.log(`[${this.id}] updateShape_ - Attempting to restore ${Object.keys(savedConnections).length} connections...`);
+      //console.log(`[${this.id}] updateShape_ - Attempting to restore ${Object.keys(savedConnections).length} connections...`);
       for (const inputName in savedConnections) {
         const targetConnection = savedConnections[inputName];
         const newInput = this.getInput(inputName);
@@ -409,7 +409,7 @@ export function definirBloquesROS2() {
            console.log(`[${this.id}] updateShape_ - Skipping restore for ${inputName}. Conditions not met: target=${!!targetConnection}, newInput=${!!newInput}, checkType=${newInput?.connection?.checkType_(targetConnection ?? null)}`);
         }
       }
-      console.log(`[${this.id}] updateShape_ END`);
+      //console.log(`[${this.id}] updateShape_ END`);
     },
 
     /**
@@ -433,7 +433,7 @@ export function definirBloquesROS2() {
           }
         } else {
           // Create the "slot" (hole) to connect a block
-          console.log(`[${this.id}] addFieldsRecursively - Creating input FIELD_${fullName} for type ${field.type}`);
+          //console.log(`[${this.id}] addFieldsRecursively - Creating input FIELD_${fullName} for type ${field.type}`);
           const valueInput = this.appendValueInput(inputName)
             .appendField(fullName + ":");
 
@@ -488,7 +488,7 @@ export function definirBloquesROS2() {
     },
 
     domToMutation: function (xmlElement: { getAttribute: (arg0: string) => string; }) {
-      console.log(`[${this.id}] domToMutation START`, xmlElement);
+      //console.log(`[${this.id}] domToMutation START`, xmlElement);
       this.messageType = xmlElement.getAttribute('messagetype') || '';
 
       try {
@@ -512,9 +512,9 @@ export function definirBloquesROS2() {
       }
 
       // Now that updateShape_ preserves connections, call it here to build the block shape.
-      console.log(`[${this.id}] domToMutation - Restored state. Type: ${this.messageType}, Fields:`, this.messageFields, ` Calling updateShape_...`);
+      //console.log(`[${this.id}] domToMutation - Restored state. Type: ${this.messageType}, Fields:`, this.messageFields, ` Calling updateShape_...`);
       this.updateShape_();
-      console.log(`[${this.id}] domToMutation END`);
+      //console.log(`[${this.id}] domToMutation END`);
     }
   };
 

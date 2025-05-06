@@ -352,7 +352,7 @@ export class WorkspaceComponent implements OnDestroy {
         // next: ([srvResult, msgResult]) => { // <-- Cambiar esta línea
         next: () => { // <-- A e
           // --- TODA la lógica que depende de las listas y carga workspaces va AQUÍ ---
-          console.log('SrvList and MsgList updated, proceeding to load workspaces.');
+          //console.log('SrvList and MsgList updated, proceeding to load workspaces.');
 
           this.tabs = tabsData;
 
@@ -801,7 +801,7 @@ export class WorkspaceComponent implements OnDestroy {
     if (tab) {
       tab.isPlaying = false;
       const session_id = this.consolesSessions.get(tabId.toString());
-      console.log('Session ID stop:', session_id);
+      //console.log('Session ID stop:', session_id);
       if (session_id) {
         this.consolesServices.get(tabId.toString())?.killExecution(session_id);
       }
@@ -1107,8 +1107,6 @@ export class WorkspaceComponent implements OnDestroy {
           }),
           switchMap((response) => {
             if (!response) return of(null);
-            console.log("Inicio");
-            performance.mark('inicio');
             console.log('Backend response:', response);
             const sessionId = response.session_id;
             this.consolesSessions.set(tabId.toString(), sessionId);
@@ -1122,19 +1120,6 @@ export class WorkspaceComponent implements OnDestroy {
             console.log('Websocket message:', response.output);
             if (response.output !== this.consolesOutput.get(tabId.toString())) {
               this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output + '\n');
-
-              performance.mark('fin');
-  
-              performance.measure('Duración del proceso', 'inicio', 'fin');
-
-              // 3. Obtenemos las medidas y las mostramos como tabla
-              const medidas = performance.getEntriesByType('measure');
-              console.table(medidas.map(m => ({
-                nombre: m.name,
-                duración: `${m.duration.toFixed(2)} ms`,
-                inicio: m.startTime.toFixed(2),
-                tipo: m.entryType
-              })));
 
               if (this.selectedTabId === tabId) {
                 this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
@@ -1351,7 +1336,7 @@ export class WorkspaceComponent implements OnDestroy {
           } else {
             srvList.length = 0;
           }
-          console.log("srvList updated:", srvList);
+          //console.log("srvList updated:", srvList);
           this.updateSrvVariablesCategory();
         },
         error: (error) => { // Lógica 'error'
@@ -1377,7 +1362,7 @@ export class WorkspaceComponent implements OnDestroy {
               }
             });
           }
-          console.log("msgList updated:", msgList);
+          //console.log("msgList updated:", msgList);
           this.updateMsgVariablesCategory();
         },
         error: (error) => {
