@@ -108,16 +108,12 @@ export class CodeService {
 
   checkSrvFiles(): Observable<{ exists: boolean, files: string[] }> {
     return this.http.get<{ exists: boolean, files: string[] }>(`${this.API_URL}/srvfiles`)
-      .pipe(
-      tap(response => console.log('checkSrvFiles returns:', response))
-    );
+      //.pipe(tap(response => console.log('checkSrvFiles returns:', response)));
   }
 
   checkMsgFiles(): Observable<{ exists: boolean, files: string[] }> {
     return this.http.get<{ exists: boolean, files: string[] }>(`${this.API_URL}/msgfiles`)
-      .pipe(
-      tap(response => console.log('checkMsgFiles returns:', response))
-    );
+      //.pipe(tap(response => console.log('checkMsgFiles returns:', response)));
   }
 
   //Funtion to delete a .srv or a .msg of the project

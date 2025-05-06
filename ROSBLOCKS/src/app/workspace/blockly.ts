@@ -22,24 +22,15 @@ export let toolbox = {
             { kind: "block", type: "ros2_publish_twist_full" },
           ]
         },
-        {
-        kind: 'category',
-        name: 'Nodes',
-        colour: blockColors.Nodes,
-        contents: [
-          { kind: 'block', type: 'ros2_timer' },
-          { kind: 'block', type: 'ros2_log' },
-        ],
-      },
       {
         kind: 'category',
-        name: 'Topics',
+        name: 'Publishers and Subscribers',
         colour: blockColors.Topics,
         contents: [
           { kind: 'block', type: 'ros2_create_publisher' },
-          { kind: 'block', type: 'ros2_create_subscriber' },
-          { kind: 'block', type: 'ros2_print_msg_type' },
           { kind: 'block', type: 'ros2_publish_message' },
+          { kind: 'block', type: 'ros2_create_subscriber' },
+          { kind: 'block', type: 'ros2_subscriber_msg_data' },
         ],
       },
       {
@@ -47,7 +38,6 @@ export let toolbox = {
         name: 'Services',
         colour: blockColors.Services,
         contents: [
-          { kind: 'block', type: 'ros2_service_block' },
           { kind: 'block', type: 'ros_create_server' },
         ],
       },
@@ -60,21 +50,72 @@ export let toolbox = {
           { kind: 'block', type: 'ros_send_request' },
         ],
       },
+      // {
+      //   kind: 'category',
+      //   name: 'Custom srv types',
+      //   colour: blockColors.Messages,
+      //   contents: [
+      //     { kind: 'block', type: 'ros2_service_block' },
+      //     { kind: 'block', type: 'ros2_named_message' },
+      //   ],
+      // },
+      // {
+      //   kind: 'category',
+      //   name: 'Custom msgs types',
+      //   colour: blockColors.Messages,
+      //   contents: [
+      //     { kind: 'block', type: 'ros2_message_block' },
+      //     { kind: 'block', type: 'ros2_named_message' },
+      //   ],
+      // },
       {
         kind: 'category',
-        name: 'Messages',
-        colour: blockColors.Messages,
+        name: 'Common Utilities',
+        colour: blockColors.Utils,
         contents: [
-          { kind: 'block', type: 'ros2_message_block' },
+          { kind: 'block', type: 'ros2_timer' },
+          { kind: 'block', type: 'ros2_log' },
+          { kind: "block", type: "ros2_cast_type" },
+          { kind: "block", type: "ros2_sleep" },
+          { kind: 'block', type: 'srv_response_set_field' },
         ],
       },
       {
         kind: 'category',
-        name: 'Variables',
+        name: 'ROS 2 msg and srv types',
         contents: [
-          { kind: 'block', type: 'ros2_subscriber_msg_data' },
-          { kind: 'block', type: 'ros2_named_message' },
-          { kind: 'block', type: 'srv_response_set_field' },
+            {
+              kind: 'category',
+              name: 'ROS 2 srv types',
+              colour: blockColors.Services,
+              contents: [
+                {
+                  kind: 'category',
+                  name: 'Create custom srv',
+                  colour: blockColors.Services,
+                  contents: [
+                    { kind: 'block', type: 'ros2_service_block' },
+                    { kind: 'block', type: 'ros2_named_message' },
+                  ]
+                }
+              ]
+            },
+            {
+            kind: 'category',
+            name: 'ROS 2 msg types',
+            colour: blockColors.Messages,
+            contents: [
+              {
+                kind: 'category',
+                name: 'Create custom msg',
+                colour: blockColors.Messages,
+                contents: [
+                  { kind: 'block', type: 'ros2_message_block' },
+                  { kind: 'block', type: 'ros2_named_message' },
+                ]
+              }
+            ]
+          },
         ],
       }]
     },
@@ -106,7 +147,6 @@ export let toolbox = {
             { kind: "block", type: "controls_whileUntil" },
             { kind: "block", type: "controls_for" },
             { kind: "block", type: "controls_forEach" },
-            { kind: "block", type: "ros2_sleep" },
           ],
         },
         {
@@ -131,20 +171,6 @@ export let toolbox = {
           contents: [
             { kind: "block", type: "variables_get" },
             { kind: "block", type: "variables_set" },
-            { kind: "block", type: "ros2_cast_type" },
-          ],
-        },
-        {
-          kind: 'category',
-          name: 'Functions',
-          colour: '#897099',
-          contents: [
-            { kind: "block", type: "init" },
-            { kind: "block", type: "procedures_defnoreturn" },
-            { kind: "block", type: "procedures_defreturn" },
-            { kind: "block", type: "procedures_callnoreturn" },
-            { kind: "block", type: "procedures_callreturn" },
-            { kind: "block", type: "procedures_ifreturn" },
           ],
         },
         {
@@ -172,32 +198,55 @@ export let toolbox = {
   ]
 };
 
-export function updateDynamicCategoryInToolbox(
+export function updateNestedCategoryInToolbox(
   toolboxObj: any,
-  parentCategoryName: string,
-  subCategoryName: string,
+  rootCategory: string,
+  parentCategory: string,
   dynamicCategoryName: string,
   newDynamicCategory: any
 ): void {
-  const contents = toolboxObj.contents;
-  const parentCategoryIdx = contents.findIndex((c: any) => c.name === parentCategoryName);
-  if (parentCategoryIdx !== -1) {
-    const parentCategory = contents[parentCategoryIdx];
-    const subCategoryIdx = parentCategory.contents.findIndex((c: any) => c.name === subCategoryName);
-    if (subCategoryIdx !== -1) {
-      const subCategory = parentCategory.contents[subCategoryIdx];
-      const dynamicCategoryIdx = subCategory.contents.findIndex((c: any) => c.name === dynamicCategoryName);
-      if (dynamicCategoryIdx !== -1) {
-        // Si ya existe, se actualiza
-        subCategory.contents[dynamicCategoryIdx] = newDynamicCategory;
-      } else {
-        // Si no existe, se agrega
-        subCategory.contents.push(newDynamicCategory);
-      }
-    } else {
-      console.warn(`Subcategoría "${subCategoryName}" no encontrada dentro de "${parentCategoryName}".`);
-    }
+  const root = toolboxObj.contents.find((c: any) => c.name === rootCategory);
+  if (!root) {
+    console.warn(`Categoría raíz "${rootCategory}" no encontrada.`);
+    return;
+  }
+
+  const parent = root.contents.find((c: any) => c.name === parentCategory);
+  if (!parent) {
+    console.warn(`Subcategoría "${parentCategory}" no encontrada dentro de "${rootCategory}".`);
+    return;
+  }
+
+  const existing = parent.contents.findIndex((c: any) => c.name === dynamicCategoryName);
+  if (existing !== -1) {
+    parent.contents[existing] = newDynamicCategory;
   } else {
-    console.warn(`Categoría principal "${parentCategoryName}" no encontrada en la toolbox.`);
+    parent.contents.push(newDynamicCategory);
   }
 }
+
+export function updateDeepCategoryInToolbox(
+  toolboxObj: any,
+  categoryPath: string[], // ['ROS 2 Blocks', 'ROS 2 msg and srv types', 'ROS 2 msg types']
+  dynamicCategoryName: string,
+  newDynamicCategory: any
+): void {
+  let currentLevel = toolboxObj.contents;
+
+  for (const name of categoryPath) {
+    const next = currentLevel.find((c: any) => c.name === name);
+    if (!next) {
+      console.warn(`Categoría "${name}" no encontrada en ruta [${categoryPath.join(' > ')}]`);
+      return;
+    }
+    currentLevel = next.contents;
+  }
+
+  const existingIndex = currentLevel.findIndex((c: any) => c.name === dynamicCategoryName);
+  if (existingIndex !== -1) {
+    currentLevel[existingIndex] = newDynamicCategory;
+  } else {
+    currentLevel.push(newDynamicCategory);
+  }
+}
+

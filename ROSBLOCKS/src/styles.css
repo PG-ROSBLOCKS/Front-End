@@ -4,7 +4,7 @@
 /* Fonts */
 @font-face {
   font-family: 'Kanit';
-  src: url('/assets/fonts/Kanit-Black.ttf') format('truetype');
+  /*src: url('/assets/fonts/Kanit-Black.ttf') format('truetype');*/
   font-weight: 900;
   font-style: normal;
 }
