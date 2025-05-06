@@ -612,7 +612,7 @@ export function definirBloquesROS2() {
         .appendField(new Blockly.FieldTextInput("parameter"), "MESSAGE_NAME");
       this.setPreviousStatement(true, "ros2_named_message");
       this.setNextStatement(true, "ros2_named_message");
-      this.setColour(blockColors.Variables);
+      //this.setColour(blockColors.Variables);
       this.setTooltip("Defines a parameter for the .msg service");
       this.setHelpUrl("");
     }
@@ -631,7 +631,7 @@ export function definirBloquesROS2() {
       this.appendStatementInput("RESPONSE_MESSAGES") // Just accepts message blocks
         .setCheck("ros2_named_message")
         .appendField("Response");
-        this.setColour(blockColors.Services);
+        //this.setColour(blockColors.Services);
       this.setTooltip("Defines a custom service in ROS with parameters.");
       this.setHelpUrl("");
     }
@@ -674,7 +674,7 @@ export function definirBloquesROS2() {
       this.appendStatementInput("CALLBACK")
         .setCheck("Callback")
         .appendField("Response");
-        this.setColour(blockColors.Services);
+        //this.setColour(blockColors.Services);
       this.setTooltip("Block to create a server in ROS2");
       this.setHelpUrl("");
 
