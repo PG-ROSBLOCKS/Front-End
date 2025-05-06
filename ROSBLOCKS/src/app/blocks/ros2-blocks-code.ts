@@ -744,4 +744,7 @@ pythonGenerator.forBlock['ros2_cast_type'] = function (block) {
   return [castedCode, Order.FUNCTION_CALL];
 };
 
-
+pythonGenerator.forBlock['integer_number'] = function (block) {
+  const numberText = block.getFieldValue('NUM') || '0';
+  return [numberText, Order.ATOMIC];
+};
