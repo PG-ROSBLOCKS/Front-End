@@ -1,5 +1,5 @@
 import { AlertService } from './../shared/components/alert/alert.service';
-import { Component, AfterViewInit, OnInit, OnDestroy, ElementRef, ViewChild, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, ElementRef, ViewChild, HostListener, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
@@ -22,6 +22,8 @@ import { initializeCommonMsgs } from '../blocks/ros2-msgs';
 import { blockColors } from '../blocks/color-palette';
 import { MessageService } from '../shared/message.service';
 import { ErrorsService } from '../shared/components/error/errors.service';
+import { parseMatrix } from './workspace-utils';
+
 
 @Component({
   selector: 'app-workspace',
@@ -385,6 +387,7 @@ export class WorkspaceComponent implements OnDestroy {
             this.selectTab(this.tabs[0].id);
           }
 
+          this.showMessage('Last session recovered.', 'success');
         },
         error: (err) => {
           console.error('Error updating service or message lists:', err);
@@ -1104,6 +1107,8 @@ export class WorkspaceComponent implements OnDestroy {
           }),
           switchMap((response) => {
             if (!response) return of(null);
+            console.log("Inicio");
+            performance.mark('inicio');
             console.log('Backend response:', response);
             const sessionId = response.session_id;
             this.consolesSessions.set(tabId.toString(), sessionId);
@@ -1117,6 +1122,20 @@ export class WorkspaceComponent implements OnDestroy {
             console.log('Websocket message:', response.output);
             if (response.output !== this.consolesOutput.get(tabId.toString())) {
               this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output + '\n');
+
+              performance.mark('fin');
+  
+              performance.measure('Duración del proceso', 'inicio', 'fin');
+
+              // 3. Obtenemos las medidas y las mostramos como tabla
+              const medidas = performance.getEntriesByType('measure');
+              console.table(medidas.map(m => ({
+                nombre: m.name,
+                duración: `${m.duration.toFixed(2)} ms`,
+                inicio: m.startTime.toFixed(2),
+                tipo: m.entryType
+              })));
+
               if (this.selectedTabId === tabId) {
                 this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
               }
@@ -1162,7 +1181,7 @@ export class WorkspaceComponent implements OnDestroy {
       const reader = new FileReader();
       reader.onload = () => {
         const content = reader.result as string;
-        this.matrix = this.parseMatrix(content);
+        this.matrix = parseMatrix(content);
         if (isValidMap(this.matrix)) {
           this.matrixLoaded = true;
           this.currentMap = 4
@@ -1178,12 +1197,6 @@ export class WorkspaceComponent implements OnDestroy {
       };
       reader.readAsText(file);
     }
-  }
-
-  parseMatrix(content: string): number[][] {
-    return content.trim().split('\n').map(row =>
-      row.trim().split('').map(char => (char === '1' ? 1 : 0))
-    );
   }
 
   drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: number[][]): void {
