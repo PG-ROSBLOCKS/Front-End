@@ -22,18 +22,9 @@ export let toolbox = {
             { kind: "block", type: "ros2_publish_twist_full" },
           ]
         },
-        {
-        kind: 'category',
-        name: 'Nodes',
-        colour: blockColors.Nodes,
-        contents: [
-          { kind: 'block', type: 'ros2_timer' },
-          { kind: 'block', type: 'ros2_log' },
-        ],
-      },
       {
         kind: 'category',
-        name: 'Topics',
+        name: 'Publishers and Subscribers',
         colour: blockColors.Topics,
         contents: [
           { kind: 'block', type: 'ros2_create_publisher' },
@@ -49,6 +40,7 @@ export let toolbox = {
         contents: [
           { kind: 'block', type: 'ros2_service_block' },
           { kind: 'block', type: 'ros_create_server' },
+          { kind: 'block', type: 'srv_response_set_field' },
         ],
       },
       {
@@ -62,15 +54,26 @@ export let toolbox = {
       },
       {
         kind: 'category',
-        name: 'Messages',
+        name: 'ROS 2 Custom Messages',
         colour: blockColors.Messages,
         contents: [
           { kind: 'block', type: 'ros2_message_block' },
+          { kind: 'block', type: 'srv_response_set_field' },
+          { kind: 'block', type: 'ros2_subscriber_msg_data' },
         ],
       },
       {
         kind: 'category',
-        name: 'Variables',
+        name: 'Common Utilities',
+        colour: blockColors.Nodes,
+        contents: [
+          { kind: 'block', type: 'ros2_timer' },
+          { kind: 'block', type: 'ros2_log' },
+        ],
+      },
+      {
+        kind: 'category',
+        name: 'ROS 2 msg and srv types',
         contents: [
           { kind: 'block', type: 'ros2_subscriber_msg_data' },
           { kind: 'block', type: 'ros2_named_message' },
