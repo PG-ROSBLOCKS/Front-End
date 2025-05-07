@@ -105,19 +105,6 @@ export class WorkspaceComponent implements OnDestroy {
   }
   
   private startInactivityCheck(): void {
-    setInterval(() => {
-      const now = Date.now();
-      const minutesInactive = (now - this.lastActivityTimestamp) / (10 * 60 * 1000);
-  
-      if (minutesInactive >= 1 && !this.inactivityTimer) {
-        this.alertService.showAlert('Due to inactivity, all nodes have been stopped');
-        this.stopAllTabs();
-        this.deleteMap();
-        this.inactivityTimer = setTimeout(() => {
-          this.inactivityTimer = null;
-        }, 60000);
-      }
-    }, 60000);
   }
 
   blockErrorMessages(): void {
