@@ -1,6 +1,6 @@
 import * as Blockly from 'blockly/core';
 import { srvList } from '../shared/srv-list';
-import { msgList, MsgVariable } from '../shared/msg-list';
+import { customMsgList, msgList, MsgVariable } from '../shared/msg-list';
 import { EventType } from 'blockly/core/events/type';
 import { common_msgs, common_msgs_for_custom } from './ros2-msgs';
 import type { MessageService } from '../shared/message.service'; // asegúrate del path correcto
@@ -32,7 +32,7 @@ export function definirBloquesROS2() {
           });
 
           // Agregar mensajes personalizados sin modificar
-          msgList.forEach((msg) => {
+          customMsgList.forEach((msg) => {
             const name = msg.name;
             // Si ya está en el mapa (por ejemplo, por common_msgs), lo ignoramos
             if (!allOptionsMap.has(name)) {
@@ -187,7 +187,7 @@ export function definirBloquesROS2() {
           });
 
           // Añadir mensajes del usuario si no están ya
-          msgList.forEach((msg) => {
+          customMsgList.forEach((msg) => {
             if (!allOptionsMap.has(msg.name)) {
               allOptionsMap.set(msg.name, msg.name); // Mostrar tal cual
             }
@@ -357,7 +357,7 @@ export function definirBloquesROS2() {
           label.setValue(messageType.split('.').pop()?.replace(/\.msg$/, '') || messageType);
         }
 
-        const msgInfo = msgList.find(x => x.name === messageType);
+        const msgInfo = customMsgList.find(x => x.name === messageType);
         this.messageFields = msgInfo?.fields || [];
         this.updateShape_();
       }
@@ -423,11 +423,11 @@ export function definirBloquesROS2() {
         const inputName = `FIELD_${fullName}`;
 
         // Determine if it is a nested message type
-        const isNested = msgList.some(msg => msg.name === field.type || msg.name === `${field.type}.msg`);
+        const isNested = customMsgList.some(msg => msg.name === field.type || msg.name === `${field.type}.msg`);
 
         if (isNested) {
           // Recursion for subfields
-          const nested = msgList.find(m => m.name === field.type || m.name === `${field.type}.msg`);
+          const nested = customMsgList.find(m => m.name === field.type || m.name === `${field.type}.msg`);
           if (nested && nested.fields) {
             this.addFieldsRecursively(nested.fields, fullName);
           }
@@ -1370,7 +1370,7 @@ Blockly.Blocks['ros2_cast_type'] = {
           allOptionsMap.set(value, label);
         });
 
-        msgList.forEach((msg) => {
+        customMsgList.forEach((msg) => {
           if (!allOptionsMap.has(msg.name)) {
             allOptionsMap.set(msg.name, msg.name);
           }

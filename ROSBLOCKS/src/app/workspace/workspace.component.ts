@@ -11,7 +11,7 @@ import { switchMap, tap } from 'rxjs/operators';
 import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, linesAfter, linesBeforeComment, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables, removeOneIndentLevel } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
-import { msgList, MsgInfo, MsgVariable } from '../shared/msg-list';
+import { msgList, MsgInfo, MsgVariable, customMsgList } from '../shared/msg-list';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { toolbox, updateDeepCategoryInToolbox, updateNestedCategoryInToolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
@@ -1434,10 +1434,11 @@ export class WorkspaceComponent implements OnDestroy {
   
     const typeToBlocksMap: Record<string, any[]> = {};
   
-    // Agrupar campos por tipo base
+    let categoryName = 'ROS 2 common msg types';
+            
     msgList.forEach((message: MsgInfo) => {
+      const baseType = message.name.split('.').pop() || message.name; 
       message.fields?.forEach((field: any) => {
-        const baseType = field.type.split('/').pop(); // Ej: Vector3, Float32, etc.
         if (!typeToBlocksMap[baseType]) {
           typeToBlocksMap[baseType] = [];
         }
@@ -1446,8 +1447,8 @@ export class WorkspaceComponent implements OnDestroy {
         typeToBlocksMap[baseType].push(block);
       });
     });
-  
-    // Crear lista de bloques planos con etiquetas por tipo
+
+
     const flatContents: any[] = [];
     Object.entries(typeToBlocksMap).forEach(([type, blocks]) => {
       flatContents.push({ kind: 'label', text: `${type} message fields:` });
@@ -1456,15 +1457,68 @@ export class WorkspaceComponent implements OnDestroy {
   
     const defaultMsgTypesCategory = {
       kind: 'category',
-      name: 'Default msg types',
+      name: categoryName,
       colour: blockColors.Messages,
       contents: flatContents
     };
     updateDeepCategoryInToolbox(
       toolboxObj,
       ['ROS 2 Blocks', 'ROS 2 msg and srv types', 'ROS 2 msg types'],
-      'Default msg types',
+      categoryName,
       defaultMsgTypesCategory
+    );
+  
+    // Actualiza el toolbox del workspace activo
+    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+      this.workspaces[this.selectedTabId].updateToolbox({
+        kind: 'categoryToolbox',
+        contents: toolboxObj.contents
+      });
+    }
+  }
+
+  updateCustomMsgVariablesCategory(): void {
+    const toolboxObj = toolbox.contents && toolbox.contents.length > 0
+      ? { ...toolbox }
+      : { kind: 'categoryToolbox', contents: [] };
+  
+    const typeToBlocksMap: Record<string, any[]> = {};
+  
+    let categoryName = 'Custom created msg types';
+    const customOnlyList = customMsgList.filter(
+      customMsg => !msgList.some(commonMsg => commonMsg.name === customMsg.name)
+    );
+    
+    customOnlyList.forEach((message: MsgInfo) => {
+      const baseType = message.name; 
+      message.fields?.forEach((field: any) => {
+        if (!typeToBlocksMap[baseType]) {
+          typeToBlocksMap[baseType] = [];
+        }
+        const block = this.createMsgVariableBlock(field);
+        block.data = message.name;
+        typeToBlocksMap[baseType].push(block);
+      });
+    });
+
+
+    const flatContents: any[] = [];
+    Object.entries(typeToBlocksMap).forEach(([type, blocks]) => {
+      flatContents.push({ kind: 'label', text: `${type} message fields:` });
+      flatContents.push(...blocks);
+    });
+  
+    const customMsgTypeCategory = {
+      kind: 'category',
+      name: categoryName,
+      colour: blockColors.Messages,
+      contents: flatContents
+    };
+    updateDeepCategoryInToolbox(
+      toolboxObj,
+      ['ROS 2 Blocks', 'ROS 2 msg and srv types', 'ROS 2 msg types'],
+      categoryName,
+      customMsgTypeCategory
     );
   
     // Actualiza el toolbox del workspace activo
@@ -1509,18 +1563,20 @@ export class WorkspaceComponent implements OnDestroy {
         next: (response) => {
           if (response.exists) {
             response.files.forEach((file: any) => {
-              const alreadyExists = msgList.some(msg => msg.name === file.name);
+              const alreadyExists = customMsgList.some(msg => msg.name === file.name);
               if (!alreadyExists) {
-                msgList.push(file);
+                customMsgList.push(file);
               }
             });
           }
           //console.log("msgList updated:", msgList);
           this.updateMsgVariablesCategory();
+          this.updateCustomMsgVariablesCategory(); 
         },
         error: (error) => {
           console.error("Error getting list of msg files:", error);
-          this.updateMsgVariablesCategory(); // Asegúrate de actualizar incluso en error
+          this.updateMsgVariablesCategory(); 
+          this.updateCustomMsgVariablesCategory(); 
         }
       })
       // }, error => { ... }); // <-- Eliminar el subscribe anterior
@@ -1574,7 +1630,7 @@ export class WorkspaceComponent implements OnDestroy {
           // Paso 1: Limpiar la pestaña ACTUAL inmediatamente
           console.log(`Cleaning current tab (${tabId}) synchronously for message ${normalizedMessageName}...`);
           try {
-            const messageInfo = msgList.find(m =>
+            const messageInfo = customMsgList.find(m =>
               (m.name && m.name.replace(/\\.msg$/, '') === normalizedMessageName) // Use normalized name
             );
             if (messageInfo && messageInfo.fields && currentWorkspace) {
@@ -1602,7 +1658,7 @@ export class WorkspaceComponent implements OnDestroy {
               setTimeout(() => {
                 console.log(`Executing asynchronous cleanup for tab ${otherTabId} for message ${normalizedMessageName}`);
                 try {
-                   const messageInfo = msgList.find(m =>
+                   const messageInfo = customMsgList.find(m =>
                      (m.name && m.name.replace(/\\.msg$/, '') === normalizedMessageName)
                    );
                   // Re-check workspace existence inside timeout
@@ -1637,13 +1693,13 @@ export class WorkspaceComponent implements OnDestroy {
                 console.log("Backend message deletion successful:", response);
 
                 // Actualizar la lista local de mensajes
-                const index = msgList.findIndex(m =>
+                const index = customMsgList.findIndex(m =>
                   (m.name && m.name.replace(/\\.msg$/, '') === normalizedMessageName)
                 );
 
                 if (index !== -1) {
-                  msgList.splice(index, 1);
-                  console.log('msgList updated after deleting message:', JSON.stringify(msgList));
+                  customMsgList.splice(index, 1);
+                  console.log('msgList updated after deleting message:', JSON.stringify(customMsgList));
                   // Forzar actualización del toolbox
                   setTimeout(() => {
                     this.updateMsgVariablesCategory(); // Update message category
