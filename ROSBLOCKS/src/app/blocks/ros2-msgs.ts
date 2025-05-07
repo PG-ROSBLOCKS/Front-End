@@ -1,4 +1,4 @@
-import { msgList, MsgVariable } from "../shared/msg-list";
+import { customMsgList, msgList, MsgVariable } from "../shared/msg-list";
 
 export const common_msgs: [string, string][] = [
   ['String (std_msgs)', 'std_msgs.msg.String'],
@@ -132,6 +132,12 @@ export function initializeCommonMsgs(): void {
         if (!msgList.find(m => m.name === name)) {
         const fields = common_msg_fields[name] || [];
         msgList.push({ name, fields });
+        }
+    }
+    for (const [label, name] of common_msgs) {
+        if (!customMsgList.find(m => m.name === name)) {
+        const fields = common_msg_fields[name] || [];
+        customMsgList.push({ name, fields });
         }
     }
 }
