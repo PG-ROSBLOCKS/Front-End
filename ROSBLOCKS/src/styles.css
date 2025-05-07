@@ -173,6 +173,7 @@
   height: calc(100% - 56.69px) !important;
   background-color: #253942;
   color: #FFF;
+  overflow-x: hidden;
 }
 
 .blocklyTreeRow {
