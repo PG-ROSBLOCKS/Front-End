@@ -1226,8 +1226,8 @@ export class WorkspaceComponent implements OnDestroy {
                  if (response.output !== undefined) {
                    // Log message
                    console.log('Websocket message:', response.output);
-                   // Append output - REMOVE the explicit '\\n' here
-                   this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output);
+                   // Append output - RE-ADD the explicit '\\n' here if backend doesn't send it
+                   this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output + '\n');
                    if (this.selectedTabId === tabId) {
                      this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
                    }
