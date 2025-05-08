@@ -96,7 +96,7 @@ ${codeWithoutVariables}
     # Flush logs and add a slightly longer pause before destroying the node
     sys.stdout.flush()
     sys.stderr.flush()
-    time.sleep(0.2)
+    time.sleep(0.5)
     node.destroy_node()
     rclpy.shutdown()
 
