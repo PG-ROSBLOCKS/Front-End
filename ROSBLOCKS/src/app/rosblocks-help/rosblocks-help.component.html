@@ -7,17 +7,17 @@
             <div class="blockly-container">
                 <div class="centerDiv">
                     <button class="getBack" (click)="goBack()">
-                        <span class="material-icons">arrow_back</span> Regresar
+                        <span class="material-icons">arrow_back</span> Back
                       </button>
                 </div>
                 <div class="buttonContainer">
                     <button class="dropdownBtn" (click)="toggleDropdown(1)">
-                        Acerca de ROSBlocks <span class="material-icons arrow-icon" [class.rotated]="dropdowns[1]">expand_more</span>
+                        About ROSBlocks <span class="material-icons arrow-icon" [class.rotated]="dropdowns[1]">expand_more</span>
                     </button>
                     <ul *ngIf="dropdowns[1]" class="dropdownList">
-                        <li (click)="selectVideo('https://www.youtube.com/embed/3n1agY5XYOk?si=QdJwRjAO0jIiE1xs')">Introducción</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/QEOcgvTbHLM?si=LuHonW5Bu9qf9RWL')">Funcionalidades básicas</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/yhh464-fKWI?si=F6I4RLbClCGigqbN')">Correcta gestión de recursos y bloques</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/iST0s7tiHCo?si=xUnTYfd7pEFJ5ctX')">Introduction</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/SK0eobH3pT4?si=B19oIhGYX2AivyXQ')">Basic functionalities</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/OmEMPZmzjMg?si=OBD026Bi2MwRNVAl')">Management of resources and blocks</li>
                     </ul>
 
                     <button class="dropdownBtn" (click)="toggleDropdown(2)">
@@ -70,6 +70,79 @@
                 allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
                 allowfullscreen>
               </iframe>
+
+              <!--Modulo 1 Video 1-->
+              <div *ngIf="selectedVideo == 'https://www.youtube.com/embed/iST0s7tiHCo?si=xUnTYfd7pEFJ5ctX'" class="video-title">
+                <h3>Introduction</h3>
+                    <div class="video-description">
+                        <pre class="text-content">ROSBlocks is an innovative online learning tool designed to teach users about the ROS 2 robotic operating system. It uses a block-based approach, similar to educational platforms like Scratch, where each block represents a segment of code.
+
+This methodology allows users, especially young people and beginners in robotics, to learn important concepts such as the functioning of nodes, topics, services, and messaging in ROS 2. By connecting blocks, students can generate executable Python code that runs in a ROS 2 environment.</pre>
+                    </div>
+                    <div class="video-description">
+                        <pre class="text-content">👩‍🎓 Target Audience:
+ROSBlocks is designed for anyone interested in robotics and learning ROS 2, promoting learning through robotics.
+
+🛠️ Block Methodology:
+The block-based teaching methodology enables beginners to visualize and understand the logic behind code, making conceptual learning easier.
+
+🌍 Encouraging Hands-on Experiences:
+ROSBlocks promotes learning through active practice, which is essential in technical education.
+
+⏳ Accelerated Learning Curve:
+Block-based programming offers a level of abstraction that helps users more easily understand how the programming logic of ROS 2 works, allowing them to master key concepts in robotics faster and more intuitively.
+
+🤖 Attractive for Educators:
+ROSBlocks is also a valuable tool for teachers looking for new ways to teach programming and robotics in their classrooms, enhancing the overall educational experience.</pre>
+                    </div>
+              </div>
+
+              <div *ngIf="selectedVideo == 'https://www.youtube.com/embed/SK0eobH3pT4?si=B19oIhGYX2AivyXQ'" class="video-title">
+                <h3>Introduction</h3>
+                    <div class="video-description">
+                        <pre class="text-content">The tutorial emphasizes the ease of using block-based programming to create and manage nodes, which are fundamental processes in ROS 2 that execute Python scripts. Viewers learn how to create, edit, and manage nodes within the user interface. The video details how to incorporate blocks — either those specific to ROS 2 or general programming blocks. Moreover, it covers the workspace features, such as managing the console output, duplicating nodes, and executing scripts, which are fundamental for illustrating programming commands in a visual and practical manner. The tutorial also dives into the simulator's features. To facilitate future work, users can save, load, and export their projects, ensuring continuity across different computing environments.</pre>
+                    </div>
+                    <div class="video-description">
+                        <pre class="text-content">📊 Block-Based Programming as an Educational Tool: The use of blocks to represent programming commands simplifies the learning curve for beginners in ROS 2. This approach not only makes the coding more accessible but also enables rapid prototyping of robotic applications.
+
+🧑‍💻 Node Functionality Explained: Understanding nodes as processes that carry out specific instructions is critical in the ROS 2 framework. Each node operates independently, and users can manage multiple nodes concurrently.
+
+📐 Interface Navigation: The tutorial emphasizes the importance of becoming familiar with the user interface and its functionalities. Skills in managing the workspace, such as creating new nodes, adjusting node names, clearing consoles, and controlling display functions.
+
+🔄 Seamless Project Workflow: The ability to save, load, and export project files ensures that users can efficiently manage their work across different sessions and devices.
+                            </pre>
+                    </div>
+              </div>
+
+              <div *ngIf="selectedVideo == 'https://www.youtube.com/embed/OmEMPZmzjMg?si=OBD026Bi2MwRNVAl'" class="video-title">
+                <h3>Introduction</h3>
+                    <div class="video-description">
+                        <pre class="text-content">The video begins by explaining what a node is—a process running in a computer, having multiple applications open can slow down the computer because it must manage many simultaneous processes. To optimize performance within the ROSBlocks platform, users are limited to creating eight nodes, which prevents conflicts and inconsistencies in projects.</pre>
+                    </div>
+                    <div class="video-description">
+                        <pre class="text-content">🖥️ Resource Management is Crucial: Understanding the management of computing resources, such as nodes, is crucial for optimal performance. In computing, every application consumes a certain amount of system resources, when multiple applications or processes run simultaneously, the available resources become stretched.
+
+🔧 Interactivity with Blocks Enhances Learning: The interactive such as a wheel icon to reveal a block’s operation allows users to understand the underlying mechanics of blocks intuitively, fostering a hands-on learning approach that can make abstract concepts more tangible.
+
+❗ Understanding and Resolving Alerts: Warnings and alerts in programming serve as vital indicators of potential issues or required actions. The video emphasizes the importance of not just understanding these warnings but actively resolving them.
+
+🛠️ **Problem-Solving as a Key Skill**: The emphasis on effectively addressing warnings illustrates a broader skill: problem-solving. This teaches learners that coding is not just about writing code; it involves a continual process of analyzing and troubleshooting—skills that are universally valuable across all domains of computing.
+                            </pre>
+                    </div>
+              </div>
+
+              <!--
+              <div *ngIf="selectedVideo == 'https://www.youtube.com/embed/iST0s7tiHCo?si=xUnTYfd7pEFJ5ctX'" class="video-title">
+                <h3>Introduction</h3>
+                    <div class="video-description">
+                        <pre class="text-content">aaa</pre>
+                    </div>
+                    <div class="video-description">
+                        <pre class="text-content">aaa</pre>
+                    </div>
+              </div>
+              -->
+              
           
               <h3 class="video-title">{{ selectedTitle }}</h3>
           

@@ -281,7 +281,7 @@ export class WorkspaceComponent implements OnDestroy {
     };
     reader.readAsText(file);
     this.resetTurtleContainer(1)
-    this.showMessage('Data loaded successfully.', 'success');
+    //this.showMessage('Data loaded successfully.', 'success');
   }
 
   saveToLocalStorage() {
