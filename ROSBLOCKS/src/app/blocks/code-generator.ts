@@ -70,8 +70,15 @@ export function create_client(code: string, name: string, main_code: string, ser
     const { headerText, codeText: codeWithoutVariables } = separateHeaderFromMarker(main_code);
     const TAB_SPACE = '    ';
     const { headerText: headerText2, codeText: codeWithoutVariables2 } = separateHeaderFromMarker(code);
+    // Ensure imports are generated first
+    const initialImports = getImports();
+    // Manually add 'import time' and 'import sys' if not already present
+    const timeImport = initialImports.includes('import time') ? '' : 'import time\n';
+    const sysImport = initialImports.includes('import sys') ? '' : 'import sys\n';
+
     return `# Archivo ${nameWithoutExtension}.py generado por ROSBlocks
-${getImports()}
+${timeImport}${sysImport}${initialImports}
+import sys
 from sample_interfaces.srv import ${serverType}
 ${headerText}
 ${headerText2}
@@ -86,7 +93,10 @@ def main(args=None):
     rclpy.init(args=args)
     node = ${nameWithoutExtension.toUpperCase()}()
 ${codeWithoutVariables}
-
+    # Flush logs and add a slightly longer pause before destroying the node
+    sys.stdout.flush()
+    sys.stderr.flush()
+    time.sleep(0.2)
     node.destroy_node()
     rclpy.shutdown()
 

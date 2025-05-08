@@ -1003,7 +1003,7 @@ export class WorkspaceComponent implements OnDestroy {
       // Only play the tab if it's not already playing
       if (!tab.isPlaying && this.workspaces[tabId]) {
           console.log(`PlayAll: Attempting to play tab ${tabId} (${tab.name})`);
-          this.playTab(tabId, true);
+      this.playTab(tabId, true);
       } else {
           console.log(`PlayAll: Skipping already running or non-existent workspace tab ${tabId} (${tab.name})`);
       }
@@ -1120,10 +1120,10 @@ export class WorkspaceComponent implements OnDestroy {
                   console.log(`Interface ${fileName} saved successfully:`, response);
                   tab.isPlaying = false; // Processing finished
                   const confirmationMessage = `Interface ${fileName} saved successfully.\n`;
-                  this.consolesOutput.set(tabId.toString(),
+              this.consolesOutput.set(tabId.toString(),
                     (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage);
-                  if (this.selectedTabId === tabId) {
-                    this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
+              if (this.selectedTabId === tabId) {
+                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
                   }
 
                   // Update the relevant interface list
@@ -1175,12 +1175,12 @@ export class WorkspaceComponent implements OnDestroy {
               switchMap(() => {
                 // This part is skipped for srv/msg types by the outer if/else
                 // No need to check type === "srv" || type === "msg" here anymore
-                return codeService.executeCode(fileName);
-              }),
-              switchMap((response) => {
+            return codeService.executeCode(fileName);
+          }),
+          switchMap((response) => {
                 if (!response) return of(null); // Handle potential null response from executeCode
                 console.log('Backend execution response:', response);
-                const sessionId = response.session_id;
+            const sessionId = response.session_id;
                 // Remove the specific check and error handling for missing session_id
                 // if (!sessionId) {
                 //     console.error('No session_id received from executeCode');
@@ -1191,8 +1191,8 @@ export class WorkspaceComponent implements OnDestroy {
                 //     return of(null); // Prevent further steps
                 // }
                 // Proceed assuming sessionId exists (or let connectToWebSocket handle potential issues)
-                this.consolesSessions.set(tabId.toString(), sessionId);
-                console.log('Session ID:', sessionId);
+            this.consolesSessions.set(tabId.toString(), sessionId);
+            console.log('Session ID:', sessionId);
 
                 // Connect to WebSocket
                 const wsConnection$ = codeService.connectToWebSocket(sessionId);
@@ -1203,24 +1203,24 @@ export class WorkspaceComponent implements OnDestroy {
                     this.changeDetectorRef.detectChanges(); // Update UI
                 }
                 return wsConnection$;
-              })
-            )
-            .subscribe({
-              next: (response) => {
+          })
+        )
+        .subscribe({
+          next: (response) => {
                  if (!response) return; // Skip if null (e.g., from error handling above)
                 // ... (Existing WebSocket message handling: output vs status) ...
                  // Differentiate between log output and status messages
                  if (response.output !== undefined) {
                    // Log message
-                   console.log('Websocket message:', response.output);
+            console.log('Websocket message:', response.output);
                    // Append output - RE-ADD the explicit '\\n' here if backend doesn't send it
-                   this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output + '\n');
-                   if (this.selectedTabId === tabId) {
-                     this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
-                   }
-                   if (this.autoScrollEnabled) {
-                     setTimeout(() => this.scrollToBottom(), 100);
-                   }
+              this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output + '\n');
+              if (this.selectedTabId === tabId) {
+                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
+              }
+              if (this.autoScrollEnabled) {
+                setTimeout(() => this.scrollToBottom(), 100);
+              }
                  } else if (response.status) {
                    // Status message
                    const sessionId = this.consolesSessions.get(tabId.toString());
@@ -1418,7 +1418,7 @@ export class WorkspaceComponent implements OnDestroy {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
       ? { ...toolbox }
       : { kind: 'categoryToolbox', contents: [] };
-  
+
     const typeToBlocksMap: Record<string, any[]> = {};
   
     let categoryName = 'ROS 2 common msg types';
@@ -2790,9 +2790,9 @@ export function hasValidChain(block: Blockly.Block | null, childBlockType: strin
       // Extended check: For blocks like publish/send_request, ensure fields are connected
       if (childBlockType === 'ros2_publish_message' || childBlockType === 'ros_send_request') {
           const hasConnectedFields = block.inputList.some(input =>
-              input.name?.startsWith('FIELD_') &&
-              input.connection &&
-              input.connection.targetBlock()
+        input.name?.startsWith('FIELD_') &&
+        input.connection &&
+        input.connection.targetBlock()
           );
           if (!hasConnectedFields && block.inputList.some(input => input.name?.startsWith('FIELD_'))) {
              // Has the block but no connected fields where fields exist
