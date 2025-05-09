@@ -1,7 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { filter, Subscription, take } from 'rxjs';
+import { filter, Subscription, take, tap } from 'rxjs';
 import { CodeService } from '../services/code.service';
+import { LandingStateService } from '../services/landing-state.service';
 
 @Component({
   selector: 'app-loading',
@@ -14,16 +15,22 @@ export class LoadingComponent implements OnInit, OnDestroy {
   private sub?: Subscription;
 
   constructor(private code: CodeService,
-              private router: Router) {}
+              private router: Router,
+              private landingState: LandingStateService) {}
 
-  ngOnInit(): void {
-    /*progress bar */
-    this.sub = this.code.progress$.subscribe(p => this.progress = p);
-
-    this.code.ready$.pipe(
-      filter(Boolean), take(1)
-    ).subscribe(() => this.router.navigate(['/workspace']));
-  }
+              ngOnInit(): void {
+                this.sub = this.code.progress$.subscribe(p => this.progress = p);
+                this.code.ready$.pipe(
+                  filter(Boolean),      
+                  take(1),          
+                  tap(() =>             
+                    this.landingState.markVisited()
+                  )
+                ).subscribe(() => {
+                  this.router.navigate(['/workspace']);
+                });
+              }
+              
 
   ngOnDestroy(): void { this.sub?.unsubscribe(); }
 }
