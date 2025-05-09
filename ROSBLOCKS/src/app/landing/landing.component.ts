@@ -10,14 +10,11 @@ import { LandingStateService } from '../services/landing-state.service';
 export class LandingComponent {
   constructor(private router: Router, private landingState: LandingStateService) {}
 
-  // Navigate to the tutorials section
   goToTutorials(): void {
     this.router.navigate(['/help']);
   }
 
-  // Navigate to the workspace (root)
   start(): void {
-    this.landingState.markVisited();
-    this.router.navigate(['/workspace']);
+    this.router.navigate(['/loading']);
   }
 }
