@@ -21,14 +21,14 @@
                     </ul>
 
                     <button class="dropdownBtn" (click)="toggleDropdown(2)">
-                        Programación básica <span class="material-icons arrow-icon" [class.rotated]="dropdowns[2]">expand_more</span>
+                        Basic programming<span class="material-icons arrow-icon" [class.rotated]="dropdowns[2]">expand_more</span>
                     </button>
                     <ul *ngIf="dropdowns[2]" class="dropdownList">
-                        <li (click)="selectVideo('https://www.youtube.com/embed/OuZQJktaxN8?si=fc4FCzmqNSJLZ0-7')">Hola mundo</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/ywTdRU6jq0M?si=EptUYYzOy-rMX6iB')">Operadores matemáticos</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/sKIScjO1Gn4?si=0eHLwqqwnjYcnrJb')">Condicionales</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/OuZQJktaxN8?si=fc4FCzmqNSJLZ0-7')">Hello World</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/ywTdRU6jq0M?si=EptUYYzOy-rMX6iB')">Mathematic operators</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/sKIScjO1Gn4?si=0eHLwqqwnjYcnrJb')">Condicionals</li>
                         <li (click)="selectVideo('https://www.youtube.com/embed/HkH_jvJuW6I?si=pH--FQet96HGhy9b')">Variables</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/mDGx1dLg2pM?si=pQcpR53LKwg-lLUE')">Bucles</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/mDGx1dLg2pM?si=pQcpR53LKwg-lLUE')">Loops</li>
                     </ul>
 
                     <button class="dropdownBtn" (click)="toggleDropdown(3)">
@@ -98,7 +98,7 @@ ROSBlocks is also a valuable tool for teachers looking for new ways to teach pro
               </div>
 
               <div *ngIf="selectedVideo == 'https://www.youtube.com/embed/SK0eobH3pT4?si=B19oIhGYX2AivyXQ'" class="video-title">
-                <h3>Introduction</h3>
+                <h3>Basic functionalities</h3>
                     <div class="video-description">
                         <pre class="text-content">The tutorial emphasizes the ease of using block-based programming to create and manage nodes, which are fundamental processes in ROS 2 that execute Python scripts. Viewers learn how to create, edit, and manage nodes within the user interface. The video details how to incorporate blocks — either those specific to ROS 2 or general programming blocks. Moreover, it covers the workspace features, such as managing the console output, duplicating nodes, and executing scripts, which are fundamental for illustrating programming commands in a visual and practical manner. The tutorial also dives into the simulator's features. To facilitate future work, users can save, load, and export their projects, ensuring continuity across different computing environments.</pre>
                     </div>
@@ -115,7 +115,7 @@ ROSBlocks is also a valuable tool for teachers looking for new ways to teach pro
               </div>
 
               <div *ngIf="selectedVideo == 'https://www.youtube.com/embed/OmEMPZmzjMg?si=OBD026Bi2MwRNVAl'" class="video-title">
-                <h3>Introduction</h3>
+                <h3>Management of resources and blocks</h3>
                     <div class="video-description">
                         <pre class="text-content">The video begins by explaining what a node is—a process running in a computer, having multiple applications open can slow down the computer because it must manage many simultaneous processes. To optimize performance within the ROSBlocks platform, users are limited to creating eight nodes, which prevents conflicts and inconsistencies in projects.</pre>
                     </div>
@@ -127,6 +127,21 @@ ROSBlocks is also a valuable tool for teachers looking for new ways to teach pro
 ❗ Understanding and Resolving Alerts: Warnings and alerts in programming serve as vital indicators of potential issues or required actions. The video emphasizes the importance of not just understanding these warnings but actively resolving them.
 
 🛠️ **Problem-Solving as a Key Skill**: The emphasis on effectively addressing warnings illustrates a broader skill: problem-solving. This teaches learners that coding is not just about writing code; it involves a continual process of analyzing and troubleshooting—skills that are universally valuable across all domains of computing.
+                            </pre>
+                    </div>
+              </div>
+
+              <div *ngIf="selectedVideo == 'https://www.youtube.com/embed/OuZQJktaxN8?si=fc4FCzmqNSJLZ0-7'" class="video-title">
+                <h3>Hello World</h3>
+                    <div class="video-description">
+                        <pre class="text-content">The exercise presented in this video emphasizes how to effectively use text blocks, print outputs to the console, and visualize the results.</pre>
+                    </div>
+                    <div class="video-description">
+                        <pre class="text-content">🔄 Initialization Block role: Focusing on the init block serves to clarify how code execution begins. Users learn that without an init block, any code statements won't run, thereby reinforcing the concept of program flow and initiation. Understanding how to trigger code execution builds a foundation for error-free coding practices.
+
+🗨️ Making Outputs Visible with the Print Block: The emphasis on the role of the print block illustrates the necessity of user feedback in programming. By manipulating the print block, learners can see immediate results from their code.
+                            
+🆕 Concatenation: Learning to concatenate strings shows the versatility of text manipulation. Through exercises that combine words, learners not only grasp basic coding syntax but also enhance their problem-solving capabilities.
                             </pre>
                     </div>
               </div>
@@ -143,12 +158,6 @@ ROSBlocks is also a valuable tool for teachers looking for new ways to teach pro
               </div>
               -->
               
-          
-              <h3 class="video-title">{{ selectedTitle }}</h3>
-          
-              <div *ngFor="let paragraph of selectedDescription" class="video-description">
-                <pre class="text-content">{{ paragraph }}</pre>
-              </div>
             </div>
           </div>
           
