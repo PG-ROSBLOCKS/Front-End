@@ -26,7 +26,7 @@
                     <ul *ngIf="dropdowns[2]" class="dropdownList">
                         <li (click)="selectVideo('https://www.youtube.com/embed/rNR4ZO_3hNI?si=_4711vqPyNayCNOR')">Hello World</li>
                         <li (click)="selectVideo('https://www.youtube.com/embed/Mfh_AdLrBMk?si=K8YU3VBlAXhhR-Q4')">Mathematic operators</li>
-                        <li (click)="selectVideo('https://www.youtube.com/embed/PC6GQ_JoEO4?si=xjiMXCTLOdco71Yq')">Condicionals</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/PC6GQ_JoEO4?si=xjiMXCTLOdco71Yq')">Conditionals</li>
                         <li (click)="selectVideo('https://www.youtube.com/embed/WudPltFWCqc?si=zj-y_68oti2fN5gg')">Variables</li>
                         <li (click)="selectVideo('https://www.youtube.com/embed/umvESSszF_c?si=BCkBF29wXNh4u7Hz')">Loops</li>
                     </ul>
@@ -52,10 +52,10 @@
                     </ul>
                     
                     <button class="dropdownBtn" (click)="toggleDropdown(4)">
-                        Export ROSBlocks proyect<span class="material-icons arrow-icon" [class.rotated]="dropdowns[4]">expand_more</span>
+                        Export ROSBlocks project<span class="material-icons arrow-icon" [class.rotated]="dropdowns[4]">expand_more</span>
                     </button>
                     <ul *ngIf="dropdowns[4]" class="dropdownList">
-                        <li (click)="selectVideo('https://www.youtube.com/embed/j25uWAxLekc?si=JaDxudauVl3AMY0E')">Export proyect from ROSBlocks to Ubuntu 24.04</li>
+                        <li (click)="selectVideo('https://www.youtube.com/embed/j25uWAxLekc?si=JaDxudauVl3AMY0E')">Export project from ROSBlocks to Ubuntu 24.04</li>
                     </ul>
                     <br>
                 </div>
@@ -363,7 +363,7 @@ ROSBlocks is also a valuable tool for teachers looking for new ways to teach pro
 
               <!--Modulo 5 Video 1-->
               <div *ngIf="selectedVideo == 'https://www.youtube.com/embed/j25uWAxLekc?si=JaDxudauVl3AMY0E'" class="video-title">
-                <h3>Export proyect from ROSBlocks to Ubuntu 24.04</h3>
+                <h3>Export project from ROSBlocks to Ubuntu 24.04</h3>
                     <div class="video-description">
                         <pre class="text-content">This tutorial by Rossbox is designed to guide users through the process of exporting a project from Ross Blocks for implementation in a ROS 2 environment on an Ubuntu 20.04 machine. The tutorial uses the TurtleSim simulator to visually demonstrate various movements of a turtle object.</pre>
                     </div>
