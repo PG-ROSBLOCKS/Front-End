@@ -10,5 +10,4 @@ export interface MsgInfo {
 }
 
 export let msgList: MsgInfo[] = [];
-  
-  
+export let customMsgList: MsgInfo[] = [];

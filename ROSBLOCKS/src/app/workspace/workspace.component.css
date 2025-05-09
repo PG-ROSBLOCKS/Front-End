@@ -541,3 +541,22 @@ canvas {
 }
 /* toolbox styles */
 
+/* Status Indicator Styles */
+.status-indicator {
+  margin-left: 15px; /* Adjust spacing as needed */
+  font-size: 0.9em;
+  color: #cccccc; /* Light gray, adjust as needed */
+  display: inline-block; /* Ensure it stays on the same line as title if possible */
+  vertical-align: middle; /* Align with text */
+}
+
+.status-running {
+  color: #4CAF50; /* Green */
+  font-weight: bold;
+}
+
+.status-stopped {
+  color: #f44336; /* Red */
+  font-weight: bold;
+}
+

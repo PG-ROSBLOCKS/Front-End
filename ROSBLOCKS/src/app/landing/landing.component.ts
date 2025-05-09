@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { LandingStateService } from '../services/landing-state.service';
 
 @Component({
   selector: 'app-landing',
@@ -7,7 +8,7 @@ import { Router } from '@angular/router';
   styleUrls: ['./landing.component.css']
 })
 export class LandingComponent {
-  constructor(private router: Router) {}
+  constructor(private router: Router, private landingState: LandingStateService) {}
 
   // Navigate to the tutorials section
   goToTutorials(): void {
@@ -16,6 +17,7 @@ export class LandingComponent {
 
   // Navigate to the workspace (root)
   start(): void {
-    this.router.navigate(['/loading']);
+    this.landingState.markVisited();
+    this.router.navigate(['/workspace']);
   }
 }

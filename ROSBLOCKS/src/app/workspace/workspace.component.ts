@@ -11,9 +11,9 @@ import { filter, switchMap, take, tap } from 'rxjs/operators';
 import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, linesAfter, linesBeforeComment, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables, removeOneIndentLevel } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
-import { msgList, MsgInfo, MsgVariable } from '../shared/msg-list';
+import { msgList, MsgInfo, MsgVariable, customMsgList } from '../shared/msg-list';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { toolbox, updateDynamicCategoryInToolbox } from "./blockly";
+import { toolbox, updateDeepCategoryInToolbox, updateNestedCategoryInToolbox } from "./blockly";
 import { SuccessService } from '../shared/components/success/success.service';
 import { paintMap, isValidMap } from '../maps/mapBuilder';
 import { map1, map2, map3 } from '../maps/maps';
@@ -23,6 +23,7 @@ import { blockColors } from '../blocks/color-palette';
 import { MessageService } from '../shared/message.service';
 import { ErrorsService } from '../shared/components/error/errors.service';
 import { parseMatrix } from './workspace-utils';
+import { colour } from 'blockly/blocks';
 
 
 @Component({
@@ -110,19 +111,6 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   private startInactivityCheck(): void {
-    setInterval(() => {
-      const now = Date.now();
-      const minutesInactive = (now - this.lastActivityTimestamp) / (10 * 60 * 1000);
-
-      if (minutesInactive >= 1 && !this.inactivityTimer) {
-        this.alertService.showAlert('Due to inactivity, all nodes have been stopped');
-        this.stopAllTabs();
-        this.deleteMap();
-        this.inactivityTimer = setTimeout(() => {
-          this.inactivityTimer = null;
-        }, 60000);
-      }
-    }, 60000);
   }
 
   blockErrorMessages(): void {
@@ -145,9 +133,33 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    for (const ws in this.websockets) {
-      this.websockets.get(ws)?.unsubscribe();
+    // Unsubscribe from all active WebSocket connections
+    this.websockets.forEach((subscription, tabId) => {
+      console.log(`Unsubscribing WebSocket for tab ${tabId}`);
+      subscription.unsubscribe();
+    });
+    this.websockets.clear(); // Clear the map after unsubscribing
+
+    // Close connections for all CodeService instances associated with tabs
+    this.consolesServices.forEach((service, tabId) => {
+      console.log(`Closing CodeService connection for tab ${tabId}`);
+      service.closeConnection(); // Ensure WebSocketSubject is completed
+      const sessionId = this.consolesSessions.get(tabId);
+      if (sessionId) {
+        console.log(`Requesting termination for session ${sessionId} during destroy`);
+        // Optionally kill any remaining backend process if the component is destroyed
+        // Be cautious with this, might not always be desired
+        // service.killExecution(sessionId);
+      }
+    });
+    this.consolesServices.clear(); // Clear the map
+
+    // Stop any inactivity timers
+    if (this.inactivityTimer) {
+        clearTimeout(this.inactivityTimer);
     }
+    // Consider saving workspace state one last time if needed
+    // this.saveToLocalStorage();
   }
 
   showMessage(message: string, type: 'success' | 'error') {
@@ -275,7 +287,7 @@ export class WorkspaceComponent implements OnDestroy {
     };
     reader.readAsText(file);
     this.resetTurtleContainer(1)
-    this.showMessage('Data loaded successfully.', 'success');
+    //this.showMessage('Data loaded successfully.', 'success');
   }
 
   saveToLocalStorage() {
@@ -807,14 +819,35 @@ export class WorkspaceComponent implements OnDestroy {
   stopTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (tab) {
+      // --- Immediate UI Update ---
       tab.isPlaying = false;
+      this.changeDetectorRef.detectChanges(); // Ensure UI reflects change quickly
+      // --- End Immediate UI Update ---
+
       const session_id = this.consolesSessions.get(tabId.toString());
-      //console.log('Session ID stop:', session_id);
-      if (session_id) {
-        this.consolesServices.get(tabId.toString())?.killExecution(session_id);
+      const codeService = this.consolesServices.get(tabId.toString());
+
+      console.log('Stop requested for tab:', tabId, 'Session ID:', session_id);
+
+      if (session_id && codeService) {
+        // Request backend termination
+        codeService.killExecution(session_id);
+        // Note: killExecution doesn't instantly confirm termination.
+        // The WebSocket 'terminated' message is the confirmation.
+      } else {
+         console.warn(`No active session or service found for tab ${tabId} to kill.`);
       }
-      this.consolesServices.get(tabId.toString())?.closeConnection();
-      this.websockets.get(tabId.toString())?.unsubscribe();
+
+      // Close the frontend WebSocket connection attempt immediately
+      // This prevents receiving further messages after stop is requested
+      // The handleTermination/handleError will do the final cleanup upon receiving status msg
+      codeService?.closeConnection(); // Close WS from frontend side
+      this.websockets.get(tabId.toString())?.unsubscribe(); // Unsubscribe immediately
+
+      // We *don't* immediately remove from websockets/consolesSessions here.
+      // handleTermination/handleError triggered by the WebSocket status message
+      // will perform the final cleanup. This handles cases where the kill
+      // command might fail or take time.
     }
   }
 
@@ -990,8 +1023,13 @@ export class WorkspaceComponent implements OnDestroy {
 
     for (const tab of this.tabs) {
       const tabId = tab.id;
-      if (!this.workspaces[tabId]) continue;
+      // Only play the tab if it's not already playing
+      if (!tab.isPlaying && this.workspaces[tabId]) {
+          console.log(`PlayAll: Attempting to play tab ${tabId} (${tab.name})`);
       this.playTab(tabId, true);
+      } else {
+          console.log(`PlayAll: Skipping already running or non-existent workspace tab ${tabId} (${tab.name})`);
+      }
     }
   }
 
@@ -1088,121 +1126,163 @@ export class WorkspaceComponent implements OnDestroy {
     if (!codeService) {
       console.error('Service not found for the tab', tabId);
       return;
-    }
+    } else {
+      const tab = this.tabs.find(t => t.id === tabId);
+      if (!tab) {
+          console.error(`Tab with ID ${tabId} not found.`);
+          return; // Exit if tab not found
+      }
 
-    // si había un WebSocket activo, lo cerramos
-    if (this.websockets.get(tabId.toString())) {
-      this.websockets.get(tabId.toString())!.unsubscribe();
-    }
+      // --- Flujo Condicional: Guardar Interfaz vs. Ejecutar Nodo ---
+      if (type === "srv" || type === "msg") {
+          // --- Guardado de Interfaz (HTTP Síncrono Backend) ---
+          console.log(`Saving interface: Type=${type}, Name=${fileName}`);
+          tab.isPlaying = true; // Indicate processing started (use isPlaying for now)
+          this.changeDetectorRef.detectChanges();
 
-    // preparar y subir
-    code = sanitizeGlobalVariables(code);
-    console.log(code);
+          codeService.uploadCode(fileName, code, type).subscribe({
+              next: (response) => {
+                  console.log(`Interface ${fileName} saved successfully:`, response);
+                  tab.isPlaying = false; // Processing finished
+                  const confirmationMessage = `Interface ${fileName} saved successfully.\n`;
+              this.consolesOutput.set(tabId.toString(),
+                    (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage);
+              if (this.selectedTabId === tabId) {
+                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
+                  }
 
-    this.websockets.set(tabId.toString(),
-      codeService.ready$.pipe(
-        filter(ready => ready),
-        take(1),
-        switchMap(() => {
-          performance.mark('upload_start');
-          return codeService.uploadCode(fileName, code, type).pipe(
-            tap(() => performance.mark('upload_end'))
-          );
-        }),
-        // 2) si es srv/msg cortamos aquí
-        switchMap(_ => {
-          if (type === 'srv') {
-            console.log("The file is a service (.srv), stopping execution after uploadCode.");
-            const msg = `Service ${fileName} created successfully.\n`;
-            this.consolesOutput.set(tabId.toString(),
-              (this.consolesOutput.get(tabId.toString()) ?? '') + msg
-            );
-            if (this.selectedTabId === tabId) {
-              this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString())!;
-              this.changeDetectorRef.detectChanges();
-            }
-            this.updateSrvList().subscribe();
-            return of(null);
-          } else if (type === 'msg') {
-            console.log("The file is a message (.msg), stopping execution after uploadCode.");
-            const msg = `Message ${fileName} created successfully.\n`;
-            this.consolesOutput.set(tabId.toString(),
-              (this.consolesOutput.get(tabId.toString()) ?? '') + msg
-            );
-            if (this.selectedTabId === tabId) {
-              this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString())!;
-              this.changeDetectorRef.detectChanges();
-            }
-            this.updateMsgList().subscribe();
-            return of(null);
+                  // Update the relevant interface list
+                  if (type === "srv") {
+                      this.updateSrvList().subscribe(() => {
+                          console.log('SRV list updated after save.');
+                          // Optionally refresh toolbox immediately if needed
+                          // this.updateSrvVariablesCategory();
+                      });
+                  } else { // type === "msg"
+                      this.updateMsgList().subscribe(() => {
+                          console.log('MSG list updated after save.');
+                          // Optionally refresh toolbox immediately if needed
+                          // this.updateMsgVariablesCategory();
+                      });
+                  }
+                  this.changeDetectorRef.detectChanges();
+              },
+              error: (error) => {
+                  console.error(`Error saving interface ${fileName}:`, error);
+                  tab.isPlaying = false; // Processing finished (with error)
+                  const detail = error?.error?.detail || error.message || 'Unknown error';
+                  this.errorsService.showErrors(`Error saving ${fileName}: ${detail}`);
+                  this.changeDetectorRef.detectChanges();
+              }
+              // No 'complete' needed typically for single HTTP POST
+          });
+
+      } else {
+          // --- Ejecución de Nodo (WebSocket Asíncrono) ---
+          console.log(`Executing node: Type=${type}, Name=${fileName}`);
+          // Make variables global in each "def"
+          code = sanitizeGlobalVariables(code);
+          console.log(code);
+
+          // Ensure WebSocket subscription map exists
+          if (!this.websockets) {
+              this.websockets = new Map<string, Subscription>();
           }
-          // 3) si no es srv/msg, ejecutamos con las marcas de tiempo
-          performance.mark('exec_start');
-          return codeService.executeCode(fileName).pipe(
-            tap(() => performance.mark('exec_end'))
-          );
-        }),
 
-        // 4) abrimos WS sobre la misma svc
-        switchMap(resp => {
-          if (!resp) return of(null);
-          const sid = resp.session_id;
-          this.consolesSessions.set(tabId.toString(), sid);
-          performance.mark('ws_wait');
-          return codeService.connectToWebSocket(sid);
-        })
-      )
+          // Unsubscribe from previous session if any
+          if (this.websockets.has(tabId.toString())) {
+              this.websockets.get(tabId.toString())?.unsubscribe();
+              this.websockets.delete(tabId.toString());
+          }
+
+          const executionSubscription = codeService.uploadCode(fileName, code, type)
+            .pipe(
+              switchMap(() => {
+                // This part is skipped for srv/msg types by the outer if/else
+                // No need to check type === "srv" || type === "msg" here anymore
+            return codeService.executeCode(fileName);
+          }),
+          switchMap((response) => {
+                if (!response) return of(null); // Handle potential null response from executeCode
+                console.log('Backend execution response:', response);
+            const sessionId = response.session_id;
+                // Remove the specific check and error handling for missing session_id
+                // if (!sessionId) {
+                //     console.error('No session_id received from executeCode');
+                //     // Handle error appropriately - maybe show error, set isPlaying false
+                //     tab.isPlaying = false;
+                //     this.errorsService.showErrors(`Failed to start execution for ${fileName}: No session ID received.`);
+                //     this.changeDetectorRef.detectChanges();
+                //     return of(null); // Prevent further steps
+                // }
+                // Proceed assuming sessionId exists (or let connectToWebSocket handle potential issues)
+            this.consolesSessions.set(tabId.toString(), sessionId);
+            console.log('Session ID:', sessionId);
+
+                // Connect to WebSocket
+                const wsConnection$ = codeService.connectToWebSocket(sessionId);
+
+                // Set isPlaying = true only AFTER successful WebSocket connection attempt
+                if (tab) { // Check tab again
+                    tab.isPlaying = true;
+                    this.changeDetectorRef.detectChanges(); // Update UI
+                }
+                return wsConnection$;
+          })
+        )
         .subscribe({
-          next: wsMsg => {
-            if (!wsMsg) return;
-            /*init asr testing*/
-            /* ---------- MEDICIONES PUB/SUB ---------- */
-            /*if (/Mensaje del publicador:/i.test(wsMsg.output)) {
-              performance.mark('ws_first');                 // sólo la marca
-              safeMeasure('upload', 'upload_start', 'upload_end');
-              if (performance.getEntriesByName('exec_end').length) {
-                safeMeasure('execute', 'exec_start', 'exec_end');
-              }
-              safeMeasure('wsFirst', 'ws_wait', 'ws_first');
-              console.table(performance.getEntriesByType('measure'));
-            }
-
-            /* ---------- MEDICIONES CLIENTE/SERVIDOR ---------- */
-            /*if (/Respuesta del servidor:/i.test(wsMsg.output)) {
-              performance.mark('srv_first');
-              safeMeasure('upload', 'upload_start', 'upload_end');
-              safeMeasure('execute', 'exec_start', 'exec_end');
-              safeMeasure('srvTotal', 'clickClient', 'srv_first');
-              console.table(performance.getEntriesByType('measure'));
-            }
-
-            /* ---------- MEDICIÓN PLAY-ALL ---------- */
-            /* if (this.allRunning && !this.seenMsgs.has(wsMsg)) {
-              this.seenMsgs.add(wsMsg);
-              this.allReady++;
-              if (this.allReady === this.allTotal) {
-                this.allRunning = false;
-                performance.mark('all_first');
-                safeMeasure('allFirst', 'all_start', 'all_first');
-                console.table(performance.getEntriesByName('allFirst'));
-              }
-            }
-            /**end asr testing*/
-
-            console.log('Websocket message:', wsMsg.output);
-            const prev = this.consolesOutput.get(tabId.toString()) ?? '';
-            if (!prev.endsWith(wsMsg.output)) {
-              this.consolesOutput.set(tabId.toString(), prev + wsMsg.output + '\n');
+          next: (response) => {
+                 if (!response) return; // Skip if null (e.g., from error handling above)
+                // ... (Existing WebSocket message handling: output vs status) ...
+                 // Differentiate between log output and status messages
+                 if (response.output !== undefined) {
+                   // Log message
+            console.log('Websocket message:', response.output);
+                   // Append output - RE-ADD the explicit '\\n' here if backend doesn't send it
+              this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output + '\n');
               if (this.selectedTabId === tabId) {
                 this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString())!;
               }
-              if (this.autoScrollEnabled) setTimeout(() => this.scrollToBottom(), 100);
-            }
-          },
-          error: err => console.error('Error:', err),
-          complete: () => console.log('Completed process')
-        })
-    );
+              if (this.autoScrollEnabled) {
+                setTimeout(() => this.scrollToBottom(), 100);
+              }
+                 } else if (response.status) {
+                   // Status message
+                   const sessionId = this.consolesSessions.get(tabId.toString());
+                   console.log(`Received status: ${response.status} for session: ${sessionId}`);
+                   if (response.status === 'terminated') {
+                     this.handleTermination(tabId, sessionId ?? '', 'Execution Finished.'); // Call handler
+                   } else if (response.status === 'error') {
+                     this.handleError(tabId, sessionId ?? '', response.detail || 'Unknown execution error.'); // Call handler
+                   }
+                   // Backend should close the connection after sending status,
+                   // but we can also unsubscribe here as a safety measure.
+                   this.websockets.get(tabId.toString())?.unsubscribe();
+                   this.websockets.delete(tabId.toString());
+                 } else {
+                   // Unknown message format
+                   console.warn('Received unknown message format via WebSocket:', response);
+                 }
+              },
+              error: (error) => { // Handle WebSocket errors
+                console.error('WebSocket Error:', error);
+                const sessionId = this.consolesSessions.get(tabId.toString());
+                this.handleError(tabId, sessionId ?? '', `WebSocket connection error: ${error.message || 'Unknown error'}`);
+              },
+              complete: () => { // Handle WebSocket closure by backend
+                console.log('WebSocket connection closed by backend.');
+                const sessionId = this.consolesSessions.get(tabId.toString());
+                if (this.consolesSessions.has(tabId.toString())) { // Check if not already handled
+                   console.warn(`WebSocket for session ${sessionId} closed unexpectedly.`);
+                   // Don't add message here as per previous request
+                   this.handleTermination(tabId, sessionId ?? '', 'Execution finished (connection closed).');
+                }
+              }
+            });
+            // Store the subscription to manage it
+            this.websockets.set(tabId.toString(), executionSubscription);
+      }
+    }
   }
 
   scrollToBottom() {
@@ -1313,7 +1393,8 @@ export class WorkspaceComponent implements OnDestroy {
     const srvVariablesCategory = {
       kind: 'category',
       type: 'category',
-      name: 'Service Variables',
+      name: 'Custom srv types created',
+      colour : blockColors.Services,
       contents: srvList.map((service: SrvInfo) => {
         const requestBlocks = service.variables?.request?.map((variable: any) =>
           this.createSrvVariableBlock(variable, "request")
@@ -1324,6 +1405,7 @@ export class WorkspaceComponent implements OnDestroy {
         return {
           kind: 'category',
           type: 'category',
+          colour: blockColors.Services,
           name: service.name ? service.name.replace(/\.srv$/, "") : "",
           contents: [
             { kind: 'label', text: "Request:" },
@@ -1340,7 +1422,13 @@ export class WorkspaceComponent implements OnDestroy {
         };
       })
     };
-    updateDynamicCategoryInToolbox(toolboxObj, 'ROS 2 Blocks', 'ROS 2 msg and srv types', 'Service Variables', srvVariablesCategory);
+
+    updateDeepCategoryInToolbox(
+      toolboxObj,
+      ['ROS 2 Blocks', 'ROS 2 msg and srv types', 'ROS 2 srv types'],
+      'Custom srv types created',
+      srvVariablesCategory
+    );
 
     // Update the toolbox of the current workspace (if active)
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
@@ -1356,36 +1444,43 @@ export class WorkspaceComponent implements OnDestroy {
       ? { ...toolbox }
       : { kind: 'categoryToolbox', contents: [] };
 
-    const msgVariablesCategory = {
+    const typeToBlocksMap: Record<string, any[]> = {};
+  
+    let categoryName = 'ROS 2 common msg types';
+            
+    msgList.forEach((message: MsgInfo) => {
+      const baseType = message.name.split('.').pop() || message.name; 
+      message.fields?.forEach((field: any) => {
+        if (!typeToBlocksMap[baseType]) {
+          typeToBlocksMap[baseType] = [];
+        }
+        const block = this.createMsgVariableBlock(field);
+        block.data = message.name;
+        typeToBlocksMap[baseType].push(block);
+      });
+    });
+
+
+    const flatContents: any[] = [];
+    Object.entries(typeToBlocksMap).forEach(([type, blocks]) => {
+      flatContents.push({ kind: 'label', text: `${type} message fields:` });
+      flatContents.push(...blocks);
+    });
+  
+    const defaultMsgTypesCategory = {
       kind: 'category',
-      type: 'category',
-      name: 'Message Variables',
-      contents: msgList.map((message: MsgInfo) => {
-        const fieldBlocks = message.fields?.map((variable: any) =>
-          this.createMsgVariableBlock(variable)
-        ) || [];
-
-        return {
-          kind: 'category',
-          type: 'category',
-          name: (() => {
-            const parts = message.name.split('.');
-            if (parts.length === 3 && parts[1] === 'msg') {
-              return parts[2]; // E.g., 'Twist'
-            }
-            return message.name; // E.g., 'message3'
-          })(),
-          contents: [
-            { kind: 'label', text: "Message fields:" },
-            ...fieldBlocks
-          ]
-        };
-      })
+      name: categoryName,
+      colour: blockColors.Messages,
+      contents: flatContents
     };
-
-    updateDynamicCategoryInToolbox(toolboxObj, 'ROS 2 Blocks', 'ROS 2 msg and srv types', 'Message Variables', msgVariablesCategory);
-
-    // Update the toolbox of the current workspace (if active)
+    updateDeepCategoryInToolbox(
+      toolboxObj,
+      ['ROS 2 Blocks', 'ROS 2 msg and srv types', 'ROS 2 msg types'],
+      categoryName,
+      defaultMsgTypesCategory
+    );
+  
+    // Actualiza el toolbox del workspace activo
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.workspaces[this.selectedTabId].updateToolbox({
         kind: 'categoryToolbox',
@@ -1393,6 +1488,60 @@ export class WorkspaceComponent implements OnDestroy {
       });
     }
   }
+
+  updateCustomMsgVariablesCategory(): void {
+    const toolboxObj = toolbox.contents && toolbox.contents.length > 0
+      ? { ...toolbox }
+      : { kind: 'categoryToolbox', contents: [] };
+  
+    const typeToBlocksMap: Record<string, any[]> = {};
+  
+    let categoryName = 'Custom created msg types';
+    const customOnlyList = customMsgList.filter(
+      customMsg => !msgList.some(commonMsg => commonMsg.name === customMsg.name)
+    );
+    
+    customOnlyList.forEach((message: MsgInfo) => {
+      const baseType = message.name; 
+      message.fields?.forEach((field: any) => {
+        if (!typeToBlocksMap[baseType]) {
+          typeToBlocksMap[baseType] = [];
+        }
+        const block = this.createMsgVariableBlock(field);
+        block.data = message.name;
+        typeToBlocksMap[baseType].push(block);
+      });
+    });
+
+
+    const flatContents: any[] = [];
+    Object.entries(typeToBlocksMap).forEach(([type, blocks]) => {
+      flatContents.push({ kind: 'label', text: `${type} message fields:` });
+      flatContents.push(...blocks);
+    });
+  
+    const customMsgTypeCategory = {
+      kind: 'category',
+      name: categoryName,
+      colour: blockColors.Messages,
+      contents: flatContents
+    };
+    updateDeepCategoryInToolbox(
+      toolboxObj,
+      ['ROS 2 Blocks', 'ROS 2 msg and srv types', 'ROS 2 msg types'],
+      categoryName,
+      customMsgTypeCategory
+    );
+  
+    // Actualiza el toolbox del workspace activo
+    if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
+      this.workspaces[this.selectedTabId].updateToolbox({
+        kind: 'categoryToolbox',
+        contents: toolboxObj.contents
+      });
+    }
+  }
+  
 
   updateSrvList(): Observable<any> {
     return this.codeService.checkSrvFiles().pipe(
@@ -1426,18 +1575,20 @@ export class WorkspaceComponent implements OnDestroy {
         next: (response) => {
           if (response.exists) {
             response.files.forEach((file: any) => {
-              const alreadyExists = msgList.some(msg => msg.name === file.name);
+              const alreadyExists = customMsgList.some(msg => msg.name === file.name);
               if (!alreadyExists) {
-                msgList.push(file);
+                customMsgList.push(file);
               }
             });
           }
           //console.log("msgList updated:", msgList);
           this.updateMsgVariablesCategory();
+          this.updateCustomMsgVariablesCategory(); 
         },
         error: (error) => {
           console.error("Error getting list of msg files:", error);
-          this.updateMsgVariablesCategory(); // Asegúrate de actualizar incluso en error
+          this.updateMsgVariablesCategory(); 
+          this.updateCustomMsgVariablesCategory(); 
         }
       })
       // }, error => { ... }); // <-- Eliminar el subscribe anterior
@@ -1491,7 +1642,7 @@ export class WorkspaceComponent implements OnDestroy {
           // Paso 1: Limpiar la pestaña ACTUAL inmediatamente
           console.log(`Cleaning current tab (${tabId}) synchronously for message ${normalizedMessageName}...`);
           try {
-            const messageInfo = msgList.find(m =>
+            const messageInfo = customMsgList.find(m =>
               (m.name && m.name.replace(/\\.msg$/, '') === normalizedMessageName) // Use normalized name
             );
             if (messageInfo && messageInfo.fields && currentWorkspace) {
@@ -1519,9 +1670,9 @@ export class WorkspaceComponent implements OnDestroy {
               setTimeout(() => {
                 console.log(`Executing asynchronous cleanup for tab ${otherTabId} for message ${normalizedMessageName}`);
                 try {
-                  const messageInfo = msgList.find(m =>
-                    (m.name && m.name.replace(/\\.msg$/, '') === normalizedMessageName)
-                  );
+                   const messageInfo = customMsgList.find(m =>
+                     (m.name && m.name.replace(/\\.msg$/, '') === normalizedMessageName)
+                   );
                   // Re-check workspace existence inside timeout
                   if (this.workspaces[otherTabId]) { // Re-check existence
                     if (messageInfo && messageInfo.fields) {
@@ -1554,13 +1705,13 @@ export class WorkspaceComponent implements OnDestroy {
                 console.log("Backend message deletion successful:", response);
 
                 // Actualizar la lista local de mensajes
-                const index = msgList.findIndex(m =>
+                const index = customMsgList.findIndex(m =>
                   (m.name && m.name.replace(/\\.msg$/, '') === normalizedMessageName)
                 );
 
                 if (index !== -1) {
-                  msgList.splice(index, 1);
-                  console.log('msgList updated after deleting message:', JSON.stringify(msgList));
+                  customMsgList.splice(index, 1);
+                  console.log('msgList updated after deleting message:', JSON.stringify(customMsgList));
                   // Forzar actualización del toolbox
                   setTimeout(() => {
                     this.updateMsgVariablesCategory(); // Update message category
@@ -1769,7 +1920,7 @@ export class WorkspaceComponent implements OnDestroy {
 
       allBlocks.forEach((block: any) => {
         try {
-          // 1. Service variables (request/response)
+          // 1. Custom srv types created (request/response)
           if (block.type === 'srv_variable') {
             // Check if the block belongs to the service through its fields
             const variableName = block.getFieldValue('VAR_NAME');
@@ -2056,7 +2207,7 @@ export class WorkspaceComponent implements OnDestroy {
 
     allBlocks.forEach((block: Blockly.Block) => { // More specific type
       try {
-        // 1. Service variables (request/response)
+        // 1. Custom srv types created (request/response)
         if (block.type === 'srv_variable') {
           // Check if the block belongs to the service through its fields or data attribute
           const variableName = block.getFieldValue('VAR_NAME');
@@ -2574,37 +2725,123 @@ export class WorkspaceComponent implements OnDestroy {
     });
     // End of modified function scope
   }
-}
 
-export function hasValidChain(block: Blockly.Block | null, childBlock: string): boolean {
-  if (!block) return false;
+  // Add these two new methods
+  handleTermination(tabId: number, sessionId: string, message: string): void {
+    console.log(`Handling termination for tab ${tabId}, session ${sessionId}`);
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (tab) {
+      tab.isPlaying = false;
+    }
 
-  if (block.type === childBlock) {
-    // Validate that you have at least one field connected (extended)
-    for (const input of block.inputList) {
-      if (
-        input.name?.startsWith('FIELD_') &&
-        input.connection &&
-        input.connection.targetBlock()
-      ) {
-        return true; // At least one field of the message is connected
+    // Append final message
+    // const finalMessage = `\\n--- ${message} (Session: ${sessionId}) ---\\n`; // Commented out
+    // this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + finalMessage); // Commented out
+    if (this.selectedTabId === tabId) {
+      // Still update the display even if no message is added, to potentially show last log lines
+      this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
+      if (this.autoScrollEnabled) {
+        setTimeout(() => this.scrollToBottom(), 100);
       }
     }
 
-    return false; // Has the block, but it is not extended
+    // Clean up resources
+    this.websockets.get(tabId.toString())?.unsubscribe();
+    this.websockets.delete(tabId.toString());
+    this.consolesSessions.delete(tabId.toString());
+
+    // Optionally close the service connection (though backend likely does)
+    // this.consolesServices.get(tabId.toString())?.closeConnection();
+
+    // Trigger change detection if needed for UI updates (e.g., button states)
+    this.changeDetectorRef.detectChanges();
+  }
+
+  handleError(tabId: number, sessionId: string, errorDetail: string): void {
+    console.error(`Handling error for tab ${tabId}, session ${sessionId}: ${errorDetail}`);
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (tab) {
+      tab.isPlaying = false;
+    }
+
+    // Append error message
+    const errorMessage = `\n--- ERROR: ${errorDetail} (Session: ${sessionId}) ---\\n`;
+    this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + errorMessage);
+    if (this.selectedTabId === tabId) {
+      this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
+      if (this.autoScrollEnabled) {
+        setTimeout(() => this.scrollToBottom(), 100);
+      }
+    }
+
+    // Clean up resources
+    this.websockets.get(tabId.toString())?.unsubscribe();
+    this.websockets.delete(tabId.toString());
+    this.consolesSessions.delete(tabId.toString());
+
+    // Optionally close the service connection
+    // this.consolesServices.get(tabId.toString())?.closeConnection();
+
+    // Trigger change detection
+    this.changeDetectorRef.detectChanges();
+  }
+
+  // Getter to check the status of the selected tab
+  get selectedTabIsPlaying(): boolean {
+    if (this.selectedTabId === null) {
+      return false;
+    }
+    const tab = this.tabs.find(t => t.id === this.selectedTabId);
+    return tab ? tab.isPlaying : false;
+  }
+
+  // Getter to check if any tab can be played
+  get canPlayAny(): boolean {
+    return this.tabs.length > 0 && this.tabs.some(tab => !tab.isPlaying);
+  }
+
+  // Getter to check if any tab can be stopped
+  get canStopAny(): boolean {
+    return this.tabs.length > 0 && this.tabs.some(tab => tab.isPlaying);
+  }
+}
+
+// Move helper functions outside the class and export them
+export function hasValidChain(block: Blockly.Block | null, childBlockType: string): boolean {
+  if (!block) return false;
+
+  if (block.type === childBlockType) {
+      // Original check: Check if it's the direct block type
+      // Extended check: For blocks like publish/send_request, ensure fields are connected
+      if (childBlockType === 'ros2_publish_message' || childBlockType === 'ros_send_request') {
+          const hasConnectedFields = block.inputList.some(input =>
+        input.name?.startsWith('FIELD_') &&
+        input.connection &&
+        input.connection.targetBlock()
+          );
+          if (!hasConnectedFields && block.inputList.some(input => input.name?.startsWith('FIELD_'))) {
+             // Has the block but no connected fields where fields exist
+             return false;
+          }
+          // If no FIELD_ inputs exist (e.g. empty message), it's valid
+          return true; 
+      } else {
+          // For other block types, just finding the block is enough
+          return true;
+      }
   }
 
   // Check inputs recursively
   for (const input of block.inputList) {
     const child = input.connection?.targetBlock();
-    if (hasValidChain(child ?? null, childBlock)) {
+    if (hasValidChain(child ?? null, childBlockType)) {
       return true;
     }
   }
 
   // Also check out the next block connected in chain
   const next = block.nextConnection?.targetBlock();
-  if (hasValidChain(next ?? null, childBlock)) {
+  if (hasValidChain(next ?? null, childBlockType)) {
     return true;
   }
 
@@ -2612,12 +2849,17 @@ export function hasValidChain(block: Blockly.Block | null, childBlock: string): 
 }
 
 export function hasAllFieldsConnected(block: Blockly.Block): boolean {
-  if (!block || block.type !== 'ros_send_request') return false;
+  if (!block || (block.type !== 'ros_send_request' && block.type !== 'ros2_publish_message')) {
+       // Added ros2_publish_message for consistency
+      return true; // Or false depending on desired behavior for non-applicable blocks
+  }
 
   const fieldInputs = block.inputList.filter(input => input.name?.startsWith("FIELD_"));
-  if (fieldInputs.length === 0) return false;
 
-  // Verify that all inputs have a block connected
+  // If there are no FIELD_ inputs (e.g., a message/service with no fields), it's considered valid.
+  if (fieldInputs.length === 0) return true;
+
+  // Verify that all existing FIELD_ inputs have a block connected
   return fieldInputs.every(input => input.connection?.targetBlock());
 }
 

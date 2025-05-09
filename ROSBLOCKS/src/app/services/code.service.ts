@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { WebSocketSubject, webSocket } from 'rxjs/webSocket';
 import { BehaviorSubject, Observable, tap, map } from 'rxjs';
+import { MsgInfo } from '../shared/msg-list'; 
 import { safeUUID } from '../utilities/sanitizer-tools';
 
 @Injectable({
@@ -145,10 +146,10 @@ export class CodeService {
       //.pipe(tap(response => console.log('checkSrvFiles returns:', response)));
   }
 
-  checkMsgFiles(): Observable<{ exists: boolean, files: string[] }> {
-    return this.http.get<{ exists: boolean, files: string[] }>(`${this.API_URL}/msgfiles`)
-      //.pipe(tap(response => console.log('checkMsgFiles returns:', response)));
+  checkMsgFiles(): Observable<{ exists: boolean, files: MsgInfo[] }> {
+    return this.http.get<{ exists: boolean, files: MsgInfo[] }>(`${this.API_URL}/msgfiles`);
   }
+  
 
   //Funtion to delete a .srv or a .msg of the project
   deleteInterfaceFile(fileType: 'srv' | 'msg', fileName: string): Observable<any> {
