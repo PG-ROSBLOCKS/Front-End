@@ -1156,13 +1156,13 @@ export class WorkspaceComponent implements OnDestroy {
                       this.updateSrvList().subscribe(() => {
                           console.log('SRV list updated after save.');
                           // Optionally refresh toolbox immediately if needed
-                          // this.updateSrvVariablesCategory();
+                          this.updateSrvVariablesCategory();
                       });
                   } else { // type === "msg"
                       this.updateMsgList().subscribe(() => {
                           console.log('MSG list updated after save.');
                           // Optionally refresh toolbox immediately if needed
-                          // this.updateMsgVariablesCategory();
+                          this.updateMsgVariablesCategory();
                       });
                   }
                   this.changeDetectorRef.detectChanges();
