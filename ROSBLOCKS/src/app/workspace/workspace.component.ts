@@ -24,7 +24,7 @@ import { MessageService } from '../shared/message.service';
 import { ErrorsService } from '../shared/components/error/errors.service';
 import { parseMatrix } from './workspace-utils';
 import { colour } from 'blockly/blocks';
-
+import { PerfTest, printAllPlay } from '../utilities/perf-utils';
 
 @Component({
   selector: 'app-workspace',
@@ -77,6 +77,7 @@ export class WorkspaceComponent implements OnDestroy {
   private allReady = 0;
   private allRunning = false;
   private seenMsgs = new WeakSet<any>();
+  private globalPerf: PerfTest | null = null;
 
   constructor(
     private http: HttpClient,
@@ -156,7 +157,7 @@ export class WorkspaceComponent implements OnDestroy {
 
     // Stop any inactivity timers
     if (this.inactivityTimer) {
-        clearTimeout(this.inactivityTimer);
+      clearTimeout(this.inactivityTimer);
     }
     // Consider saving workspace state one last time if needed
     // this.saveToLocalStorage();
@@ -698,6 +699,10 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   playTab(tabId: number, playAllTabs: boolean) {
+    const perf = getPerf(tabId);
+    perf.clear();
+    perf.mark('upload_start');
+
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (!tab) return;
 
@@ -835,7 +840,7 @@ export class WorkspaceComponent implements OnDestroy {
         // Note: killExecution doesn't instantly confirm termination.
         // The WebSocket 'terminated' message is the confirmation.
       } else {
-         console.warn(`No active session or service found for tab ${tabId} to kill.`);
+        console.warn(`No active session or service found for tab ${tabId} to kill.`);
       }
 
       // Close the frontend WebSocket connection attempt immediately
@@ -1011,6 +1016,9 @@ export class WorkspaceComponent implements OnDestroy {
     performance.clearMarks();
     performance.clearMeasures();
     performance.mark('all_start');
+    performance.mark('ps_start');
+    this.globalPerf = new PerfTest('all');
+    this.globalPerf.mark('start');
 
     this.allRunning = true;
     this.allReady = 0;
@@ -1025,10 +1033,10 @@ export class WorkspaceComponent implements OnDestroy {
       const tabId = tab.id;
       // Only play the tab if it's not already playing
       if (!tab.isPlaying && this.workspaces[tabId]) {
-          console.log(`PlayAll: Attempting to play tab ${tabId} (${tab.name})`);
-      this.playTab(tabId, true);
+        console.log(`PlayAll: Attempting to play tab ${tabId} (${tab.name})`);
+        this.playTab(tabId, true);
       } else {
-          console.log(`PlayAll: Skipping already running or non-existent workspace tab ${tabId} (${tab.name})`);
+        console.log(`PlayAll: Skipping already running or non-existent workspace tab ${tabId} (${tab.name})`);
       }
     }
   }
@@ -1082,8 +1090,12 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   enviarCodigo(code_to_send: string, tabId: number) {
-    resetNodePerf();
-    performance.mark('ps_start');
+
+    const perf = getPerf(tabId);
+    perf.clear();
+    perf.mark('upload_start');
+    perf.mark('ps_start');
+
     console.log(code_to_send);
     const workspace = this.workspaces[tabId];
 
@@ -1118,7 +1130,7 @@ export class WorkspaceComponent implements OnDestroy {
       code = replaceMessageFilename(code, fileName);
     } else if (type === "client") {
       console.log('Creating client...');
-      performance.mark('clickClient');
+      perf.mark('cli_sent');
       fileName = sanitizePythonFilename(this.tabs.find(tab => tab.id === tabId)?.name || 'Cliente');
       code = replaceSelfWithNodeInMain(create_client(linesBeforeComment(code), fileName, linesAfter(code), serverType));
     }
@@ -1129,158 +1141,190 @@ export class WorkspaceComponent implements OnDestroy {
     } else {
       const tab = this.tabs.find(t => t.id === tabId);
       if (!tab) {
-          console.error(`Tab with ID ${tabId} not found.`);
-          return; // Exit if tab not found
+        console.error(`Tab with ID ${tabId} not found.`);
+        return; // Exit if tab not found
       }
 
       // --- Flujo Condicional: Guardar Interfaz vs. Ejecutar Nodo ---
       if (type === "srv" || type === "msg") {
-          // --- Guardado de Interfaz (HTTP Síncrono Backend) ---
-          console.log(`Saving interface: Type=${type}, Name=${fileName}`);
-          tab.isPlaying = true; // Indicate processing started (use isPlaying for now)
-          this.changeDetectorRef.detectChanges();
+        // --- Guardado de Interfaz (HTTP Síncrono Backend) ---
+        console.log(`Saving interface: Type=${type}, Name=${fileName}`);
+        tab.isPlaying = true; // Indicate processing started (use isPlaying for now)
+        this.changeDetectorRef.detectChanges();
 
-          codeService.uploadCode(fileName, code, type).subscribe({
-              next: (response) => {
-                  console.log(`Interface ${fileName} saved successfully:`, response);
-                  tab.isPlaying = false; // Processing finished
-                  const confirmationMessage = `Interface ${fileName} saved successfully.\n`;
-              this.consolesOutput.set(tabId.toString(),
-                    (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage);
-              if (this.selectedTabId === tabId) {
-                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
-                  }
+        codeService.uploadCode(fileName, code, type).subscribe({
+          next: (response) => {
+            console.log(`Interface ${fileName} saved successfully:`, response);
+            tab.isPlaying = false; // Processing finished
+            const confirmationMessage = `Interface ${fileName} saved successfully.\n`;
+            this.consolesOutput.set(tabId.toString(),
+              (this.consolesOutput.get(tabId.toString()) ?? '') + confirmationMessage);
+            if (this.selectedTabId === tabId) {
+              this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString()) ?? '';
+            }
 
-                  // Update the relevant interface list
-                  if (type === "srv") {
-                      this.updateSrvList().subscribe(() => {
-                          console.log('SRV list updated after save.');
-                          // Optionally refresh toolbox immediately if needed
-                          this.updateSrvVariablesCategory();
-                      });
-                  } else { // type === "msg"
-                      this.updateMsgList().subscribe(() => {
-                          console.log('MSG list updated after save.');
-                          // Optionally refresh toolbox immediately if needed
-                          this.updateMsgVariablesCategory();
-                      });
-                  }
-                  this.changeDetectorRef.detectChanges();
-              },
-              error: (error) => {
-                  console.error(`Error saving interface ${fileName}:`, error);
-                  tab.isPlaying = false; // Processing finished (with error)
-                  const detail = error?.error?.detail || error.message || 'Unknown error';
-                  this.errorsService.showErrors(`Error saving ${fileName}: ${detail}`);
-                  this.changeDetectorRef.detectChanges();
-              }
-              // No 'complete' needed typically for single HTTP POST
-          });
+            // Update the relevant interface list
+            if (type === "srv") {
+              this.updateSrvList().subscribe(() => {
+                console.log('SRV list updated after save.');
+                // Optionally refresh toolbox immediately if needed
+                this.updateSrvVariablesCategory();
+              });
+            } else { // type === "msg"
+              this.updateMsgList().subscribe(() => {
+                console.log('MSG list updated after save.');
+                // Optionally refresh toolbox immediately if needed
+                this.updateMsgVariablesCategory();
+              });
+            }
+            this.changeDetectorRef.detectChanges();
+          },
+          error: (error) => {
+            console.error(`Error saving interface ${fileName}:`, error);
+            tab.isPlaying = false; // Processing finished (with error)
+            const detail = error?.error?.detail || error.message || 'Unknown error';
+            this.errorsService.showErrors(`Error saving ${fileName}: ${detail}`);
+            this.changeDetectorRef.detectChanges();
+          }
+          // No 'complete' needed typically for single HTTP POST
+        });
 
       } else {
-          // --- Ejecución de Nodo (WebSocket Asíncrono) ---
-          console.log(`Executing node: Type=${type}, Name=${fileName}`);
-          // Make variables global in each "def"
-          code = sanitizeGlobalVariables(code);
-          console.log(code);
+        // --- Ejecución de Nodo (WebSocket Asíncrono) ---
+        console.log(`Executing node: Type=${type}, Name=${fileName}`);
+        // Make variables global in each "def"
+        code = sanitizeGlobalVariables(code);
+        console.log(code);
 
-          // Ensure WebSocket subscription map exists
-          if (!this.websockets) {
-              this.websockets = new Map<string, Subscription>();
-          }
+        // Ensure WebSocket subscription map exists
+        if (!this.websockets) {
+          this.websockets = new Map<string, Subscription>();
+        }
 
-          // Unsubscribe from previous session if any
-          if (this.websockets.has(tabId.toString())) {
-              this.websockets.get(tabId.toString())?.unsubscribe();
-              this.websockets.delete(tabId.toString());
-          }
+        // Unsubscribe from previous session if any
+        if (this.websockets.has(tabId.toString())) {
+          this.websockets.get(tabId.toString())?.unsubscribe();
+          this.websockets.delete(tabId.toString());
+        }
 
-          const executionSubscription = codeService.uploadCode(fileName, code, type)
-            .pipe(
-              switchMap(() => {
-                // This part is skipped for srv/msg types by the outer if/else
-                // No need to check type === "srv" || type === "msg" here anymore
-            return codeService.executeCode(fileName);
-          }),
-          switchMap((response) => {
-                if (!response) return of(null); // Handle potential null response from executeCode
-                console.log('Backend execution response:', response);
-            const sessionId = response.session_id;
-                // Remove the specific check and error handling for missing session_id
-                // if (!sessionId) {
-                //     console.error('No session_id received from executeCode');
-                //     // Handle error appropriately - maybe show error, set isPlaying false
-                //     tab.isPlaying = false;
-                //     this.errorsService.showErrors(`Failed to start execution for ${fileName}: No session ID received.`);
-                //     this.changeDetectorRef.detectChanges();
-                //     return of(null); // Prevent further steps
-                // }
-                // Proceed assuming sessionId exists (or let connectToWebSocket handle potential issues)
-            this.consolesSessions.set(tabId.toString(), sessionId);
-            console.log('Session ID:', sessionId);
+        const executionSubscription = codeService.uploadCode(fileName, code, type)
+          .pipe(
+            tap(() => {
+              perf.mark('upload_end');
+              perf.measure('upload', 'upload_start', 'upload_end');
+            }),
+            switchMap(() => {
+              perf.mark('exec_start');
+              return codeService.executeCode(fileName).pipe(
+                tap(() => {
+                  perf.mark('exec_end');
+                  perf.measure('exec', 'exec_start', 'exec_end');
+                })
+              );
+            }),
+            switchMap((response) => {
+              if (!response) return of(null); // Handle potential null response from executeCode
+              console.log('Backend execution response:', response);
+              const sessionId = response.session_id;
+              // Remove the specific check and error handling for missing session_id
+              // if (!sessionId) {
+              //     console.error('No session_id received from executeCode');
+              //     // Handle error appropriately - maybe show error, set isPlaying false
+              //     tab.isPlaying = false;
+              //     this.errorsService.showErrors(`Failed to start execution for ${fileName}: No session ID received.`);
+              //     this.changeDetectorRef.detectChanges();
+              //     return of(null); // Prevent further steps
+              // }
+              // Proceed assuming sessionId exists (or let connectToWebSocket handle potential issues)
+              this.consolesSessions.set(tabId.toString(), sessionId);
+              console.log('Session ID:', sessionId);
 
-                // Connect to WebSocket
-                const wsConnection$ = codeService.connectToWebSocket(sessionId);
+              // Connect to WebSocket
+              const wsConnection$ = codeService.connectToWebSocket(sessionId);
 
-                // Set isPlaying = true only AFTER successful WebSocket connection attempt
-                if (tab) { // Check tab again
-                    tab.isPlaying = true;
-                    this.changeDetectorRef.detectChanges(); // Update UI
+              // Set isPlaying = true only AFTER successful WebSocket connection attempt
+              if (tab) { // Check tab again
+                tab.isPlaying = true;
+                this.changeDetectorRef.detectChanges(); // Update UI
+              }
+              return wsConnection$;
+            })
+          )
+          .subscribe({
+            next: (response) => {
+              if (!response) return; // Skip if null (e.g., from error handling above)
+              // ... (Existing WebSocket message handling: output vs status) ...
+              // Differentiate between log output and status messages
+              if (response.output !== undefined) {
+                /* ---------- PUB/SUB ---------- */
+                if (/Mensaje del publicador:/i.test(response.output)) {
+                  perf.mark('pub_rx');
+                  perf.measure('latency_pub_sub', 'upload_start', 'pub_rx');
+                  console.table([{ test: 'latency_pub_sub', dur: perf.getMeasures().find(m => m.name.endsWith('latency_pub_sub'))?.duration?.toFixed(2) + ' ms' }]);
                 }
-                return wsConnection$;
-          })
-        )
-        .subscribe({
-          next: (response) => {
-                 if (!response) return; // Skip if null (e.g., from error handling above)
-                // ... (Existing WebSocket message handling: output vs status) ...
-                 // Differentiate between log output and status messages
-                 if (response.output !== undefined) {
-                   // Log message
-            console.log('Websocket message:', response.output);
-                   // Append output - RE-ADD the explicit '\\n' here if backend doesn't send it
-              this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output + '\n');
-              if (this.selectedTabId === tabId) {
-                this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString())!;
-              }
-              if (this.autoScrollEnabled) {
-                setTimeout(() => this.scrollToBottom(), 100);
-              }
-                 } else if (response.status) {
-                   // Status message
-                   const sessionId = this.consolesSessions.get(tabId.toString());
-                   console.log(`Received status: ${response.status} for session: ${sessionId}`);
-                   if (response.status === 'terminated') {
-                     this.handleTermination(tabId, sessionId ?? '', 'Execution Finished.'); // Call handler
-                   } else if (response.status === 'error') {
-                     this.handleError(tabId, sessionId ?? '', response.detail || 'Unknown execution error.'); // Call handler
-                   }
-                   // Backend should close the connection after sending status,
-                   // but we can also unsubscribe here as a safety measure.
-                   this.websockets.get(tabId.toString())?.unsubscribe();
-                   this.websockets.delete(tabId.toString());
-                 } else {
-                   // Unknown message format
-                   console.warn('Received unknown message format via WebSocket:', response);
-                 }
-              },
-              error: (error) => { // Handle WebSocket errors
-                console.error('WebSocket Error:', error);
-                const sessionId = this.consolesSessions.get(tabId.toString());
-                this.handleError(tabId, sessionId ?? '', `WebSocket connection error: ${error.message || 'Unknown error'}`);
-              },
-              complete: () => { // Handle WebSocket closure by backend
-                console.log('WebSocket connection closed by backend.');
-                const sessionId = this.consolesSessions.get(tabId.toString());
-                if (this.consolesSessions.has(tabId.toString())) { // Check if not already handled
-                   console.warn(`WebSocket for session ${sessionId} closed unexpectedly.`);
-                   // Don't add message here as per previous request
-                   this.handleTermination(tabId, sessionId ?? '', 'Execution finished (connection closed).');
+
+                /* ---------- CLI/SRV ---------- */
+                if (/Mensaje del servidor:/i.test(response.output)) {
+                  perf.mark('srv_rx');
+                  perf.measure('latency_cli_srv', 'upload_start', 'srv_rx');
+                  console.table([{ test: 'latency_cli_srv', dur: perf.getMeasures().find(m => m.name.endsWith('latency_cli_srv'))?.duration?.toFixed(2) + ' ms' }]);
                 }
+
+                /* ---------- PLAY-ALL ---------- */
+                if (this.allRunning && !this.seenMsgs.has(response)) {
+                  this.seenMsgs.add(response);
+                  if (++this.allReady === this.allTotal) {
+                    this.allRunning = false;
+                    this.globalPerf?.mark('ready');
+                    this.globalPerf?.measure('play_all', 'start', 'ready');
+                    printAllPlay(this.globalPerf);                 // helper opcional
+                  }
+                }
+                // Log message
+                console.log('Websocket message:', response.output);
+                // Append output - RE-ADD the explicit '\\n' here if backend doesn't send it
+                this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output + '\n');
+                if (this.selectedTabId === tabId) {
+                  this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId.toString())!;
+                }
+                if (this.autoScrollEnabled) {
+                  setTimeout(() => this.scrollToBottom(), 100);
+                }
+              } else if (response.status) {
+                // Status message
+                const sessionId = this.consolesSessions.get(tabId.toString());
+                console.log(`Received status: ${response.status} for session: ${sessionId}`);
+                if (response.status === 'terminated') {
+                  this.handleTermination(tabId, sessionId ?? '', 'Execution Finished.'); // Call handler
+                } else if (response.status === 'error') {
+                  this.handleError(tabId, sessionId ?? '', response.detail || 'Unknown execution error.'); // Call handler
+                }
+                // Backend should close the connection after sending status,
+                // but we can also unsubscribe here as a safety measure.
+                this.websockets.get(tabId.toString())?.unsubscribe();
+                this.websockets.delete(tabId.toString());
+              } else {
+                // Unknown message format
+                console.warn('Received unknown message format via WebSocket:', response);
               }
-            });
-            // Store the subscription to manage it
-            this.websockets.set(tabId.toString(), executionSubscription);
+            },
+            error: (error) => { // Handle WebSocket errors
+              console.error('WebSocket Error:', error);
+              const sessionId = this.consolesSessions.get(tabId.toString());
+              this.handleError(tabId, sessionId ?? '', `WebSocket connection error: ${error.message || 'Unknown error'}`);
+            },
+            complete: () => { // Handle WebSocket closure by backend
+              console.log('WebSocket connection closed by backend.');
+              const sessionId = this.consolesSessions.get(tabId.toString());
+              if (this.consolesSessions.has(tabId.toString())) { // Check if not already handled
+                console.warn(`WebSocket for session ${sessionId} closed unexpectedly.`);
+                // Don't add message here as per previous request
+                this.handleTermination(tabId, sessionId ?? '', 'Execution finished (connection closed).');
+              }
+            }
+          });
+        // Store the subscription to manage it
+        this.websockets.set(tabId.toString(), executionSubscription);
       }
     }
   }
@@ -1394,7 +1438,7 @@ export class WorkspaceComponent implements OnDestroy {
       kind: 'category',
       type: 'category',
       name: 'Custom srv types created',
-      colour : blockColors.Services,
+      colour: blockColors.Services,
       contents: srvList.map((service: SrvInfo) => {
         const requestBlocks = service.variables?.request?.map((variable: any) =>
           this.createSrvVariableBlock(variable, "request")
@@ -1445,11 +1489,11 @@ export class WorkspaceComponent implements OnDestroy {
       : { kind: 'categoryToolbox', contents: [] };
 
     const typeToBlocksMap: Record<string, any[]> = {};
-  
+
     let categoryName = 'ROS 2 common msg types';
-            
+
     msgList.forEach((message: MsgInfo) => {
-      const baseType = message.name.split('.').pop() || message.name; 
+      const baseType = message.name.split('.').pop() || message.name;
       message.fields?.forEach((field: any) => {
         if (!typeToBlocksMap[baseType]) {
           typeToBlocksMap[baseType] = [];
@@ -1466,7 +1510,7 @@ export class WorkspaceComponent implements OnDestroy {
       flatContents.push({ kind: 'label', text: `${type} message fields:` });
       flatContents.push(...blocks);
     });
-  
+
     const defaultMsgTypesCategory = {
       kind: 'category',
       name: categoryName,
@@ -1479,7 +1523,7 @@ export class WorkspaceComponent implements OnDestroy {
       categoryName,
       defaultMsgTypesCategory
     );
-  
+
     // Actualiza el toolbox del workspace activo
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.workspaces[this.selectedTabId].updateToolbox({
@@ -1493,16 +1537,16 @@ export class WorkspaceComponent implements OnDestroy {
     const toolboxObj = toolbox.contents && toolbox.contents.length > 0
       ? { ...toolbox }
       : { kind: 'categoryToolbox', contents: [] };
-  
+
     const typeToBlocksMap: Record<string, any[]> = {};
-  
+
     let categoryName = 'Custom created msg types';
     const customOnlyList = customMsgList.filter(
       customMsg => !msgList.some(commonMsg => commonMsg.name === customMsg.name)
     );
-    
+
     customOnlyList.forEach((message: MsgInfo) => {
-      const baseType = message.name; 
+      const baseType = message.name;
       message.fields?.forEach((field: any) => {
         if (!typeToBlocksMap[baseType]) {
           typeToBlocksMap[baseType] = [];
@@ -1519,7 +1563,7 @@ export class WorkspaceComponent implements OnDestroy {
       flatContents.push({ kind: 'label', text: `${type} message fields:` });
       flatContents.push(...blocks);
     });
-  
+
     const customMsgTypeCategory = {
       kind: 'category',
       name: categoryName,
@@ -1532,7 +1576,7 @@ export class WorkspaceComponent implements OnDestroy {
       categoryName,
       customMsgTypeCategory
     );
-  
+
     // Actualiza el toolbox del workspace activo
     if (this.selectedTabId && this.workspaces[this.selectedTabId]) {
       this.workspaces[this.selectedTabId].updateToolbox({
@@ -1541,7 +1585,7 @@ export class WorkspaceComponent implements OnDestroy {
       });
     }
   }
-  
+
 
   updateSrvList(): Observable<any> {
     return this.codeService.checkSrvFiles().pipe(
@@ -1583,12 +1627,12 @@ export class WorkspaceComponent implements OnDestroy {
           }
           //console.log("msgList updated:", msgList);
           this.updateMsgVariablesCategory();
-          this.updateCustomMsgVariablesCategory(); 
+          this.updateCustomMsgVariablesCategory();
         },
         error: (error) => {
           console.error("Error getting list of msg files:", error);
-          this.updateMsgVariablesCategory(); 
-          this.updateCustomMsgVariablesCategory(); 
+          this.updateMsgVariablesCategory();
+          this.updateCustomMsgVariablesCategory();
         }
       })
       // }, error => { ... }); // <-- Eliminar el subscribe anterior
@@ -1670,9 +1714,9 @@ export class WorkspaceComponent implements OnDestroy {
               setTimeout(() => {
                 console.log(`Executing asynchronous cleanup for tab ${otherTabId} for message ${normalizedMessageName}`);
                 try {
-                   const messageInfo = customMsgList.find(m =>
-                     (m.name && m.name.replace(/\\.msg$/, '') === normalizedMessageName)
-                   );
+                  const messageInfo = customMsgList.find(m =>
+                    (m.name && m.name.replace(/\\.msg$/, '') === normalizedMessageName)
+                  );
                   // Re-check workspace existence inside timeout
                   if (this.workspaces[otherTabId]) { // Re-check existence
                     if (messageInfo && messageInfo.fields) {
@@ -2811,24 +2855,24 @@ export function hasValidChain(block: Blockly.Block | null, childBlockType: strin
   if (!block) return false;
 
   if (block.type === childBlockType) {
-      // Original check: Check if it's the direct block type
-      // Extended check: For blocks like publish/send_request, ensure fields are connected
-      if (childBlockType === 'ros2_publish_message' || childBlockType === 'ros_send_request') {
-          const hasConnectedFields = block.inputList.some(input =>
+    // Original check: Check if it's the direct block type
+    // Extended check: For blocks like publish/send_request, ensure fields are connected
+    if (childBlockType === 'ros2_publish_message' || childBlockType === 'ros_send_request') {
+      const hasConnectedFields = block.inputList.some(input =>
         input.name?.startsWith('FIELD_') &&
         input.connection &&
         input.connection.targetBlock()
-          );
-          if (!hasConnectedFields && block.inputList.some(input => input.name?.startsWith('FIELD_'))) {
-             // Has the block but no connected fields where fields exist
-             return false;
-          }
-          // If no FIELD_ inputs exist (e.g. empty message), it's valid
-          return true; 
-      } else {
-          // For other block types, just finding the block is enough
-          return true;
+      );
+      if (!hasConnectedFields && block.inputList.some(input => input.name?.startsWith('FIELD_'))) {
+        // Has the block but no connected fields where fields exist
+        return false;
       }
+      // If no FIELD_ inputs exist (e.g. empty message), it's valid
+      return true;
+    } else {
+      // For other block types, just finding the block is enough
+      return true;
+    }
   }
 
   // Check inputs recursively
@@ -2850,8 +2894,8 @@ export function hasValidChain(block: Blockly.Block | null, childBlockType: strin
 
 export function hasAllFieldsConnected(block: Blockly.Block): boolean {
   if (!block || (block.type !== 'ros_send_request' && block.type !== 'ros2_publish_message')) {
-       // Added ros2_publish_message for consistency
-      return true; // Or false depending on desired behavior for non-applicable blocks
+    // Added ros2_publish_message for consistency
+    return true; // Or false depending on desired behavior for non-applicable blocks
   }
 
   const fieldInputs = block.inputList.filter(input => input.name?.startsWith("FIELD_"));
@@ -2877,6 +2921,13 @@ function safeMeasure(name: string, start: string, end: string) {
   if (!performance.getEntriesByName(name).length) {
     performance.measure(name, start, end);
   }
+}
+
+const perfTests = new Map<number, PerfTest>();   // una instancia por tab
+
+function getPerf(tabId: number): PerfTest {
+  if (!perfTests.has(tabId)) perfTests.set(tabId, new PerfTest(`tab-${tabId}`));
+  return perfTests.get(tabId)!;
 }
 
 
