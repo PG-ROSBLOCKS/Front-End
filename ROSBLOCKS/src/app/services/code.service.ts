@@ -88,7 +88,7 @@ export class CodeService {
         next: (response) => {
           console.log(session_id);
           
-          console.log('Sesión successfully deleted:', response);
+          console.log('Session successfully deleted:', response);
           this.closeConnection();
         },
         error: (error) => console.error('Error killing the session:', error)

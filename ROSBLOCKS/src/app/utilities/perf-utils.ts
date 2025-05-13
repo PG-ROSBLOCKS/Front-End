@@ -54,3 +54,4 @@ export function printAllPlay(globalPerf: PerfTest | null) {
   }
 }
 
+export const globalMonitorPerf = new PerfTest('global');

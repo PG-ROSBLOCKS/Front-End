@@ -25,7 +25,7 @@ import { ErrorsService } from '../shared/components/error/errors.service';
 import { BackendMonitorService } from '../services/backend-monitor.service';
 import { parseMatrix } from './workspace-utils';
 import { colour } from 'blockly/blocks';
-import { PerfTest, printAllPlay } from '../utilities/perf-utils';
+import { globalMonitorPerf, PerfTest, printAllPlay } from '../utilities/perf-utils';
 
 @Component({
   selector: 'app-workspace',
@@ -1314,6 +1314,7 @@ export class WorkspaceComponent implements OnDestroy {
             },
             error: (error) => { // Handle WebSocket errors
               console.error('WebSocket Error:', error);
+              globalMonitorPerf.mark('ws_error');  
               const sessionId = this.consolesSessions.get(tabId.toString());
               this.handleError(tabId, sessionId ?? '', `WebSocket connection error: ${error.message || 'Unknown error'}`);
             },

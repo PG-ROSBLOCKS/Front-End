@@ -5,6 +5,7 @@ import { AlertService } from '../shared/components/alert/alert.service';
 import { Subscription, interval, switchMap, catchError, of } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { CodeService } from './code.service';
+import { globalMonitorPerf, PerfTest } from '../utilities/perf-utils';
 
 @Injectable({ providedIn: 'root' })
 export class BackendMonitorService implements OnDestroy {
@@ -50,6 +51,8 @@ export class BackendMonitorService implements OnDestroy {
 
   /** Arranca el polling periódico al /health del backend dinámico */
   public startHeartbeat(): void {
+    globalMonitorPerf.clear();
+
     if (this.isRunning) { return; }
     this.isRunning = true;
     this.heartbeatCount = 0;
@@ -74,6 +77,8 @@ export class BackendMonitorService implements OnDestroy {
         this.heartbeatCount++;
         console.log(`[BackendMonitor] #${this.heartbeatCount} → status=${res.status}`);
         if (res.status !== 'ok') {
+          globalMonitorPerf.mark('backend_down');
+          globalMonitorPerf.measure('ws_to_backendDown', 'ws_error', 'backend_down');
           console.warn(`[BackendMonitor] backend DOWN @ #${this.heartbeatCount}`);
           this.onBackendDown();
         }
@@ -93,8 +98,17 @@ export class BackendMonitorService implements OnDestroy {
   /** Cuando detectamos backend caído */
   private onBackendDown(): void {
     this.stopHeartbeat();
+    localStorage.removeItem('uuid');
     this.alert.showAlert('El servidor backend no responde. Redirigiendo…');
     this.router.navigate(['/']);
+    const m = globalMonitorPerf.getMeasures()
+      .find(x => x.name === 'global:ws_to_backendDown');
+    if (m) {
+      console.table([{
+        test: 'ws_to_backendDown',
+        duration: `${m.duration.toFixed(2)} ms`
+      }]);
+    }
   }
 
   ngOnDestroy(): void {
