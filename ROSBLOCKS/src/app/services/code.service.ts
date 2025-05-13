@@ -177,5 +177,9 @@ export class CodeService {
       })
     );
   }
+
+    public get apiUrl(): string {
+    return this.API_URL;
+  }
   
 }
