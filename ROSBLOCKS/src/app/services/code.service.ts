@@ -154,7 +154,7 @@ export class CodeService {
   //Funtion to delete a .srv or a .msg of the project
   deleteInterfaceFile(fileType: 'srv' | 'msg', fileName: string): Observable<any> {
     console.log('El endpoint es:', `${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);
-    return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}/`);
+    return this.http.delete(`${this.API_URL}/delete/interfaces/${fileType}/${fileName}`);
   }
 
   vncTurtlesim(): string {
