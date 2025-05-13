@@ -274,7 +274,7 @@ export class WorkspaceComponent implements OnDestroy {
           this.mapSessionId = fileData['mapSessionId'];
         }
 
-        this.mapCodeService = new CodeService(this.http);
+            this.mapCodeService = this.codeService;
 
 
         if (this.mapSessionId && this.currentMap !== 1) {
@@ -396,7 +396,7 @@ export class WorkspaceComponent implements OnDestroy {
           });
 
           this.mapSessionId = localStorage.getItem('mapSessionId') || '';
-          this.mapCodeService = new CodeService(this.http);
+              this.mapCodeService = this.codeService;
 
           if (this.mapSessionId && this.currentMap !== 1) {
             setTimeout(() => {
@@ -499,7 +499,7 @@ export class WorkspaceComponent implements OnDestroy {
     const code = code_to_send;
 
     if (!this.mapCodeService) {
-      this.mapCodeService = new CodeService(this.http);
+          this.mapCodeService = this.codeService;
     }
     const codeService = this.mapCodeService;
 
