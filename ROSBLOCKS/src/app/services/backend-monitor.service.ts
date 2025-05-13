@@ -109,6 +109,7 @@ export class BackendMonitorService implements OnDestroy {
         duration: `${m.duration.toFixed(2)} ms`
       }]);
     }
+    localStorage.removeItem('uuid');
   }
 
   ngOnDestroy(): void {
