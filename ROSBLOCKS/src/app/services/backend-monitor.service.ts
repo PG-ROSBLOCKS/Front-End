@@ -1,55 +1,86 @@
-import { HttpClient, HttpErrorResponse, HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Injectable, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
-import { Subscription, interval, switchMap, catchError, of, filter, take, Observable, throwError } from 'rxjs';
+import { Router, NavigationEnd, Event } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AlertService } from '../shared/components/alert/alert.service';
+import { Subscription, interval, switchMap, catchError, of } from 'rxjs';
+import { filter } from 'rxjs/operators';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class BackendMonitorService implements OnDestroy {
-    private readonly HEARTBEAT_INTERVAL = 5_000;
-    private sub?: Subscription;
-    private hasAlerted = false;       // <- flag para no repetir alertas
-  
-    constructor(
-      private http: HttpClient,
-      private alert: AlertService,
-      private router: Router
-    ) {
-      this.startHeartbeat();
-    }
-  
-    private notifyOnce(message: string) {
-      if (!this.hasAlerted) {
-        this.hasAlerted = true;
-        this.alert.showAlert(message);
-      }
-    }
-  
-    private startHeartbeat(): void {
-      this.sub = interval(this.HEARTBEAT_INTERVAL).pipe(
-        switchMap(() =>
-          this.http.get<{status:string}>('/health').pipe(
-            catchError(() => of({ status: 'down' }))
-          )
-        ),
-        take(1)
-      ).subscribe(res => {
-        if (res.status === 'ok') {
-          // si está ok, reinicio flag y vuelvo a arrancar el heartbeat
-          this.hasAlerted = false;
-          this.startHeartbeat();
+  private readonly HEARTBEAT_INTERVAL = 5_000;
+  private heartbeatCount = 0;
+  private sub?: Subscription;
+  private routerSub: Subscription;
+  private isRunning = false;
+
+  constructor(
+    private http: HttpClient,
+    private alert: AlertService,
+    private router: Router
+  ) {
+    // Escucho cambios de ruta y solo dejo pasar NavigationEnd
+    this.routerSub = this.router.events
+      .pipe(
+        filter((ev): ev is NavigationEnd => ev instanceof NavigationEnd)
+      )
+      .subscribe(ev => {
+        if (ev.urlAfterRedirects === '/') {
+          this.stopHeartbeat();
         } else {
-          // si está down, sólo alerto una vez y redirijo
-          this.notifyOnce('El servidor backend no responde. Redirigiendo…');
-          this.router.navigate(['/']);
+          this.startHeartbeat();
         }
       });
-    }
-  
-    ngOnDestroy(): void {
-      this.sub?.unsubscribe();
+
+    // Arranco al init si no estamos en '/'
+    if (this.router.url !== '/') {
+      this.startHeartbeat();
     }
   }
-  
+
+  public startHeartbeat(): void {
+    if (this.isRunning) { return; }
+    this.isRunning = true;
+    this.heartbeatCount = 0;
+    console.log('[BackendMonitor] heartbeat started');
+
+    this.sub = interval(this.HEARTBEAT_INTERVAL)
+      .pipe(
+        switchMap(() =>
+          this.http.get<{ status: string }>('http://localhost:8000/health').pipe(
+            catchError(err => {
+              console.error('[BackendMonitor] Error en el health check:', err);
+              return of({ status: 'down' });
+            })
+          )
+        )
+      )
+      .subscribe(res => {
+        this.heartbeatCount++;
+        console.log(`[BackendMonitor] #${this.heartbeatCount} → status=${res.status}`);
+        if (res.status !== 'ok') {
+          console.warn(`[BackendMonitor] Backend down at heartbeat #${this.heartbeatCount}`);
+          this.onBackendDown();
+        }
+      });
+  }
+
+  private stopHeartbeat(): void {
+    if (this.sub) {
+      this.sub.unsubscribe();
+      this.sub = undefined;
+    }
+    this.isRunning = false;
+    console.log('[BackendMonitor] heartbeat stopped');
+  }
+
+  private onBackendDown(): void {
+    this.stopHeartbeat();
+    this.alert.showAlert('El servidor backend no responde. Redirigiendo…');
+    this.router.navigate(['/']);
+  }
+
+  ngOnDestroy(): void {
+    this.stopHeartbeat();
+    this.routerSub.unsubscribe();
+  }
+}

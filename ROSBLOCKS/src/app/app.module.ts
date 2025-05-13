@@ -43,10 +43,7 @@ import { BackendMonitorService } from './services/backend-monitor.service';
     { provide: RouteReuseStrategy, 
       useClass: SimpleReuseStrategy 
     }, 
-    { provide: HTTP_INTERCEPTORS,
-    useClass: BackendMonitorService,
-    multi: true
-  }],
+],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

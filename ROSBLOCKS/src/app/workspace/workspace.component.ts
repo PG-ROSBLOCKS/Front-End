@@ -92,7 +92,7 @@ export class WorkspaceComponent implements OnDestroy {
     setMessageService(this.messageService);
     this.blockErrorMessages();
     this.startInactivityCheck();
-    //this.backendMonitor.startHeartbeat();
+    this.backendMonitor.startHeartbeat();
   }
   
   @HostListener('window:mousemove')
@@ -157,6 +157,7 @@ export class WorkspaceComponent implements OnDestroy {
     }
     // Consider saving workspace state one last time if needed
     // this.saveToLocalStorage();
+    //this.backendMonitor.stopHeartbeat();
   }
 
   showMessage(message: string, type: 'success' | 'error') {
