@@ -6,6 +6,7 @@ import { Subscription, interval, switchMap, catchError, of } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { CodeService } from './code.service';
 import { globalMonitorPerf, PerfTest } from '../utilities/perf-utils';
+import { safeUUID } from '../utilities/sanitizer-tools';
 
 @Injectable({ providedIn: 'root' })
 export class BackendMonitorService implements OnDestroy {
@@ -99,6 +100,9 @@ export class BackendMonitorService implements OnDestroy {
   private onBackendDown(): void {
     this.stopHeartbeat();
     localStorage.removeItem('uuid');
+
+    let uuid = safeUUID();
+    localStorage.setItem('uuid', uuid);
     this.alert.showAlert('El servidor backend no responde. Redirigiendo…');
     this.router.navigate(['/']);
     const m = globalMonitorPerf.getMeasures()
