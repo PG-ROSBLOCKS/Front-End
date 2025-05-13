@@ -8,7 +8,7 @@ import { CodeService } from './code.service';
 
 @Injectable({ providedIn: 'root' })
 export class BackendMonitorService implements OnDestroy {
-  private readonly HEARTBEAT_INTERVAL = 5_000;
+  private readonly HEARTBEAT_INTERVAL = 10_000;
   private heartbeatCount = 0;
   private sub?: Subscription;
   private routerSub: Subscription;
@@ -29,6 +29,7 @@ export class BackendMonitorService implements OnDestroy {
       .subscribe(() => {
         // sólo arrancamos el heartbeat si no estamos en “/”
         if (this.router.url !== '/') {
+          console.log('[BackendMonitor] backend URL ready: ', this.codeService.apiUrl);
           this.startHeartbeat();
         }
       });
@@ -59,7 +60,7 @@ export class BackendMonitorService implements OnDestroy {
         switchMap(() =>
           this.http
             .get<{ status: string }>(
-              `${this.codeService.apiUrl}/health`
+              `${this.codeService.apiUrl}/health/`
             )
             .pipe(
               catchError(err => {
