@@ -111,6 +111,8 @@ export class BackendMonitorService implements OnDestroy {
     }
     localStorage.removeItem('uuid');
     localStorage.setItem('uuid', safeUUID());
+    window.location.reload();
+
   }
 
   ngOnDestroy(): void {
