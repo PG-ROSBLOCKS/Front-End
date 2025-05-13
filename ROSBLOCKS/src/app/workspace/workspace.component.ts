@@ -35,6 +35,7 @@ import { globalMonitorPerf, PerfTest, printAllPlay } from '../utilities/perf-uti
 export class WorkspaceComponent implements OnDestroy {
   private lastActivityTimestamp: number = Date.now();
   private inactivityTimer: any;
+  private suppressBeforeUnload = false;
 
   @ViewChild('resizer') resizer!: ElementRef;
   @ViewChild('leftSection') leftSection!: ElementRef;
@@ -43,6 +44,10 @@ export class WorkspaceComponent implements OnDestroy {
 
   @HostListener('window:beforeunload', ['$event'])
   unloadNotification(event: BeforeUnloadEvent): void {
+    if (this.suppressBeforeUnload) {
+      // si está suprimido, no hago nada
+      return;
+    }
     event.preventDefault();
     event.returnValue = 'Are you sure you want to leave?';
   }
@@ -100,6 +105,9 @@ export class WorkspaceComponent implements OnDestroy {
     this.blockErrorMessages();
     this.startInactivityCheck();
     this.backendMonitor.startHeartbeat();
+    window.addEventListener('suppress-before-unload', () => {
+      this.suppressBeforeUnload = true;
+    });
   }
 
   @HostListener('window:mousemove')
@@ -1233,7 +1241,7 @@ export class WorkspaceComponent implements OnDestroy {
             perf.mark('upload_end');
             perf.measure('upload', 'upload_start', 'upload_end');
           }),
-          
+
           switchMap(() => {
             perf.mark('exec_start');
             return codeService.executeCode(fileName).pipe(

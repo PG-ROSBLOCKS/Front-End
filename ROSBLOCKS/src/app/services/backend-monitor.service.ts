@@ -99,6 +99,7 @@ export class BackendMonitorService implements OnDestroy {
   /** Cuando detectamos backend caído */
   private onBackendDown(): void {
     this.stopHeartbeat();
+    window.dispatchEvent(new CustomEvent('suppress-before-unload'));
     this.alert.showAlert('El servidor backend no responde. Redirigiendo…');
 
     const m = globalMonitorPerf.getMeasures()
