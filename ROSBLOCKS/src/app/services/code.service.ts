@@ -181,5 +181,16 @@ export class CodeService {
     public get apiUrl(): string {
     return this.API_URL;
   }
+
+    resetSession(): void {
+    // 1) desmarco como “no ready”
+    this.readySubject.next(false);
+    // 2) vuelvo al API_URL por defecto
+    this.API_URL = 'http://localhost:8000';
+    // 3) opcionalmente reinicio el progreso
+    this.progressSubject.next(0);
+    // 4) lanzar de nuevo el polling:
+    this.pollForIp(this.uuid);
+  }
   
 }

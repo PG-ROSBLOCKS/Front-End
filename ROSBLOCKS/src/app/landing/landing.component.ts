@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { LandingStateService } from '../services/landing-state.service';
+import { CodeService } from '../services/code.service';
 
 @Component({
   selector: 'app-landing',
@@ -8,13 +9,15 @@ import { LandingStateService } from '../services/landing-state.service';
   styleUrls: ['./landing.component.css']
 })
 export class LandingComponent {
-  constructor(private router: Router, private landingState: LandingStateService) {}
+  constructor(private router: Router, private landingState: LandingStateService, private codeService: CodeService) {}
 
   goToTutorials(): void {
     this.router.navigate(['/help']);
   }
 
   start(): void {
+    this.landingState.markVisited();
+    this.codeService.resetSession();
     this.router.navigate(['/loading']);
   }
 }
