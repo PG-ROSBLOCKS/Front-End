@@ -33,7 +33,7 @@ export class CodeService {
     this.uuid = localStorage.getItem('uuid') ?? safeUUID();
     localStorage.setItem('uuid', this.uuid);
   
-    this.pollForIp(this.uuid);
+    //this.pollForIp(this.uuid);
   }
   
   private async pollForIp(uuid: string) {
