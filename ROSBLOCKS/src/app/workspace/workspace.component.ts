@@ -22,6 +22,7 @@ import { initializeCommonMsgs } from '../blocks/ros2-msgs';
 import { blockColors } from '../blocks/color-palette';
 import { MessageService } from '../shared/message.service';
 import { ErrorsService } from '../shared/components/error/errors.service';
+import { BackendMonitorService } from '../services/backend-monitor.service';
 import { parseMatrix } from './workspace-utils';
 import { colour } from 'blockly/blocks';
 import { PerfTest, printAllPlay } from '../utilities/perf-utils';
@@ -87,7 +88,8 @@ export class WorkspaceComponent implements OnDestroy {
     private errorsService: ErrorsService,
     private sanitizer: DomSanitizer,
     private messageService: MessageService,
-    private changeDetectorRef: ChangeDetectorRef
+    private changeDetectorRef: ChangeDetectorRef,
+    private backendMonitor: BackendMonitorService, 
   ) { }
 
   ngOnInit(): void {
@@ -97,6 +99,7 @@ export class WorkspaceComponent implements OnDestroy {
     setMessageService(this.messageService);
     this.blockErrorMessages();
     this.startInactivityCheck();
+    this.backendMonitor.startHeartbeat();
   }
 
   @HostListener('window:mousemove')
@@ -161,6 +164,7 @@ export class WorkspaceComponent implements OnDestroy {
     }
     // Consider saving workspace state one last time if needed
     // this.saveToLocalStorage();
+    //this.backendMonitor.stopHeartbeat();
   }
 
   showMessage(message: string, type: 'success' | 'error') {

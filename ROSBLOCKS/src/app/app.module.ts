@@ -8,7 +8,7 @@ import { WorkspaceComponent } from './workspace/workspace.component';
 import { HeaderComponent } from './shared/components/header/header.component';
 import { RosblocksHelpComponent } from './rosblocks-help/rosblocks-help.component';
 import { SafePipe } from './safe.pipe';
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { ConfirmComponent } from './shared/components/confirm/confirm.component';
 import { AlertComponent } from './shared/components/alert/alert.component';
 import { ResizerDirective } from './workspace/resizer.directive';
@@ -18,6 +18,7 @@ import { LandingComponent } from './landing/landing.component';
 import { RouteReuseStrategy } from '@angular/router';
 import { SimpleReuseStrategy } from './landing/reuse-strategy';
 import { LoadingComponent } from './loading/loading.component';
+import { BackendMonitorService } from './services/backend-monitor.service';
 
 @NgModule({
   declarations: [
@@ -40,7 +41,11 @@ import { LoadingComponent } from './loading/loading.component';
     AppRoutingModule,
     HttpClientModule,
   ],
-  providers: [{provide: RouteReuseStrategy, useClass: SimpleReuseStrategy}],
+  providers: [
+    { provide: RouteReuseStrategy, 
+      useClass: SimpleReuseStrategy 
+    }, 
+],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
