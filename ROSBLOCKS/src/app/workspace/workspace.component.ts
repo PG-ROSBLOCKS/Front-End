@@ -1222,51 +1222,55 @@ export class WorkspaceComponent implements OnDestroy {
           this.websockets.delete(tabId.toString());
         }
 
-          const executionSubscription = this.codeService.ready$.pipe(
-            // 1) Esperamos a que el servicio esté “ready”
-            filter(ready => ready),
-            take(1),
-            tap(() => {
-              perf.mark('upload_end');
-              perf.measure('upload', 'upload_start', 'upload_end');
-            }),
-            switchMap(() => {
-              perf.mark('exec_start');
-              return codeService.executeCode(fileName).pipe(
-                tap(() => {
-                  perf.mark('exec_end');
-                  perf.measure('exec', 'exec_start', 'exec_end');
-                })
-              );
-            }),
-            switchMap((response) => {
-              if (!response) return of(null); // Handle potential null response from executeCode
-              console.log('Backend execution response:', response);
-              const sessionId = response.session_id;
-              // Remove the specific check and error handling for missing session_id
-              // if (!sessionId) {
-              //     console.error('No session_id received from executeCode');
-              //     // Handle error appropriately - maybe show error, set isPlaying false
-              //     tab.isPlaying = false;
-              //     this.errorsService.showErrors(`Failed to start execution for ${fileName}: No session ID received.`);
-              //     this.changeDetectorRef.detectChanges();
-              //     return of(null); // Prevent further steps
-              // }
-              // Proceed assuming sessionId exists (or let connectToWebSocket handle potential issues)
-              this.consolesSessions.set(tabId.toString(), sessionId);
-              console.log('Session ID:', sessionId);
+        const executionSubscription = this.codeService.ready$.pipe(
+          filter(ready => ready),
+          take(1),
 
-              // Connect to WebSocket
-              const wsConnection$ = codeService.connectToWebSocket(sessionId);
+          tap(() => perf.mark('upload_start')),
+          switchMap(() => this.codeService.uploadCode(fileName, code, type)),
 
-              // Set isPlaying = true only AFTER successful WebSocket connection attempt
-              if (tab) { // Check tab again
-                tab.isPlaying = true;
-                this.changeDetectorRef.detectChanges(); // Update UI
-              }
-              return wsConnection$;
-            })
-          )
+          tap(() => {
+            perf.mark('upload_end');
+            perf.measure('upload', 'upload_start', 'upload_end');
+          }),
+          
+          switchMap(() => {
+            perf.mark('exec_start');
+            return codeService.executeCode(fileName).pipe(
+              tap(() => {
+                perf.mark('exec_end');
+                perf.measure('exec', 'exec_start', 'exec_end');
+              })
+            );
+          }),
+          switchMap((response) => {
+            if (!response) return of(null); // Handle potential null response from executeCode
+            console.log('Backend execution response:', response);
+            const sessionId = response.session_id;
+            // Remove the specific check and error handling for missing session_id
+            // if (!sessionId) {
+            //     console.error('No session_id received from executeCode');
+            //     // Handle error appropriately - maybe show error, set isPlaying false
+            //     tab.isPlaying = false;
+            //     this.errorsService.showErrors(`Failed to start execution for ${fileName}: No session ID received.`);
+            //     this.changeDetectorRef.detectChanges();
+            //     return of(null); // Prevent further steps
+            // }
+            // Proceed assuming sessionId exists (or let connectToWebSocket handle potential issues)
+            this.consolesSessions.set(tabId.toString(), sessionId);
+            console.log('Session ID:', sessionId);
+
+            // Connect to WebSocket
+            const wsConnection$ = codeService.connectToWebSocket(sessionId);
+
+            // Set isPlaying = true only AFTER successful WebSocket connection attempt
+            if (tab) { // Check tab again
+              tab.isPlaying = true;
+              this.changeDetectorRef.detectChanges(); // Update UI
+            }
+            return wsConnection$;
+          })
+        )
           .subscribe({
             next: (response) => {
               if (!response) return; // Skip if null (e.g., from error handling above)
