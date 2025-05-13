@@ -100,7 +100,7 @@ export class BackendMonitorService implements OnDestroy {
   private onBackendDown(): void {
     this.stopHeartbeat();
     this.alert.showAlert('El servidor backend no responde. Redirigiendo…');
-    this.router.navigate(['/']);
+
     const m = globalMonitorPerf.getMeasures()
       .find(x => x.name === 'global:ws_to_backendDown');
     if (m) {
@@ -111,7 +111,10 @@ export class BackendMonitorService implements OnDestroy {
     }
     localStorage.removeItem('uuid');
     localStorage.setItem('uuid', safeUUID());
-    window.location.reload();
+    
+    // 2) Navega a '/' y, cuando termine, recarga la página
+    this.router.navigate(['/'])
+      .then(() => window.location.reload());
 
   }
 
