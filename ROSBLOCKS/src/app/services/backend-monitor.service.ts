@@ -79,7 +79,15 @@ export class BackendMonitorService implements OnDestroy {
         console.log(`[BackendMonitor] #${this.heartbeatCount} → status=${res.status}`);
         if (res.status !== 'ok') {
           globalMonitorPerf.mark('backend_down');
-          globalMonitorPerf.measure('ws_to_backendDown', 'ws_error', 'backend_down');
+
+          // Solo medimos si existe la marca 'ws_error'
+          if (performance.getEntriesByName('global:ws_error', 'mark').length) {
+            globalMonitorPerf.measure(
+              'ws_to_backendDown',
+              'ws_error',
+              'backend_down'
+            );
+          }
           console.warn(`[BackendMonitor] backend DOWN @ #${this.heartbeatCount}`);
           this.onBackendDown();
         }
@@ -96,31 +104,31 @@ export class BackendMonitorService implements OnDestroy {
     console.log('[BackendMonitor] heartbeat STOPPED');
   }
 
-/** Cuando detectamos backend caído */
-private onBackendDown(): void {
-  this.stopHeartbeat();
+  /** Cuando detectamos backend caído */
+  private onBackendDown(): void {
+    this.stopHeartbeat();
 
-  window.dispatchEvent(new CustomEvent('suppress-before-unload'));
+    window.dispatchEvent(new CustomEvent('suppress-before-unload'));
 
-  this.alert.showAlert('El servidor backend no responde. Redirigiendo…');
+    this.alert.showAlert('El servidor backend no responde. Redirigiendo…');
 
-  const m = globalMonitorPerf.getMeasures()
-    .find(x => x.name === 'global:ws_to_backendDown');
-  if (m) {
-    console.table([{
-      test: 'ws_to_backendDown',
-      duration: `${m.duration.toFixed(2)} ms`
-    }]);
+    const m = globalMonitorPerf.getMeasures()
+      .find(x => x.name === 'global:ws_to_backendDown');
+    if (m) {
+      console.table([{
+        test: 'ws_to_backendDown',
+        duration: `${m.duration.toFixed(2)} ms`
+      }]);
+    }
+
+    localStorage.removeItem('uuid');
+    localStorage.setItem('uuid', safeUUID());
+
+    setTimeout(() => {
+      this.router.navigate(['/'])
+        .then(() => window.location.reload());
+    }, 5000);
   }
-
-  localStorage.removeItem('uuid');
-  localStorage.setItem('uuid', safeUUID());
-
-  setTimeout(() => {
-    this.router.navigate(['/'])
-      .then(() => window.location.reload());
-  }, 5000);
-}
 
 
   ngOnDestroy(): void {
