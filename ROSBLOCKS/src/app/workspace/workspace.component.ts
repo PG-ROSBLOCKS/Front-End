@@ -6,8 +6,8 @@ import { pythonGenerator } from 'blockly/python';
 import { definirBloquesROS2, setMessageService } from '../blocks/ros2-blocks';
 import { clearImports, definirGeneradoresROS2 } from '../blocks/ros2-blocks-code';
 import { CodeService } from '../services/code.service';
-import { Observable, Subscription, forkJoin, of } from 'rxjs';
-import { filter, switchMap, take, tap } from 'rxjs/operators';
+import { Observable, Subscription, forkJoin, of, throwError } from 'rxjs';
+import { catchError, filter, switchMap, take, tap } from 'rxjs/operators';
 import { extractFirstLine, reorderCodeBelowFirstMarker, extractServiceFilename, replaceSelfWithNodeInMain, linesAfter, linesBeforeComment, replaceServiceFilename, sanitizePythonFilename, sanitizeSrvFilename, sanitizeMsgFilename, extractMessageFilename, replaceMessageFilename, removeSelfInMain, sanitizeGlobalVariables, removeOneIndentLevel } from '../utilities/sanitizer-tools';
 import { create_client, create_publisher, create_server } from '../blocks/code-generator';
 import { srvList, SrvInfo } from '../shared/srv-list';
@@ -89,7 +89,7 @@ export class WorkspaceComponent implements OnDestroy {
     private sanitizer: DomSanitizer,
     private messageService: MessageService,
     private changeDetectorRef: ChangeDetectorRef,
-    private backendMonitor: BackendMonitorService, 
+    private backendMonitor: BackendMonitorService,
   ) { }
 
   ngOnInit(): void {
@@ -1156,7 +1156,18 @@ export class WorkspaceComponent implements OnDestroy {
         tab.isPlaying = true; // Indicate processing started (use isPlaying for now)
         this.changeDetectorRef.detectChanges();
 
-        codeService.uploadCode(fileName, code, type).subscribe({
+        this.codeService.ready$.pipe(
+          filter(ready => ready),
+          take(1),
+          switchMap(() =>
+            this.codeService.uploadCode(fileName, code, type)
+              .pipe(
+                catchError(err => {
+                  return throwError(() => err);
+                })
+              )
+          )
+        ).subscribe({
           next: (response) => {
             console.log(`Interface ${fileName} saved successfully:`, response);
             tab.isPlaying = false; // Processing finished
@@ -1211,8 +1222,10 @@ export class WorkspaceComponent implements OnDestroy {
           this.websockets.delete(tabId.toString());
         }
 
-        const executionSubscription = codeService.uploadCode(fileName, code, type)
-          .pipe(
+          const executionSubscription = this.codeService.ready$.pipe(
+            // 1) Esperamos a que el servicio esté “ready”
+            filter(ready => ready),
+            take(1),
             tap(() => {
               perf.mark('upload_end');
               perf.measure('upload', 'upload_start', 'upload_end');
@@ -1314,7 +1327,7 @@ export class WorkspaceComponent implements OnDestroy {
             },
             error: (error) => { // Handle WebSocket errors
               console.error('WebSocket Error:', error);
-              globalMonitorPerf.mark('ws_error');  
+              globalMonitorPerf.mark('ws_error');
               const sessionId = this.consolesSessions.get(tabId.toString());
               this.handleError(tabId, sessionId ?? '', `WebSocket connection error: ${error.message || 'Unknown error'}`);
             },
