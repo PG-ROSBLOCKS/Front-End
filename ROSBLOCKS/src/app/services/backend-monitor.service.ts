@@ -96,28 +96,32 @@ export class BackendMonitorService implements OnDestroy {
     console.log('[BackendMonitor] heartbeat STOPPED');
   }
 
-  /** Cuando detectamos backend caído */
-  private onBackendDown(): void {
-    this.stopHeartbeat();
-    window.dispatchEvent(new CustomEvent('suppress-before-unload'));
-    this.alert.showAlert('El servidor backend no responde. Redirigiendo…');
+/** Cuando detectamos backend caído */
+private onBackendDown(): void {
+  this.stopHeartbeat();
 
-    const m = globalMonitorPerf.getMeasures()
-      .find(x => x.name === 'global:ws_to_backendDown');
-    if (m) {
-      console.table([{
-        test: 'ws_to_backendDown',
-        duration: `${m.duration.toFixed(2)} ms`
-      }]);
-    }
-    localStorage.removeItem('uuid');
-    localStorage.setItem('uuid', safeUUID());
-    
-    // 2) Navega a '/' y, cuando termine, recarga la página
+  window.dispatchEvent(new CustomEvent('suppress-before-unload'));
+
+  this.alert.showAlert('El servidor backend no responde. Redirigiendo…');
+
+  const m = globalMonitorPerf.getMeasures()
+    .find(x => x.name === 'global:ws_to_backendDown');
+  if (m) {
+    console.table([{
+      test: 'ws_to_backendDown',
+      duration: `${m.duration.toFixed(2)} ms`
+    }]);
+  }
+
+  localStorage.removeItem('uuid');
+  localStorage.setItem('uuid', safeUUID());
+
+  setTimeout(() => {
     this.router.navigate(['/'])
       .then(() => window.location.reload());
+  }, 5000);
+}
 
-  }
 
   ngOnDestroy(): void {
     this.stopHeartbeat();
