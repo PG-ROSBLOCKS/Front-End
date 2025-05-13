@@ -99,10 +99,6 @@ export class BackendMonitorService implements OnDestroy {
   /** Cuando detectamos backend caído */
   private onBackendDown(): void {
     this.stopHeartbeat();
-    localStorage.removeItem('uuid');
-
-    let uuid = safeUUID();
-    localStorage.setItem('uuid', uuid);
     this.alert.showAlert('El servidor backend no responde. Redirigiendo…');
     this.router.navigate(['/']);
     const m = globalMonitorPerf.getMeasures()

@@ -17,7 +17,8 @@ export class LandingComponent {
 
   start(): void {
     this.landingState.markVisited();
-    this.codeService.resetSession();
+    localStorage.removeItem('uuid');
+    //this.codeService.resetSession();
     this.router.navigate(['/loading']);
   }
 }
