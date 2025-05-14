@@ -98,6 +98,7 @@ export class WorkspaceComponent implements OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    this.mapFullyLoaded = false
     this.loadFromLocalStorage();
     initializeCommonMsgs();
     setMessageService(this.messageService);
@@ -109,7 +110,7 @@ export class WorkspaceComponent implements OnDestroy {
     });
     setTimeout(() => {
       this.reloadTurtlesim();
-      
+      this.mapFullyLoaded = true
     }, 5000);
   }
 
@@ -285,8 +286,7 @@ export class WorkspaceComponent implements OnDestroy {
           this.mapSessionId = fileData['mapSessionId'];
         }
 
-        this.mapCodeService = new CodeService(this.http);
-
+        //this.mapCodeService = new CodeService(this.http);
 
         if (this.mapSessionId && this.currentMap !== 1) {
           setTimeout(() => {
