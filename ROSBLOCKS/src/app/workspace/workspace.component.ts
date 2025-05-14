@@ -98,7 +98,6 @@ export class WorkspaceComponent implements OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    this.reloadTurtlesim();
     this.loadFromLocalStorage();
     initializeCommonMsgs();
     setMessageService(this.messageService);
@@ -108,6 +107,10 @@ export class WorkspaceComponent implements OnDestroy {
     window.addEventListener('suppress-before-unload', () => {
       this.suppressBeforeUnload = true;
     });
+    setTimeout(() => {
+      this.reloadTurtlesim();
+      
+    }, 5000);
   }
 
   @HostListener('window:mousemove')
@@ -835,7 +838,7 @@ export class WorkspaceComponent implements OnDestroy {
 
   stopTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
-    if (tab) {
+    if (tab && !tab.isPlaying) {
       // --- Immediate UI Update ---
       tab.isPlaying = false;
       this.changeDetectorRef.detectChanges(); // Ensure UI reflects change quickly

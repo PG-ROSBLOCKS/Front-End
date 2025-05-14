@@ -1,15 +1,70 @@
+:host {
+  display: block;
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  background: #0d5d67;
+}
+
+.background {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  background: #098999;
+  animation: floatLoop 20s ease-in-out infinite;
+}
+
+img {
+  margin-bottom: 5%;
+  width: 40%;
+}
+
+@keyframes floatLoop {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(10px, -15px) scale(1.05); }
+  50%  { transform: translate(20px, 10px) scale(1); }
+  75%  { transform: translate(-10px, 15px) scale(1.03); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+.circle:nth-child(1)  { width: 60px;  height: 60px;  top: 20%; left: 10%; animation-delay: 0s; }
+.circle:nth-child(2)  { width: 40px;  height: 40px;  top: 50%; left: 70%; animation-delay: 1s; }
+.circle:nth-child(3)  { width: 30px;  height: 30px;  top: 70%; left: 30%; animation-delay: 2s; }
+.circle:nth-child(4)  { width: 80px;  height: 80px;  top: 35%; left: 50%; animation-delay: 3s; }
+.circle:nth-child(5)  { width: 50px;  height: 50px;  top: 10%; left: 80%; animation-delay: 4s; }
+.circle:nth-child(6)  { width: 100px; height: 100px; top: 60%; left: 20%; animation-delay: 5s; }
+.circle:nth-child(7)  { width: 25px;  height: 25px;  top: 80%; left: 60%; animation-delay: 6s; }
+.circle:nth-child(8)  { width: 70px;  height: 70px;  top: 25%; left: 75%; animation-delay: 7s; }
+.circle:nth-child(9)  { width: 90px;  height: 90px;  top: 40%; left: 25%; animation-delay: 8s; }
+.circle:nth-child(10) { width: 20px;  height: 20px;  top: 85%; left: 10%; animation-delay: 9s; }
+.circle:nth-child(11) { width: 120px; height: 120px; top: 30%; left: 90%; animation-delay: 10s; }
+.circle:nth-child(12) { width: 35px;  height: 35px;  top: 15%; left: 60%; animation-delay: 11s; }
+.circle:nth-child(13) { width: 55px;  height: 55px;  top: 75%; left: 45%; animation-delay: 12s; }
+.circle:nth-child(14) { width: 45px;  height: 45px;  top: 65%; left: 85%; animation-delay: 13s; }
+.circle:nth-child(15) { width: 85px;  height: 85px;  top: 5%;  left: 35%; animation-delay: 14s; }
+
 .landing-container {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100vh;          /* Full-screen vertical centering */
-  gap: 2rem;              /* Space between buttons */
+  height: 100%;
+  gap: 2rem;
 }
 
 .action-btn {
-  padding: 2rem 4rem;     /* Large clickable area */
-  font-size: 1.5rem;      /* Readable text */
+  padding: 2rem 4rem;
+  font-size: 1.5rem;
   font-weight: 600;
   border: none;
   border-radius: 8px;
@@ -22,7 +77,6 @@
   background-color: #e0e0e0;
 }
 
-/* Highlight the primary action */
 .action-btn.primary {
   background-color: #3b82f6;
   color: #ffffff;
