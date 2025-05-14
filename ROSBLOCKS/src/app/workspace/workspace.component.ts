@@ -299,13 +299,13 @@ export class WorkspaceComponent implements OnDestroy {
         this.rewriteLocalStorageFromJSON(fileData);
 
         this.loadFromLocalStorage()
+        location.reload();
       } catch (error) {
         this.showAlert('Error loading data from file.', 'error');
       }
     };
     reader.readAsText(file);
     this.resetTurtleContainer(1)
-    this.ngOnInit()
     //this.showMessage('Data loaded successfully.', 'success');
   }
 
