@@ -427,11 +427,19 @@ export class WorkspaceComponent implements OnDestroy {
           this.showMessage('Last session recovered.', 'success');
         },
         error: (err) => {
-          console.error('Error updating service or message lists:', err);
-          this.showAlert('Error loading initial data.', 'error');
-          // Aún podrías intentar cargar los workspaces aquí, pero los dropdowns podrían fallar
+          if (err.message == 'Http failure response for http://localhost:8000/srvfiles: 0 Unknown Error') {
+            console.log("loaded by refreshing");
+            this.showMessage('Last session recovered.', 'success');
+          }
+          else {
+            console.error('Error updating service or message lists:', err);
+            this.showAlert('Error loading initial data.', 'error');
+            // Aún podrías intentar cargar los workspaces aquí, pero los dropdowns podrían fallar
+          }
+          console.log(err.message);
+
           this.tabs = tabsData;
-          tabsData.forEach((tab: any) => this.selectTab(tab.id)); // Intenta cargar de todas formas
+            tabsData.forEach((tab: any) => this.selectTab(tab.id));
         }
       });
       // --- FIN DEL BLOQUE forkJoin ---
