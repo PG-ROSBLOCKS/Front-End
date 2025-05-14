@@ -278,33 +278,60 @@ export class WorkspaceComponent implements OnDestroy {
     if (!input.files || input.files.length === 0) return;
     const file = input.files[0];
     const reader = new FileReader();
-    reader.onload = (e) => {
+  
+    reader.onload = async (e) => {
       try {
         const fileData = JSON.parse(e.target?.result as string);
-
+  
         if (fileData['mapSessionId']) {
           this.mapSessionId = fileData['mapSessionId'];
         }
-
-        //this.mapCodeService = new CodeService(this.http);
-
+  
+        this.rewriteLocalStorageFromJSON(fileData);
+  
+        await this.loadFromLocalStorageWithReady(); // <<< NUEVO
+  
         if (this.mapSessionId && this.currentMap !== 1) {
           setTimeout(() => {
-            this.paint();
+            this.paint(); // ← Esto ejecuta código usando mapCodeService
           }, 300);
         }
-
-        this.rewriteLocalStorageFromJSON(fileData);
-
-        this.loadFromLocalStorage()
+  
       } catch (error) {
         this.showAlert('Error loading data from file.', 'error');
       }
     };
+  
     reader.readAsText(file);
-    this.resetTurtleContainer(1)
-    //this.showMessage('Data loaded successfully.', 'success');
+    this.resetTurtleContainer(1);
   }
+
+  async loadFromLocalStorageWithReady(): Promise<void> {
+    return new Promise((resolve) => {
+      this.loadFromLocalStorage();
+      // Espera 100ms para garantizar que todas las instancias CodeService se conecten
+      setTimeout(() => {
+        const readyObservables = Array.from(this.consolesServices.values()).map(service =>
+          service.ready$.pipe(filter(r => r), take(1)).toPromise()
+        );
+  
+        if (this.mapCodeService) {
+          readyObservables.push(
+            this.mapCodeService.ready$.pipe(filter(r => r), take(1)).toPromise()
+          );
+        }
+  
+        Promise.all(readyObservables)
+          .then(() => resolve())
+          .catch((e) => {
+            console.warn("Some CodeService failed to become ready:", e);
+            resolve(); // Aun así continúa
+          });
+      }, 100);
+    });
+  }
+  
+  
 
   saveToLocalStorage() {
     //Turns off the node if selected
