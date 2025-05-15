@@ -6,16 +6,33 @@ export class PerfTest {
     return `${this.id}:${label}`;
   }
 
-  /** Place a mark called "<id>:<label>" */
+  /** Place a mark called "<id>:<label>" safely */
   mark(label: string): void {
-    performance.mark(this.pref(label));
+    const markName = this.pref(label);
+    try {
+      performance.mark(markName);
+    } catch {
+      // ignore if mark fails (e.g., invalid or duplicates)
+    }
   }
 
-  /** Measure "<id>:<name>" once between two marks of this test */
+  /** Measure "<id>:<name>" once between two marks of this test safely */
   measure(name: string, start: string, end: string): void {
-    const full = this.pref(name);
-    if (!performance.getEntriesByName(full, 'measure').length) {
-      performance.measure(full, this.pref(start), this.pref(end));
+    const measureName = this.pref(name);
+    const startMark = this.pref(start);
+    const endMark = this.pref(end);
+
+    // Only measure if not already done and both marks exist
+    const hasMeasure = performance.getEntriesByName(measureName, 'measure').length > 0;
+    const hasStart = performance.getEntriesByName(startMark, 'mark').length > 0;
+    const hasEnd = performance.getEntriesByName(endMark, 'mark').length > 0;
+
+    if (!hasMeasure && hasStart && hasEnd) {
+      try {
+        performance.measure(measureName, startMark, endMark);
+      } catch {
+        // ignore measurement errors
+      }
     }
   }
 
