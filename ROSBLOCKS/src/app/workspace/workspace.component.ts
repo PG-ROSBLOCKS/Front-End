@@ -135,6 +135,23 @@ export class WorkspaceComponent implements OnDestroy {
       if (diffInSeconds < 60 * 10) {
         this.userConnected = true
         console.log(diffInSeconds);
+
+        performance.mark('save_end');
+        performance.measure('Duración del proceso', 'save_start', 'save_end');
+
+        // 2. Recupera las medidas
+        const measures = performance.getEntriesByType('measure');
+
+        const tableData = measures.map((m, index) => ({
+          index,
+          nombre: m.name,
+          duración: `${m.duration.toFixed(2)} ms`,
+          inicio: `${m.startTime.toFixed(2)} ms`,
+          fin: `${(m.startTime + m.duration).toFixed(2)} ms`,
+          tipo: m.entryType
+        }));
+
+        console.table(tableData);
         
       } else if (this.userConnected) {
 
@@ -155,8 +172,6 @@ export class WorkspaceComponent implements OnDestroy {
     }));
 
     console.table(tableData);
-
-
 
 
         this.userConnected = false
@@ -335,6 +350,7 @@ export class WorkspaceComponent implements OnDestroy {
         this.rewriteLocalStorageFromJSON(fileData);
 
         //this.loadFromLocalStorage()
+        window.dispatchEvent(new CustomEvent('suppress-before-unload'));
         window.location.reload();
       } catch (error) {
         this.showAlert('Error loading data from file.', 'error');
