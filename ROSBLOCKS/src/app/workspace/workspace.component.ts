@@ -440,7 +440,7 @@ export class WorkspaceComponent implements OnDestroy {
           console.log(err.message);
 
           this.tabs = tabsData;
-            tabsData.forEach((tab: any) => this.selectTab(tab.id));
+          tabsData.forEach((tab: any) => this.selectTab(tab.id));
         }
       });
       // --- FIN DEL BLOQUE forkJoin ---
@@ -849,12 +849,11 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   stopTab(tabId: number) {
-    const tab = this.tabs.find(tab => tab.id === tabId);
-    if (tab && !tab.isPlaying) {
-      // --- Immediate UI Update ---
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (tab && tab.isPlaying) {
+      // — Actualizamos UI —
       tab.isPlaying = false;
-      this.changeDetectorRef.detectChanges(); // Ensure UI reflects change quickly
-      // --- End Immediate UI Update ---
+      this.changeDetectorRef.detectChanges();
 
       const session_id = this.consolesSessions.get(tabId.toString());
       const codeService = this.consolesServices.get(tabId.toString());
