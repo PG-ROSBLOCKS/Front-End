@@ -313,7 +313,7 @@ function definirGeneradoresROS2() {
     code += `msg.linear.x = float(${linear})\n`;
     code += `msg.angular.z = float(${angular})\n`;
     code += `self.publisher_.publish(msg)\n`;
-    code += `self.get_logger().info("Mensaje Twist publicado")\n`;
+    code += `self.get_logger().info("Twist message published")\n`;
 
     return code;
   };
@@ -327,14 +327,14 @@ function definirGeneradoresROS2() {
     const srvClass = addImport('turtlesim.srv.TeleportAbsolute');
 
     let code = `self.teleport_client = self.create_client(${srvClass}, '${turtleName}/teleport_absolute')\n`;
-    code += `while not self.teleport_client.wait_for_service(timeout_sec=1.0): self.get_logger().info('Esperando servicio ${turtleName}/teleport_absolute...')\n`;
+    code += `while not self.teleport_client.wait_for_service(timeout_sec=1.0): self.get_logger().info('Waiting service ${turtleName}/teleport_absolute...')\n`;
     code += `req = ${srvClass}.Request()\n`;
     code += `req.x = float(${x})\n`;
     code += `req.y = float(${y})\n`;
     code += `req.theta = float(${theta})\n`;
     code += `future = self.teleport_client.call_async(req)\n`;
-    code += `future.add_done_callback(lambda future: self.get_logger().info('Teletransporte completado.'))\n`;
-    code += `self.get_logger().info('Posicionando tortuga en (${x}, ${y}) con orientación ${theta}.')\n`;
+    code += `future.add_done_callback(lambda future: self.get_logger().info('Teleport completed.'))\n`;
+    code += `self.get_logger().info('Turtle in (${x}, ${y}) and orientation ${theta}.')\n`;
 
     return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
   };
@@ -441,7 +441,7 @@ function definirGeneradoresROS2() {
   kill_request = ${srvClass}.Request()
   kill_request.name = '${turtleName}'
   self.kill_client.call_async(kill_request)
-  self.get_logger().info('Solicitud para matar a ${turtleName} enviada.')
+  self.get_logger().info('Request to kill ${turtleName} sent.')
   `;
     return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
   };
@@ -487,7 +487,7 @@ function definirGeneradoresROS2() {
   pen_request.width = int(${width})
   pen_request.off = int(${penState})  # 0 = lápiz abajo, 1 = lápiz arriba
   self.pen_client.call_async(pen_request)
-  self.get_logger().info('Cambiando lápiz de ${turtleName} (RGB: ${r}, ${g}, ${b}, Grosor: ${width}, Estado: ${penState}).')
+  self.get_logger().info('Changing pen ${turtleName} (RGB: ${r}, ${g}, ${b}, Width: ${width}, Status: ${penState}).')
   `;
     return pythonGenerator.prefixLines(code, pythonGenerator.INDENT.repeat(2));
   };
@@ -541,7 +541,7 @@ function definirGeneradoresROS2() {
     code += `msg = Twist()\n`;
     code += `msg.angular.z = float(${degrees})\n`;
     code += `self.publisher_.publish(msg)\n`;
-    code += `self.get_logger().info("Mensaje Twist publicado")\n`;
+    code += `self.get_logger().info("Twist message published")\n`;
 
     return code;
   };

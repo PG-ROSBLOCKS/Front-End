@@ -139,7 +139,6 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   reloadTurtlesim(): void {
-    performance.mark('save_start');
     const url = this.codeService.vncTurtlesim();
 
     if (url) {
@@ -147,22 +146,6 @@ export class WorkspaceComponent implements OnDestroy {
     } else {
       this.alertService.showAlert('Could not get URL');
     }
-
-    performance.mark('save_end');
-    performance.measure('Duración del proceso', 'save_start', 'save_end');
-
-    const measures = performance.getEntriesByType('measure');
-
-    const tableData = measures.map((m, index) => ({
-    index,
-    nombre: m.name,
-    duración: `${m.duration.toFixed(2)} ms`,
-    inicio: `${m.startTime.toFixed(2)} ms`,
-    fin: `${(m.startTime + m.duration).toFixed(2)} ms`,
-    tipo: m.entryType
-    }));
-
-    console.table(tableData);
   }
 
   ngOnDestroy(): void {
