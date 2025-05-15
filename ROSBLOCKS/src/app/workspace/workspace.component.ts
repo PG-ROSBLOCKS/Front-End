@@ -33,9 +33,12 @@ import { globalMonitorPerf, PerfTest, printAllPlay } from '../utilities/perf-uti
   styleUrls: ['./workspace.component.css']
 })
 export class WorkspaceComponent implements OnDestroy {
-  private lastActivityTimestamp: number = Date.now();
-  private inactivityTimer: any;
+  private lastActivity: number = Date.now();
+  private intervalId: any;
+  private userConnected: boolean = true
   private suppressBeforeUnload = false;
+
+  isActive: boolean = true;
 
   @ViewChild('resizer') resizer!: ElementRef;
   @ViewChild('leftSection') leftSection!: ElementRef;
@@ -109,6 +112,32 @@ export class WorkspaceComponent implements OnDestroy {
     window.addEventListener('suppress-before-unload', () => {
       this.suppressBeforeUnload = true;
     });
+
+    setTimeout(() => {
+      this.reloadTurtlesim();
+      this.mapFullyLoaded = true
+    }, 5000);
+  }
+
+  @HostListener('window:mousemove')
+  @HostListener('window:keydown')
+  @HostListener('window:click')
+  @HostListener('window:scroll')
+  resetInactivityTimer(): void {
+    this.lastActivity = Date.now();
+  }
+
+  private startInactivityCheck(): void {
+    this.intervalId = setInterval(() => {
+      const now = Date.now();
+      const diffInSeconds = (now - this.lastActivity) / 1000;
+
+      if (diffInSeconds < 60 * 10) {
+        this.userConnected = true
+        console.log(diffInSeconds);
+        
+      } else if (this.userConnected) {
+
         // ... tu código ...
     performance.mark('save_end');
     performance.measure('Duración del proceso', 'save_start', 'save_end');
@@ -127,25 +156,15 @@ export class WorkspaceComponent implements OnDestroy {
 
     console.table(tableData);
 
-    setTimeout(() => {
-      this.reloadTurtlesim();
-      this.mapFullyLoaded = true
-    }, 5000);
-  }
 
-  @HostListener('window:mousemove')
-  @HostListener('window:keydown')
-  @HostListener('window:click')
-  @HostListener('window:scroll')
-  resetInactivityTimer(): void {
-    this.lastActivityTimestamp = Date.now();
-    if (this.inactivityTimer) {
-      clearTimeout(this.inactivityTimer);
-      this.inactivityTimer = null;
-    }
-  }
 
-  private startInactivityCheck(): void {
+
+        this.userConnected = false
+        this.stopAllTabs()
+        this.alertService.showAlert('Disconnected due to inactivity');
+        console.log('se ha desconectado');
+      }
+    }, 1000); // check every second
   }
 
   blockErrorMessages(): void {
@@ -168,6 +187,9 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
     // Unsubscribe from all active WebSocket connections
     this.websockets.forEach((subscription, tabId) => {
       console.log(`Unsubscribing WebSocket for tab ${tabId}`);
@@ -188,11 +210,6 @@ export class WorkspaceComponent implements OnDestroy {
       }
     });
     this.consolesServices.clear(); // Clear the map
-
-    // Stop any inactivity timers
-    if (this.inactivityTimer) {
-      clearTimeout(this.inactivityTimer);
-    }
     // Consider saving workspace state one last time if needed
     // this.saveToLocalStorage();
     //this.backendMonitor.stopHeartbeat();
