@@ -98,6 +98,7 @@ export class WorkspaceComponent implements OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    performance.mark('save_start');
     this.mapFullyLoaded = false
     this.loadFromLocalStorage();
     initializeCommonMsgs();
@@ -108,6 +109,24 @@ export class WorkspaceComponent implements OnDestroy {
     window.addEventListener('suppress-before-unload', () => {
       this.suppressBeforeUnload = true;
     });
+        // ... tu código ...
+    performance.mark('save_end');
+    performance.measure('Duración del proceso', 'save_start', 'save_end');
+
+    // 2. Recupera las medidas
+    const measures = performance.getEntriesByType('measure');
+
+    const tableData = measures.map((m, index) => ({
+      index,
+      nombre: m.name,
+      duración: `${m.duration.toFixed(2)} ms`,
+      inicio: `${m.startTime.toFixed(2)} ms`,
+      fin: `${(m.startTime + m.duration).toFixed(2)} ms`,
+      tipo: m.entryType
+    }));
+
+    console.table(tableData);
+
     setTimeout(() => {
       this.reloadTurtlesim();
       this.mapFullyLoaded = true
