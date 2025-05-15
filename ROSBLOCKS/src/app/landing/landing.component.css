@@ -19,7 +19,7 @@
   position: absolute;
   border-radius: 50%;
   background: #098999;
-  animation: floatLoop 20s ease-in-out infinite;
+  animation: rotateLoop 20s ease-in-out infinite;
 }
 
 .floating-image {
@@ -58,15 +58,14 @@ img {
 
 
 @keyframes rotateLoop {
-  0%   { transform: rotate(0deg); }
-  25%  { transform: rotate(3deg); }
-  50%  { transform: rotate(0deg); }
-  75%  { transform: rotate(-3deg); }
-  100% { transform: rotate(0deg); }
+  0%   { transform: translate(0px, 0px)  scale(1); }
+  25%  { transform: translate(-10px, -5px)  scale(1.03); }
+  50%  { transform: translate(0px, 2px)  scale(1); }
+  75%  { transform: translate(10px, 5px)  scale(0.97); }
+  100% { transform: translate(0px, 0px)  scale(1); }
 }
 
-
-.circle:nth-child(1)  { width: 60px;  height: 60px;  top: 20%; left: 10%; animation-delay: 0s; }
+.circle:nth-child(1)  { width: 60px;  height: 60px;  top: 20%; left: 5%; animation-delay: 0s; }
 .circle:nth-child(2)  { width: 40px;  height: 40px;  top: 50%; left: 70%; animation-delay: 0.5s; }
 .circle:nth-child(3)  { width: 30px;  height: 30px;  top: 70%; left: 30%; animation-delay: 1s; }
 .circle:nth-child(4)  { width: 80px;  height: 80px;  top: 35%; left: 50%; animation-delay: 1.5s; }
@@ -107,11 +106,14 @@ img {
   border-radius: 8px;
   background-color: #a2f1da;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: 
+    background-color 0.3s ease,
+    transform 0.3s ease;
 }
 
 .action-btn:hover {
-  background-color: #7ccfb8;
+  background-color: #cafff1;
+  transform: scale(1.02);
 }
 
 .action-btn.primary {
@@ -120,5 +122,6 @@ img {
 }
 
 .action-btn.primary:hover {
-  background-color: #219e79;
+  background-color: #52dfb4;
+  transform: scale(1.02);
 }

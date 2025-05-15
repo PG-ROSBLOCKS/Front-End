@@ -41,6 +41,7 @@
   filter: blur(60px);
   opacity: 0.6;
   animation: floatLight 20s ease-in-out infinite alternate;
+  animation-fill-mode: both;
 }
 
 .aqua {
