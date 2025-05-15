@@ -849,11 +849,12 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   stopTab(tabId: number) {
-    const tab = this.tabs.find(t => t.id === tabId);
-    if (tab && tab.isPlaying) {
-      // — Actualizamos UI —
+    const tab = this.tabs.find(tab => tab.id === tabId);
+    if (tab) {
+      // --- Immediate UI Update ---
       tab.isPlaying = false;
-      this.changeDetectorRef.detectChanges();
+      this.changeDetectorRef.detectChanges(); // Ensure UI reflects change quickly
+      // --- End Immediate UI Update ---
 
       const session_id = this.consolesSessions.get(tabId.toString());
       const codeService = this.consolesServices.get(tabId.toString());
@@ -866,7 +867,7 @@ export class WorkspaceComponent implements OnDestroy {
         // Note: killExecution doesn't instantly confirm termination.
         // The WebSocket 'terminated' message is the confirmation.
       } else {
-        console.warn(`No active session or service found for tab ${tabId} to kill.`);
+         console.warn(`No active session or service found for tab ${tabId} to kill.`);
       }
 
       // Close the frontend WebSocket connection attempt immediately
@@ -881,6 +882,7 @@ export class WorkspaceComponent implements OnDestroy {
       // command might fail or take time.
     }
   }
+
 
   deleteTab(tabId: number) {
     const tab = this.tabs.find(tab => tab.id === tabId);
@@ -1072,6 +1074,7 @@ export class WorkspaceComponent implements OnDestroy {
       const tabId = tab.id;
       if (!this.workspaces[tabId]) continue;
       this.stopTab(tabId);
+      console.log(`StopAll: Stopped tab ${tabId} (${tab.name})`);
     }
     this.resetTurtleContainer(this.currentMap);
     this.seenMsgs = new WeakSet();
