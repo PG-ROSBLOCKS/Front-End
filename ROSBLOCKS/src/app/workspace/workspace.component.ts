@@ -299,6 +299,7 @@ export class WorkspaceComponent implements OnDestroy {
         this.rewriteLocalStorageFromJSON(fileData);
 
         //this.loadFromLocalStorage()
+        window.dispatchEvent(new CustomEvent('suppress-before-unload'));
         window.location.reload();
       } catch (error) {
         this.showAlert('Error loading data from file.', 'error');
