@@ -5,7 +5,7 @@ import { EventType } from 'blockly/core/events/type';
 import { common_msgs, common_msgs_for_custom } from './ros2-msgs';
 import type { MessageService } from '../shared/message.service'; // asegúrate del path correcto
 import { blockColors } from './color-palette';
-import { sanitizeBaseNameAllowUnderscoreWithoutExtension, sanitizeNameWithoutExtension, validateTopicName } from '../utilities/sanitizer-tools';
+import { normalizeType, sanitizeBaseNameAllowUnderscoreWithoutExtension, sanitizeNameWithoutExtension, validateTopicName } from '../utilities/sanitizer-tools';
 
 let messageServiceInstance: MessageService | null = null;
 
@@ -422,32 +422,22 @@ export function definirBloquesROS2() {
         const fullName = parentPath ? `${parentPath}.${field.name}` : field.name;
         const inputName = `FIELD_${fullName}`;
 
-        // Determine if it is a nested message type
-        const isNested = customMsgList.some(
-          msg => msg.name === field.type || msg.name === `${field.type}.msg`
+        const fieldTypeNormalized = normalizeType(field.type);
+
+        // Detectar si es un tipo compuesto (otro mensaje)
+        const nestedMsg = customMsgList.find(
+          msg => normalizeType(msg.name) === fieldTypeNormalized
         );
 
-        if (isNested) {
-          // 🔹 Insert a visual label to group the subfields
-          this.appendDummyInput()
-            .appendField(`${fullName}:`);  // e.g. "linear:"
-
-          // 🔁 Recurse into nested fields
-          const nested = customMsgList.find(
-            m => m.name === field.type || m.name === `${field.type}.msg`
-          );
-          if (nested && nested.fields) {
-            this.addFieldsRecursively(nested.fields, fullName);
-          }
+        if (nestedMsg && nestedMsg.fields) {
+          // 🔸 No crear input para el campo padre, solo expandir subcampos
+          this.addFieldsRecursively(nestedMsg.fields, fullName);
         } else {
-          // ✅ Create actual input for primitive fields
+          // 🔹 Campo primitivo: crear input
           const valueInput = this.appendValueInput(inputName)
             .appendField(`${fullName}:`);
 
-          // Optionally restore saved value (if not using shadow blocks)
-          const saved = this.fieldValues[fullName] || "";
-
-          // Set input type checks
+          // Tipo del campo para check
           if (field.type === "string") {
             valueInput.setCheck("String");
           } else if (["int32", "int64"].includes(field.type)) {
@@ -457,7 +447,7 @@ export function definirBloquesROS2() {
           } else if (field.type === "bool") {
             valueInput.setCheck("Boolean");
           } else {
-            valueInput.setCheck(null); // Allow any block
+            valueInput.setCheck(null); // fallback
           }
         }
       }

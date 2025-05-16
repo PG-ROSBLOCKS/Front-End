@@ -526,3 +526,6 @@ export function removeCommonIndentation(code: string) {
     }
   }
   
+  export function normalizeType(type: string): string {
+    return type.replace('/', '.').replace(/\.msg$/, '');
+  }
