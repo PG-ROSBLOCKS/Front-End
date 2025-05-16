@@ -177,8 +177,11 @@ export class CodeService {
       })
     );
   }
-
-    public get apiUrl(): string {
+  stopROSDaemon(): Observable<any> {
+    return this.http.get(`${this.API_URL}/ros_commands/stop_ros_daemon`);
+  }
+  
+  public get apiUrl(): string {
     return this.API_URL;
   }
 
