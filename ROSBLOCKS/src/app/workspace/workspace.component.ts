@@ -343,9 +343,7 @@ export class WorkspaceComponent implements OnDestroy {
     this.rewriteLocalStorageFromJSON(this.localStorageAsJSON());
   }
 
-  rewriteLocalStorageFromJSON(jsonData: string): void {
-    jsonData = JSON.stringify(jsonData, null, 2);
-
+    rewriteLocalStorageFromJSON(jsonData: string): void {
     try {
       const parsedData = JSON.parse(jsonData);
 
@@ -353,7 +351,10 @@ export class WorkspaceComponent implements OnDestroy {
         localStorage.clear();
 
         for (const key in parsedData) {
-          if (Object.prototype.hasOwnProperty.call(parsedData, key)) {
+          if (
+            Object.prototype.hasOwnProperty.call(parsedData, key) &&
+            key !== 'uuid' 
+          ) {
             localStorage.setItem(key, parsedData[key]);
           }
         }
