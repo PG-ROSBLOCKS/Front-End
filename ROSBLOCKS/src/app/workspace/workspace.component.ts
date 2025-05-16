@@ -343,7 +343,8 @@ export class WorkspaceComponent implements OnDestroy {
       }
     } catch (error) {
     }
-
+    let jsonData = this.localStorageAsJSON();
+    
     this.rewriteLocalStorageFromJSON(this.localStorageAsJSON());
   }
 
@@ -376,7 +377,9 @@ export class WorkspaceComponent implements OnDestroy {
     for (let i = 0; i < length; i++) {
       const key = localStorage.key(i);
       if (key) {
-        localStorageData[key] = localStorage.getItem(key);
+        if(!key.startsWith("uuid")) {
+          localStorageData[key] = localStorage.getItem(key);
+        }
       }
     }
 
