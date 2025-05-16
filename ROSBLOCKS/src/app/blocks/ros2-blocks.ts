@@ -5,7 +5,7 @@ import { EventType } from 'blockly/core/events/type';
 import { common_msgs, common_msgs_for_custom } from './ros2-msgs';
 import type { MessageService } from '../shared/message.service'; // asegúrate del path correcto
 import { blockColors } from './color-palette';
-import { normalizeType, sanitizeBaseNameAllowUnderscoreWithoutExtension, sanitizeNameWithoutExtension, validateTopicName } from '../utilities/sanitizer-tools';
+import { normalizeFieldType, sanitizeBaseNameAllowUnderscoreWithoutExtension, sanitizeNameWithoutExtension, validateTopicName } from '../utilities/sanitizer-tools';
 
 let messageServiceInstance: MessageService | null = null;
 
@@ -422,32 +422,27 @@ export function definirBloquesROS2() {
         const fullName = parentPath ? `${parentPath}.${field.name}` : field.name;
         const inputName = `FIELD_${fullName}`;
 
-        const fieldTypeNormalized = normalizeType(field.type);
-
-        // Detectar si es un tipo compuesto (otro mensaje)
-        const nestedMsg = customMsgList.find(
-          msg => normalizeType(msg.name) === fieldTypeNormalized
-        );
+        // Normalizar el tipo
+        const normalizedType = field.type.replace('/', '.msg.');
+        const nestedMsg = customMsgList.find(msg => msg.name === normalizedType);
 
         if (nestedMsg && nestedMsg.fields) {
-          // 🔸 No crear input para el campo padre, solo expandir subcampos
+          // Expandir subcampos
           this.addFieldsRecursively(nestedMsg.fields, fullName);
         } else {
-          // 🔹 Campo primitivo: crear input
           const valueInput = this.appendValueInput(inputName)
             .appendField(`${fullName}:`);
 
-          // Tipo del campo para check
           if (field.type === "string") {
             valueInput.setCheck("String");
-          } else if (["int32", "int64"].includes(field.type)) {
+          } else if (["int32", "int64", "int16"].includes(field.type)) {
             valueInput.setCheck("Integer");
           } else if (["float32", "float64"].includes(field.type)) {
             valueInput.setCheck("Float");
           } else if (field.type === "bool") {
             valueInput.setCheck("Boolean");
           } else {
-            valueInput.setCheck(null); // fallback
+            valueInput.setCheck(null);
           }
         }
       }
