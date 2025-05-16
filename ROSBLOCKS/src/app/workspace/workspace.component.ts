@@ -260,8 +260,15 @@ export class WorkspaceComponent implements OnDestroy {
       } else {
         this.showMessage('data saved successfully.', 'success');
       }
-
-      const blob = new Blob([this.localStorageAsJSON()], { type: 'application/json' });
+      let jsonData = this.localStorageAsJSON();
+      try {
+        const parsedData = JSON.parse(jsonData);
+        delete parsedData.uuid;
+        jsonData = JSON.stringify(parsedData, null, 2); 
+      } catch (e) {
+        console.error('Error with JSON export', e);
+      }
+      const blob = new Blob([jsonData], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'project.rosblocks';
@@ -282,10 +289,6 @@ export class WorkspaceComponent implements OnDestroy {
     reader.onload = async (e) => {
       try {
         const fileData = JSON.parse(e.target?.result as string);
-
-        if (fileData['uuid']) {
-          fileData['uuid'].delete();
-        }
 
         if (fileData['mapSessionId']) {
           this.mapSessionId = fileData['mapSessionId'];
@@ -377,9 +380,7 @@ export class WorkspaceComponent implements OnDestroy {
     for (let i = 0; i < length; i++) {
       const key = localStorage.key(i);
       if (key) {
-        if(!key.startsWith("uuid")) {
-          localStorageData[key] = localStorage.getItem(key);
-        }
+        localStorageData[key] = localStorage.getItem(key);
       }
     }
 
