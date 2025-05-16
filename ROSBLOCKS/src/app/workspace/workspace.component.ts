@@ -1135,6 +1135,21 @@ export class WorkspaceComponent implements OnDestroy {
       }
     });
   }
+  stopROSDaemon(): void {
+    if (!this.selectedTabId) {
+      console.error("No tab selected");
+      return;
+    }
+
+    const tabId = this.selectedTabId.toString();
+    const consoleService = this.consolesServices.get(tabId);
+
+    if (!consoleService) {
+      console.error("Console service not found for tab", tabId);
+      return;
+    }
+    consoleService.stopROSDaemon();
+  }
 
   enviarCodigo(code_to_send: string, tabId: number) {
 
