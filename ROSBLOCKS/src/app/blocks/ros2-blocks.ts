@@ -27,8 +27,12 @@ export function definirBloquesROS2() {
           const allOptionsMap = new Map<string, string>();
 
           // Agregar common_msgs (ya tienen su [label, value])
-          common_msgs.forEach(([label, value]) => {
-            allOptionsMap.set(value, label);
+          msgList.forEach((msg) => {
+            const name = msg.name;
+            // Si ya está en el mapa (por ejemplo, por common_msgs), lo ignoramos
+            if (!allOptionsMap.has(name)) {
+              allOptionsMap.set(name, name); // Mostrarlo tal cual
+            }
           });
 
           // Agregar mensajes personalizados sin modificar
