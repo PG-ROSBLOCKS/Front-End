@@ -1148,7 +1148,21 @@ export class WorkspaceComponent implements OnDestroy {
       console.error("Console service not found for tab", tabId);
       return;
     }
-    consoleService.stopROSDaemon();
+    consoleService.stopROSDaemon().subscribe({
+      next: (response) => {
+        console.log("ROS Daemon stopped successfully:", response);
+        const currentOutput = this.consolesOutput.get(tabId) || '';
+        this.consolesOutput.set(tabId, `${currentOutput}ROS Daemon stopped successfully.\n`);
+        this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId) || '';
+      },
+      error: (err) => {
+        console.error("Error stopping ROS Daemon:", err);
+        const currentOutput = this.consolesOutput.get(tabId) || '';
+        this.consolesOutput.set(tabId, `${currentOutput}Error: ${err.message}\n`);
+        this.currentDisplayedConsoleOutput = this.consolesOutput.get(tabId) || '';
+      }
+    }
+    );
   }
 
   enviarCodigo(code_to_send: string, tabId: number) {

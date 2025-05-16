@@ -367,7 +367,6 @@ input::selection {
   font-size: 16px;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease;
-  margin-right: 5px; /* Añade espacio a la derecha */
   display: inline-block; /* Permite que los botones se alineen en línea */
 }
 
@@ -384,7 +383,7 @@ input::selection {
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease;
   display: inline-block; /* Permite que los botones se alineen */
-  margin-left: 0; /* Elimina cualquier margen izquierdo */
+  margin-left: 5px; /* Elimina cualquier margen izquierdo */
 }
 
 .btnClean:hover,
