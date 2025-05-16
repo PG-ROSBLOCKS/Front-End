@@ -283,6 +283,10 @@ export class WorkspaceComponent implements OnDestroy {
       try {
         const fileData = JSON.parse(e.target?.result as string);
 
+        if (fileData['uuid']) {
+          fileData['uuid'].delete();
+        }
+
         if (fileData['mapSessionId']) {
           this.mapSessionId = fileData['mapSessionId'];
         }
@@ -343,7 +347,9 @@ export class WorkspaceComponent implements OnDestroy {
     this.rewriteLocalStorageFromJSON(this.localStorageAsJSON());
   }
 
-    rewriteLocalStorageFromJSON(jsonData: string): void {
+  rewriteLocalStorageFromJSON(jsonData: string): void {
+    jsonData = JSON.stringify(jsonData, null, 2);
+
     try {
       const parsedData = JSON.parse(jsonData);
 
@@ -351,10 +357,7 @@ export class WorkspaceComponent implements OnDestroy {
         localStorage.clear();
 
         for (const key in parsedData) {
-          if (
-            Object.prototype.hasOwnProperty.call(parsedData, key) &&
-            key !== 'uuid' 
-          ) {
+          if (Object.prototype.hasOwnProperty.call(parsedData, key)) {
             localStorage.setItem(key, parsedData[key]);
           }
         }
