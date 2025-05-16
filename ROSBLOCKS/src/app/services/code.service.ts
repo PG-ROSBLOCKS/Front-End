@@ -178,9 +178,10 @@ export class CodeService {
     );
   }
   stopROSDaemon(): Observable<any> {
+    console.log('El endpoint es:', `${this.API_URL}/ros_commands/stop_ros_daemon`);
     return this.http.get(`${this.API_URL}/ros_commands/stop_ros_daemon`);
   }
-  
+
   public get apiUrl(): string {
     return this.API_URL;
   }
