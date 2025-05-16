@@ -192,5 +192,9 @@ export class CodeService {
     // 4) lanzar de nuevo el polling:
     this.pollForIp(this.uuid);
   }
+
+  getSessionURL(): string {
+    return this.API_URL;
+  }
   
 }

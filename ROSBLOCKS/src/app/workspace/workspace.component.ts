@@ -272,14 +272,14 @@ export class WorkspaceComponent implements OnDestroy {
     }
   }
 
-  loadFromFile(event: Event) {
+  async loadFromFile(event: Event) {
     this.stopAllTabs();
     this.setToZero();
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
     const file = input.files[0];
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const fileData = JSON.parse(e.target?.result as string);
 
@@ -287,7 +287,13 @@ export class WorkspaceComponent implements OnDestroy {
           this.mapSessionId = fileData['mapSessionId'];
         }
 
-        this.mapCodeService = new CodeService(this.http);
+        if (!this.mapCodeService) {
+          this.mapCodeService = new CodeService(this.http);
+        }
+        while(this.mapCodeService.getSessionURL() == "http://localhost:8000") {
+          console.log("Waiting for mapCodeService to be ready...");
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
 
 
         if (this.mapSessionId && this.currentMap !== 1) {
@@ -411,7 +417,9 @@ export class WorkspaceComponent implements OnDestroy {
           });
 
           this.mapSessionId = localStorage.getItem('mapSessionId') || '';
-          this.mapCodeService = new CodeService(this.http);
+          if (!this.mapCodeService) {
+            this.mapCodeService = new CodeService(this.http);
+          }
 
           if (this.mapSessionId && this.currentMap !== 1) {
             setTimeout(() => {
