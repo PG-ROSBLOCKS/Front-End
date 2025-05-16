@@ -1553,46 +1553,18 @@ export class WorkspaceComponent implements OnDestroy {
       : { kind: 'categoryToolbox', contents: [] };
 
     const typeToBlocksMap: Record<string, any[]> = {};
-    const msgMap = new Map(msgList.map(msg => [msg.name.replace('/', '.'), msg]));
-
-    const expandFieldsRecursively = (field: any, parentType: string, prefix = ''): any[] => {
-      const blocks: any[] = [];
-      const fieldTypeName = field.type.replace('/', '.');
-
-      const fullName = prefix ? `${prefix}.${field.name}` : field.name;
-
-      const subMsg = msgMap.get(fieldTypeName);
-      if (subMsg && subMsg.fields) {
-        // Si es compuesto, expandir recursivamente
-        subMsg.fields.forEach(subField => {
-          blocks.push(...expandFieldsRecursively(subField, parentType, fullName));
-        });
-      } else {
-        // Si es primitivo, crear bloque
-        const simpleField = {
-          name: fullName,
-          type: field.type
-        };
-        const block = this.createMsgVariableBlock(simpleField);
-        block.data = parentType;
-        blocks.push(block);
-      }
-
-      return blocks;
-    };
 
     let categoryName = 'ROS 2 common msg types';
 
     msgList.forEach((message: MsgInfo) => {
       const baseType = message.name.split('.').pop() || message.name;
-
       message.fields?.forEach((field: any) => {
         if (!typeToBlocksMap[baseType]) {
           typeToBlocksMap[baseType] = [];
         }
-
-        const expandedBlocks = expandFieldsRecursively(field, message.name);
-        typeToBlocksMap[baseType].push(...expandedBlocks);
+        const block = this.createMsgVariableBlock(field);
+        block.data = message.name;
+        typeToBlocksMap[baseType].push(block);
       });
     });
 
@@ -1608,7 +1580,6 @@ export class WorkspaceComponent implements OnDestroy {
       colour: blockColors.Messages,
       contents: flatContents
     };
-
     updateDeepCategoryInToolbox(
       toolboxObj,
       ['ROS 2 Blocks', 'ROS 2 msg and srv types', 'ROS 2 msg types'],
