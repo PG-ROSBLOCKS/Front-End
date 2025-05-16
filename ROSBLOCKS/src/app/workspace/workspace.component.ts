@@ -487,6 +487,18 @@ export class WorkspaceComponent implements OnDestroy {
 
   resetTurtleContainer(map?: number): void {
     this.deleteMap()
+    this.codeService.stopROSDaemon().subscribe({
+      next: (response) => {
+        this.mapSessionId = '';
+        this.mapCodeService = new CodeService(this.http);
+        this.mapCodeService.closeConnection();
+        this.mapFullyLoaded = true;
+      },
+      error: (error) => {
+        console.error('Error stopping ROS daemon:', error);
+        this.mapFullyLoaded = true;
+      }
+    });
     //When presing restart button
     if (map) {
       this.currentMap = map
