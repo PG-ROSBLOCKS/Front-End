@@ -5,7 +5,7 @@ import { EventType } from 'blockly/core/events/type';
 import { common_msgs, common_msgs_for_custom } from './ros2-msgs';
 import type { MessageService } from '../shared/message.service'; // asegúrate del path correcto
 import { blockColors } from './color-palette';
-import { normalizeFieldType, sanitizeBaseNameAllowUnderscoreWithoutExtension, sanitizeNameWithoutExtension, validateTopicName } from '../utilities/sanitizer-tools';
+import { sanitizeBaseNameAllowUnderscoreWithoutExtension, sanitizeNameWithoutExtension, validateTopicName } from '../utilities/sanitizer-tools';
 
 let messageServiceInstance: MessageService | null = null;
 
@@ -417,31 +417,42 @@ export function definirBloquesROS2() {
      * If the field is another message, go up one level of recursion
      * Otherwise, create a ValueInput with .setCheck(...) as appropriate
      */
-    addFieldsRecursively: function (fields: any[], parentPath: string) {
+    addFieldsRecursively: function (fields: any, parentPath: any) {
       for (const field of fields) {
         const fullName = parentPath ? `${parentPath}.${field.name}` : field.name;
         const inputName = `FIELD_${fullName}`;
 
-        // Normalizar el tipo
-        const normalizedType = field.type.replace('/', '.msg.');
-        const nestedMsg = customMsgList.find(msg => msg.name === normalizedType);
+        // Determine if it is a nested message type
+        const isNested = customMsgList.some(msg => msg.name === field.type || msg.name === `${field.type}.msg`);
 
-        if (nestedMsg && nestedMsg.fields) {
-          // Expandir subcampos
-          this.addFieldsRecursively(nestedMsg.fields, fullName);
+        if (isNested) {
+          // Recursion for subfields
+          const nested = customMsgList.find(m => m.name === field.type || m.name === `${field.type}.msg`);
+          if (nested && nested.fields) {
+            this.addFieldsRecursively(nested.fields, fullName);
+          }
         } else {
+          // Create the "slot" (hole) to connect a block
+          //console.log(`[${this.id}] addFieldsRecursively - Creating input FIELD_${fullName} for type ${field.type}`);
           const valueInput = this.appendValueInput(inputName)
-            .appendField(`${fullName}:`);
+            .appendField(fullName + ":");
 
+          // Optionally: load a saved value (if not using shadow blocks)
+          // NOTE: This "value" will not be displayed directly if it is a ValueInput,
+          //       because the "editing" will come from the connected block.
+          const saved = this.fieldValues[fullName] || "";
+
+          // Adjust .setCheck(...) according to the type
           if (field.type === "string") {
             valueInput.setCheck("String");
-          } else if (["int32", "int64", "int16"].includes(field.type)) {
-            valueInput.setCheck("Integer");
+          } else if (["int32", "int64",].includes(field.type)) {
+            valueInput.setCheck("Integer"); // Use specific Integer check
           } else if (["float32", "float64"].includes(field.type)) {
-            valueInput.setCheck("Float");
+            valueInput.setCheck("Float");   // Use specific Float check
           } else if (field.type === "bool") {
             valueInput.setCheck("Boolean");
           } else {
+            // Unknown type => allow any block
             valueInput.setCheck(null);
           }
         }
@@ -747,10 +758,10 @@ Blockly.Blocks['ros2_publish_twist'] = {
       .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
     this.appendValueInput("LINEAR")
       .setCheck("Number")
-      .appendField("Linear Velocity:");
+      .appendField("Move:");
     this.appendValueInput("ANGULAR")
       .setCheck("Number")
-      .appendField("Angular Velocity:");
+      .appendField("Rotate:");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
     this.setColour(blockColors.Turtlesim);
