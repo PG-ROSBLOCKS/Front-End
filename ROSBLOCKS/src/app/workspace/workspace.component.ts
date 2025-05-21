@@ -126,7 +126,7 @@ export class WorkspaceComponent implements OnDestroy {
     perf.measure(measureName, 'init_start', markName);
 
     const dur = perf.getMeasures().find(m => m.name.endsWith(measureName))?.duration;
-    console.table([{ tick, measure: measureName, duration: dur?.toFixed(2) + ' ms' }]);
+    console.table([{measure: measureName, duration: dur?.toFixed(2) + ' ms' }]);
     tick++;
   }, 1000);
   }
