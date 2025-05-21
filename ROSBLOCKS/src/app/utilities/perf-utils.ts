@@ -72,3 +72,4 @@ export function printAllPlay(globalPerf: PerfTest | null) {
 }
 
 export const globalMonitorPerf = new PerfTest('global');
+export const navigationPerf = new PerfTest('navigation');
