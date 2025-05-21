@@ -756,9 +756,12 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   playTab(tabId: number, playAllTabs: boolean) {
+    console.log("INICIOOOOOOO");
+    
     const perf = getPerf(tabId);
     perf.clear();
     perf.mark('upload_start');
+    performance.mark('turtle_start');
 
     const tab = this.tabs.find(tab => tab.id === tabId);
     if (!tab) return;
@@ -1386,6 +1389,18 @@ export class WorkspaceComponent implements OnDestroy {
                 }
                 // Log message
                 console.log('Websocket message:', response.output);
+                console.log('EEENNDDDD');
+
+                performance.mark('turtle_end');
+                safeMeasure('turtle_total', 'turtle_start', 'turtle_end');
+
+                console.log('EEENNDDDD');
+
+                const m = performance.getEntriesByName('turtle_total').pop();
+                if (m) {
+                  console.table([{ tramo: 'turtle_total', ms: m.duration.toFixed(2) }]);
+                }
+                
                 // Append output - RE-ADD the explicit '\\n' here if backend doesn't send it
                 this.consolesOutput.set(tabId.toString(), (this.consolesOutput.get(tabId.toString()) ?? '') + response.output + '\n');
                 if (this.selectedTabId === tabId) {
