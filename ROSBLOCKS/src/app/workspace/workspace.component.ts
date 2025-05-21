@@ -101,35 +101,49 @@ export class WorkspaceComponent implements OnDestroy {
     const perf = getPerf(999); // ID ficticio
     perf.clear();
     perf.mark('init_start');
-    this.mapFullyLoaded = false
+  
+    this.mapFullyLoaded = false;
     this.loadFromLocalStorage();
     initializeCommonMsgs();
     setMessageService(this.messageService);
     this.blockErrorMessages();
     this.startInactivityCheck();
     this.backendMonitor.startHeartbeat();
+  
     window.addEventListener('suppress-before-unload', () => {
       this.suppressBeforeUnload = true;
     });
+  
     setTimeout(() => {
       this.reloadTurtlesim();
-      this.mapFullyLoaded = true
+      this.mapFullyLoaded = true;
     }, 5000);
-
-    
-
-    let tick = 0;
-  setInterval(() => {
-    const markName = `tick`;
-    const measureName = `latency`;
-    perf.mark(markName);
-    perf.measure(measureName, 'init_start', markName);
-
-    const dur = perf.getMeasures().find(m => m.name.endsWith(measureName))?.duration;
-    console.table([{measure: measureName, duration: dur?.toFixed(2) + ' ms' }]);
-    tick++;
-  }, 1000);
+  
+    let second = 1;
+  
+    setInterval(() => {
+      const markName = `tick_${second}`;
+      const measureName = `latency_${second}`;
+  
+      perf.mark(markName);
+      perf.measure(measureName, 'init_start', markName);
+  
+      const dur = perf.getMeasures().find(m => m.name === `tab-999:${measureName}`)?.duration;
+      const timestamp = new Date().toLocaleTimeString();
+  
+      if (dur !== undefined) {
+        console.table([
+          {
+            measure: 'latency',
+            duration: `${dur.toFixed(2)} ms`,
+          }
+        ]);
+      }
+  
+      second++;
+    }, 1000);
   }
+  
 
   @HostListener('window:mousemove')
   @HostListener('window:keydown')
