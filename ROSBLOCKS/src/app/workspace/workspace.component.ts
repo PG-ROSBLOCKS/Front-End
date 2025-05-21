@@ -119,16 +119,16 @@ export class WorkspaceComponent implements OnDestroy {
     
 
     let tick = 0;
-    setInterval(() => {
-      const markName = `tick_${tick}`;
-      const measureName = `latency_${tick}`;
-      perf.mark(markName);
-      perf.measure(measureName, 'start', markName);
+  setInterval(() => {
+    const markName = `tick`;
+    const measureName = `latency`;
+    perf.mark(markName);
+    perf.measure(measureName, 'init_start', markName);
 
-      const dur = perf.getMeasures().find(m => m.name.endsWith(measureName))?.duration;
-      console.table([{ tick, measure: measureName, duration: dur?.toFixed(2) + ' ms' }]);
-      tick++;
-    }, 1000);
+    const dur = perf.getMeasures().find(m => m.name.endsWith(measureName))?.duration;
+    console.table([{ tick, measure: measureName, duration: dur?.toFixed(2) + ' ms' }]);
+    tick++;
+  }, 1000);
   }
 
   @HostListener('window:mousemove')
