@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { LandingStateService } from '../services/landing-state.service';
 import { CodeService } from '../services/code.service';
+import { navigationPerf } from '../utilities/perf-utils';
 
 @Component({
   selector: 'app-landing',
@@ -16,6 +17,8 @@ export class LandingComponent {
   }
 
   start(): void {
+    navigationPerf.clear();                      // limpio marcas previas
+    navigationPerf.mark('get_started_click');
     this.landingState.markVisited();
     this.codeService.resetSession();
     this.router.navigate(['/loading']);
