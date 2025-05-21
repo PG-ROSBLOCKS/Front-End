@@ -20,6 +20,7 @@ export class LoadingComponent implements OnInit, OnDestroy {
     private landingState: LandingStateService) { }
 
   ngOnInit(): void {
+    this.sub = this.code.progress$.subscribe(p => this.progress = p);
     this.code.ready$.pipe(
       filter(Boolean),
       take(1),
@@ -31,8 +32,12 @@ export class LoadingComponent implements OnInit, OnDestroy {
           'loaded_workspace'
         );
         printSingle('navigation', 'time_to_workspace');
-      })
-    ).subscribe(() => this.router.navigate(['/workspace']));
+        this.landingState.markVisited()
+      }
+      )
+    ).subscribe(() => {
+      this.router.navigate(['/workspace']);
+    });
   }
 
 
