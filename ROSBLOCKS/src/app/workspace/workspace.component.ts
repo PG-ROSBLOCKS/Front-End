@@ -98,6 +98,9 @@ export class WorkspaceComponent implements OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    const perf = getPerf(999); // ID ficticio
+    perf.clear();
+    perf.mark('init_start');
     this.mapFullyLoaded = false
     this.loadFromLocalStorage();
     initializeCommonMsgs();
@@ -112,6 +115,20 @@ export class WorkspaceComponent implements OnDestroy {
       this.reloadTurtlesim();
       this.mapFullyLoaded = true
     }, 5000);
+
+    
+
+    let tick = 0;
+    setInterval(() => {
+      const markName = `tick_${tick}`;
+      const measureName = `latency_${tick}`;
+      perf.mark(markName);
+      perf.measure(measureName, 'start', markName);
+
+      const dur = perf.getMeasures().find(m => m.name.endsWith(measureName))?.duration;
+      console.table([{ tick, measure: measureName, duration: dur?.toFixed(2) + ' ms' }]);
+      tick++;
+    }, 1000);
   }
 
   @HostListener('window:mousemove')
@@ -756,7 +773,6 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   playTab(tabId: number, playAllTabs: boolean) {
-    console.log("INICIOOOOOOO");
     
     const perf = getPerf(tabId);
     perf.clear();
@@ -1389,12 +1405,9 @@ export class WorkspaceComponent implements OnDestroy {
                 }
                 // Log message
                 console.log('Websocket message:', response.output);
-                console.log('EEENNDDDD');
 
                 performance.mark('turtle_end');
                 safeMeasure('turtle_total', 'turtle_start', 'turtle_end');
-
-                console.log('EEENNDDDD');
 
                 const m = performance.getEntriesByName('turtle_total').pop();
                 if (m) {
