@@ -328,10 +328,6 @@ export class WorkspaceComponent implements OnDestroy {
         if (!this.mapCodeService) {
           this.mapCodeService = new CodeService(this.http);
         }
-        while(this.mapCodeService.getSessionURL() == "http://localhost:8000") {
-          console.log("Waiting for mapCodeService to be ready...");
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
 
 
         if (this.mapSessionId && this.currentMap !== 1) {

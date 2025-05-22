@@ -25,24 +25,23 @@ export class CodeService {
 
   private API_URL = 'http://localhost:8000';
   private uuid: string = '';
-  private DOMAIN = 'https://api.rosblocks.com.co';
+  private DOMAIN = 'http://localhost:8000';
+  private API_URL_NO_PORT = 'http://localhost:';
 
 
   constructor(private http: HttpClient) {
     this.wsSubject = undefined;
-    this.uuid = localStorage.getItem('uuid') ?? safeUUID();
-    localStorage.setItem('uuid', this.uuid);
   
     this.pollForIp(this.uuid);
   }
   
   private async pollForIp(uuid: string) {
     try {
-      const res = await fetch(`${this.DOMAIN}/api/get-ip/${uuid}`);
+      const res = await fetch(`${this.DOMAIN}/health/`);
       const data = await res.json();
   
-      if (data.status === "ready") {
-        this.API_URL = `${this.DOMAIN}/session/${uuid}/app`;
+      if (data.status === "ok") {
+        this.API_URL = `${this.DOMAIN}`;
         this.readySubject.next(true);
       } else {
         this.progressSubject.next((this.progressSubject.value + 5) % 100);
@@ -68,9 +67,7 @@ export class CodeService {
   }
 
   connectToWebSocket(sessionId: string): WebSocketSubject<any> {
-    this.wsSubject = webSocket(
-      `wss://api.rosblocks.com.co/session/${this.uuid}/app/execution/ws/${sessionId}`
-    );
+    this.wsSubject = webSocket(`${this.API_URL.replace('http', 'ws')}/execution/ws/${sessionId}`);
     return this.wsSubject;
   }
   
@@ -158,8 +155,8 @@ export class CodeService {
   }
 
   vncTurtlesim(): string {
-    return `${this.DOMAIN}/session/${this.uuid}/vnc/vnc_lite.html?path=session/${this.uuid}/vnc/websockify`;
-  }  
+    return `${this.API_URL_NO_PORT}8080/vnc_lite.html`;
+  }
 
   vncTurtlesimReset(): string {
     return `${this.API_URL}/reset/`;
