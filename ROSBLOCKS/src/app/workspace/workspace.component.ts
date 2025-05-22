@@ -625,7 +625,7 @@ export class WorkspaceComponent implements OnDestroy {
           /* 3️⃣  Imprime el resultado sólo la primera vez */
           const m = performance.getEntriesByName('play_total').pop();
           if (m) {
-            console.table([{ tramo: 'play_total', ms: m.duration.toFixed(2) }]);
+            console.table([{ measure: 'play_total', ms: m.duration.toFixed(2) }]);
           }
         }
       },
@@ -1440,7 +1440,7 @@ export class WorkspaceComponent implements OnDestroy {
 
                 const m = performance.getEntriesByName('turtle_total').pop();
                 if (m) {
-                  console.table([{ tramo: 'turtle_total', ms: m.duration.toFixed(2) }]);
+                  console.table([{ measure: 'turtle_total', ms: m.duration.toFixed(2) }]);
                 }
                 
                 // Append output - RE-ADD the explicit '\\n' here if backend doesn't send it
