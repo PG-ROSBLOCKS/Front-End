@@ -98,9 +98,11 @@ export class WorkspaceComponent implements OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    /*
     const perf = getPerf(999); // ID ficticio
     perf.clear();
     perf.mark('init_start');
+    */
   
     this.mapFullyLoaded = false;
     this.loadFromLocalStorage();
@@ -119,6 +121,7 @@ export class WorkspaceComponent implements OnDestroy {
       this.mapFullyLoaded = true;
     }, 5000);
   
+    /*
     let second = 1;
   
     setInterval(() => {
@@ -142,6 +145,7 @@ export class WorkspaceComponent implements OnDestroy {
   
       second++;
     }, 1000);
+    */
   }
   
 
@@ -577,6 +581,7 @@ export class WorkspaceComponent implements OnDestroy {
   }
 
   enviarCodigoMapa(code_to_send: string): void {
+    performance.mark('play_start');
     let count = 2;
     const fileName = "turtleMap.py";
     const type = "pub_sub";
@@ -612,6 +617,16 @@ export class WorkspaceComponent implements OnDestroy {
         if (count === 0) {
           this.mapFullyLoaded = true;
           this.saveToLocalStorage();
+          performance.mark('play_end');        // <<< AQUÍ
+          safeMeasure('play_total', 'play_start', 'play_end');
+
+          console.log('EEENNDDDD');
+
+          /* 3️⃣  Imprime el resultado sólo la primera vez */
+          const m = performance.getEntriesByName('play_total').pop();
+          if (m) {
+            console.table([{ tramo: 'play_total', ms: m.duration.toFixed(2) }]);
+          }
         }
       },
       error: err => {
