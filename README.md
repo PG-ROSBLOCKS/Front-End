@@ -1,80 +1,109 @@
-# Angular Blockly App
-Este proyecto es una aplicación web moderna desarrollada con Angular que integra la biblioteca Blockly para ofrecer una experiencia de programación visual. La combinación de Angular para el manejo de la interfaz y la lógica de negocio, con Blockly para la creación y manipulación de bloques, permite crear aplicaciones interactivas, didácticas y altamente escalables.
+# ROSBlocks Frontend
 
-## Tecnologías
+**ROSBlocks** is a web-based visual programming environment built with Angular and powered by Google's Blockly library. It is designed to simplify the development of applications using **ROS 2 (Robot Operating System)**, especially for users who are not yet familiar with Linux, Python, or C++. With ROSBlocks, users can create and control ROS 2 nodes using an intuitive drag-and-drop interface directly from their browser.
 
-- **Angular**
-- **TypeScript**
-- **HTML5 & CSS3**
-- **Angular CLI**
-- **RxJS**
-- **Blockly:** Biblioteca para la programación visual con bloques
+This repository contains the **frontend client** for the ROSBlocks platform. It handles user interaction, visual programming with Blockly, communication with the backend, and workspace management.
 
-## Requisitos
+## Key Features
 
-- [Node.js](https://nodejs.org/) (versión LTS recomendada)
-- npm (incluido con Node.js).
-- Angular CLI (instalar globalmente: `npm install -g @angular/cli`)
-- El backend debe estar corriendo previamente para que se le puedan enviar las peticiones y las procese.
+- Visual programming with Blockly blocks adapted to ROS 2 concepts (publishers, subscribers, services, etc.)
+- Real-time code generation in Python for ROS 2
+- Live execution and monitoring of ROS 2 nodes
+- WebSocket-based communication with the backend
+- Multi-workspace environment with autosave and project isolation
+- Integrated VNC streaming for graphical visualization of ROS simulations (e.g., `turtlesim`)
+- Session management and dynamic backend instance allocation
 
-## Requisitos e Instalación en Windows/Ubuntu
+## Technology Stack
+
+- **Angular** – Web application framework
+- **TypeScript** – Strictly-typed JavaScript for app logic
+- **HTML5 & CSS3** – UI structure and styling
+- **RxJS** – Reactive programming for event and data flow
+- **Blockly** – Visual programming library for creating custom ROS 2 blocks
+- **WebSocket** – Real-time interaction with backend processes
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) (LTS version recommended)
+- npm (comes with Node.js)
+- Angular CLI (install globally via `npm install -g @angular/cli`)
+- A running instance of the **ROSBlocks backend**, which processes code execution and simulation
+
+## Installation Guide (Windows & Ubuntu)
+
 ### Windows
 
-1. **Instalar Node.js y npm:**
-   - Descarga el instalador de la versión LTS desde [nodejs.org](https://nodejs.org/en/download/).
-   - Ejecuta el instalador y sigue las instrucciones; npm se instalará junto con Node.js.
+1. **Install Node.js and npm:**
+   - Download the LTS version from [nodejs.org](https://nodejs.org/en/download/)
+   - Run the installer and follow the instructions
 
-2. **Instalar Angular CLI:**
-   - Abre el símbolo del sistema (cmd) o PowerShell y ejecuta:
-     ```bash
-     npm install -g @angular/cli
-     ```
-
-3. **Verificar la instalación:**
-   - Ejecuta los siguientes comandos para confirmar que Node.js, npm y Angular CLI están instalados correctamente:
-     ```bash
-     node -v
-     npm -v
-     ng version
-     ```
-
-### Ubuntu
-
-1. **Actualizar repositorios:**
+2. **Install Angular CLI:**
    ```bash
-   sudo apt update
-   sudo apt upgrade
+   npm install -g @angular/cli
    ```
-2. **Instalar Angular y Nodejs:**
-   ```bash
-   curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-   sudo apt-get install -y nodejs
-   ```
-3. **Instalar Angular CLI:**
-   ```bash
-   sudo npm install -g @angular/cli
-   ```
-4. **Verificar la instalación:**
+
+3. **Verify Installation:**
    ```bash
    node -v
    npm -v
    ng version
    ```
-## Instalación (solo se hace una única vez)
 
-1. **Clona el repositorio:**
+### Ubuntu
 
+1. **Update repositories:**
+   ```bash
+   sudo apt update && sudo apt upgrade
+   ```
+
+2. **Install Node.js and npm:**
+   ```bash
+   curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+   sudo apt install -y nodejs
+   ```
+
+3. **Install Angular CLI:**
+   ```bash
+   sudo npm install -g @angular/cli
+   ```
+
+4. **Verify Installation:**
+   ```bash
+   node -v
+   npm -v
+   ng version
+   ```
+
+## Setup (One-time initialization)
+
+1. **Clone the repository:**
    ```bash
    git clone https://github.com/PG-ROSBLOCKS/Front-End.git
    cd Front-End
    ```
-2. **Instalar las dependencias:**
+
+2. **Install project dependencies:**
    ```bash
    npm install
    ```
-## Iniciar el proyecto de angular
-Para iniciar la aplicación en modo desarrollo, ejecuta:
-   ```bash
-   ng serve
-   ```
-Abre http://localhost:4200 en tu navegador para ver la aplicación. Los cambios se reflejarán automáticamente al guardar.
+
+## Running the Application
+
+To start the development server:
+
+```bash
+ng serve
+```
+
+Then open your browser and go to:
+
+```
+http://localhost:4200
+```
+
+Changes made to the source files will automatically reload the application in the browser.
+
+---
+
+If you need help setting up the backend or deploying ROSBlocks in a containerized environment, refer to the backend documentation or contact the maintainers.
