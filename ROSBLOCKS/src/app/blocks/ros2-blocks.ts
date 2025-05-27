@@ -5,7 +5,7 @@ import { EventType } from 'blockly/core/events/type';
 import { common_msgs, common_msgs_for_custom } from './ros2-msgs';
 import type { MessageService } from '../shared/message.service'; // asegúrate del path correcto
 import { blockColors } from './color-palette';
-import { sanitizeBaseNameAllowUnderscoreWithoutExtension, sanitizeNameWithoutExtension, validateTopicName } from '../utilities/sanitizer-tools';
+import { normalizeFieldType, sanitizeBaseNameAllowUnderscoreWithoutExtension, sanitizeNameWithoutExtension, validateTopicName } from '../utilities/sanitizer-tools';
 
 let messageServiceInstance: MessageService | null = null;
 
@@ -417,42 +417,43 @@ export function definirBloquesROS2() {
      * If the field is another message, go up one level of recursion
      * Otherwise, create a ValueInput with .setCheck(...) as appropriate
      */
-    addFieldsRecursively: function (fields: any, parentPath: any) {
+    addFieldsRecursively: function (fields: any[], parentPath: string) {
       for (const field of fields) {
         const fullName = parentPath ? `${parentPath}.${field.name}` : field.name;
         const inputName = `FIELD_${fullName}`;
 
-        // Determine if it is a nested message type
-        const isNested = customMsgList.some(msg => msg.name === field.type || msg.name === `${field.type}.msg`);
+        // Normalizar el tipo
+        const normalizedType = field.type.replace('/', '.msg.');
+        const nestedMsg = customMsgList.find(msg => msg.name === normalizedType);
 
-        if (isNested) {
-          // Recursion for subfields
-          const nested = customMsgList.find(m => m.name === field.type || m.name === `${field.type}.msg`);
-          if (nested && nested.fields) {
-            this.addFieldsRecursively(nested.fields, fullName);
-          }
+        if (nestedMsg && nestedMsg.fields) {
+          // Expandir subcampos
+          this.addFieldsRecursively(nestedMsg.fields, fullName);
+
+
+
         } else {
-          // Create the "slot" (hole) to connect a block
-          //console.log(`[${this.id}] addFieldsRecursively - Creating input FIELD_${fullName} for type ${field.type}`);
+
+
           const valueInput = this.appendValueInput(inputName)
-            .appendField(fullName + ":");
+            .appendField(`${fullName}:`);
 
-          // Optionally: load a saved value (if not using shadow blocks)
-          // NOTE: This "value" will not be displayed directly if it is a ValueInput,
-          //       because the "editing" will come from the connected block.
-          const saved = this.fieldValues[fullName] || "";
 
-          // Adjust .setCheck(...) according to the type
+
+
+
+
+
           if (field.type === "string") {
             valueInput.setCheck("String");
-          } else if (["int32", "int64",].includes(field.type)) {
-            valueInput.setCheck("Integer"); // Use specific Integer check
+          } else if (["int32", "int64", "int16"].includes(field.type)) {
+            valueInput.setCheck("Integer");
           } else if (["float32", "float64"].includes(field.type)) {
-            valueInput.setCheck("Float");   // Use specific Float check
+            valueInput.setCheck("Float");
           } else if (field.type === "bool") {
             valueInput.setCheck("Boolean");
           } else {
-            // Unknown type => allow any block
+
             valueInput.setCheck(null);
           }
         }
@@ -758,7 +759,7 @@ Blockly.Blocks['ros2_publish_twist'] = {
       .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
     this.appendValueInput("LINEAR")
       .setCheck("Number")
-      .appendField("Move:");
+      .appendField("Move forward:");
     this.appendValueInput("ANGULAR")
       .setCheck("Number")
       .appendField("Rotate:");
@@ -901,7 +902,7 @@ Blockly.Blocks["ros_send_request"] = {
     this.fieldValues = {};      // *** Object to store the entered values
     this.setOnChange((event: any) => {
       if (!this.workspace || this.workspace.isDragging()) return;
-    
+
       const parent = this.getParent(); // Obtener el bloque padre
       if (!parent) {
         // Si no se encontró un bloque 'ros_create_client' en la cadena de padres,
@@ -909,10 +910,10 @@ Blockly.Blocks["ros_send_request"] = {
         this.setWarningText("This block must be inside a 'Create Client'.");
         return;
       }
-    
+
       let warningMessage = null; // Variable para almacenar el mensaje final
       const isDynamic = !!this.clientType; // Determina si el bloque ya está configurado dinámicamente
-    
+
       if (!isDynamic) {
         warningMessage = "This block must be inside a 'Create Client'.";
         // Si tiene inputs dinámicos, los limpiamos
@@ -930,12 +931,12 @@ Blockly.Blocks["ros_send_request"] = {
             input.name?.startsWith("FIELD_") &&
             !input.connection?.targetBlock()
         );
-        
+
         if (hasUnconnectedFields) {
           warningMessage = 'You must complete all required fields before executing.';
         }
       }
-    
+
       // Finalmente, establecer (o limpiar) el warning
       this.setWarningText(warningMessage);
     });
@@ -1325,7 +1326,7 @@ Blockly.Blocks['ros2_publish_twist_full'] = {
     this.appendDummyInput()
       .appendField("Publish Twist from")
       .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
-    
+
     this.appendDummyInput()
       .appendField("Linear Velocity:");
     this.appendValueInput("LINEAR_X")
@@ -1382,7 +1383,7 @@ Blockly.Blocks['ros2_cast_type'] = {
 
         return options.length > 0 ? options : [['No types available', '']];
       }), 'TARGET_TYPE');
-      
+
     this.setOutput(true, null);
     this.setColour(blockColors.Variables);
     this.setTooltip('Casts a value to the selected ROS2 message type.');
@@ -1429,4 +1430,3 @@ function validateDescendants(block: { type: string; data: string; unplug: () => 
     validateDescendants(block.nextConnection.targetBlock(), selectedServiceNormalized);
   }
 }
-
