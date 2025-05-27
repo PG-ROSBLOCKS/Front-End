@@ -759,10 +759,10 @@ Blockly.Blocks['ros2_publish_twist'] = {
       .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
     this.appendValueInput("LINEAR")
       .setCheck("Number")
-      .appendField("Linear Velocity:");
+      .appendField("Move forward:");
     this.appendValueInput("ANGULAR")
       .setCheck("Number")
-      .appendField("Angular Velocity:");
+      .appendField("Rotate:");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
     this.setColour(blockColors.Turtlesim);
