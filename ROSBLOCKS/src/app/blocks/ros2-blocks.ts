@@ -429,9 +429,20 @@ export function definirBloquesROS2() {
         if (nestedMsg && nestedMsg.fields) {
           // Expandir subcampos
           this.addFieldsRecursively(nestedMsg.fields, fullName);
+
+
+
         } else {
+
+
           const valueInput = this.appendValueInput(inputName)
             .appendField(`${fullName}:`);
+
+
+
+
+
+
 
           if (field.type === "string") {
             valueInput.setCheck("String");
@@ -442,6 +453,7 @@ export function definirBloquesROS2() {
           } else if (field.type === "bool") {
             valueInput.setCheck("Boolean");
           } else {
+
             valueInput.setCheck(null);
           }
         }
@@ -746,11 +758,11 @@ Blockly.Blocks['ros2_publish_twist'] = {
     this.appendDummyInput()
       .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
     this.appendValueInput("LINEAR")
-      .setCheck("Number")      
-      .appendField("Move:");
+      .setCheck("Number")
+      .appendField("Linear Velocity:");
     this.appendValueInput("ANGULAR")
       .setCheck("Number")
-      .appendField("Rotate:");
+      .appendField("Angular Velocity:");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
     this.setColour(blockColors.Turtlesim);
@@ -890,7 +902,7 @@ Blockly.Blocks["ros_send_request"] = {
     this.fieldValues = {};      // *** Object to store the entered values
     this.setOnChange((event: any) => {
       if (!this.workspace || this.workspace.isDragging()) return;
-    
+
       const parent = this.getParent(); // Obtener el bloque padre
       if (!parent) {
         // Si no se encontró un bloque 'ros_create_client' en la cadena de padres,
@@ -898,10 +910,10 @@ Blockly.Blocks["ros_send_request"] = {
         this.setWarningText("This block must be inside a 'Create Client'.");
         return;
       }
-    
+
       let warningMessage = null; // Variable para almacenar el mensaje final
       const isDynamic = !!this.clientType; // Determina si el bloque ya está configurado dinámicamente
-    
+
       if (!isDynamic) {
         warningMessage = "This block must be inside a 'Create Client'.";
         // Si tiene inputs dinámicos, los limpiamos
@@ -919,12 +931,12 @@ Blockly.Blocks["ros_send_request"] = {
             input.name?.startsWith("FIELD_") &&
             !input.connection?.targetBlock()
         );
-        
+
         if (hasUnconnectedFields) {
           warningMessage = 'You must complete all required fields before executing.';
         }
       }
-    
+
       // Finalmente, establecer (o limpiar) el warning
       this.setWarningText(warningMessage);
     });
@@ -1314,7 +1326,7 @@ Blockly.Blocks['ros2_publish_twist_full'] = {
     this.appendDummyInput()
       .appendField("Publish Twist from")
       .appendField(new Blockly.FieldTextInput("turtle1", sanitizeBaseNameAllowUnderscoreWithoutExtension), "TURTLE_NAME");
-    
+
     this.appendDummyInput()
       .appendField("Linear Velocity:");
     this.appendValueInput("LINEAR_X")
@@ -1371,7 +1383,7 @@ Blockly.Blocks['ros2_cast_type'] = {
 
         return options.length > 0 ? options : [['No types available', '']];
       }), 'TARGET_TYPE');
-      
+
     this.setOutput(true, null);
     this.setColour(blockColors.Variables);
     this.setTooltip('Casts a value to the selected ROS2 message type.');
